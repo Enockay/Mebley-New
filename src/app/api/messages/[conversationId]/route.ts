@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getMessages, saveMessage } from '@/lib/mongodb'
+import { rateLimit } from '@/lib/rateLimit'
+import { validateMessage } from '@/lib/validation'
 
 export async function GET(
   request: NextRequest,
@@ -15,14 +17,23 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: conversation, error: convError } = await supabase
+    // Rate limit by user
+    const limit = rateLimit(user.id, 'api')
+    if (!limit.success) {
+      return NextResponse.json(
+        { error: 'Too many requests', resetIn: limit.resetIn },
+        { status: 429 }
+      )
+    }
+
+    const { data: conversation } = await supabase
       .from('conversations')
       .select(`id, match_id, matches ( user1_id, user2_id )`)
       .eq('id', conversationId)
       .maybeSingle()
 
     if (!conversation) {
-      return NextResponse.json({ error: 'Conversation not found', debug: convError }, { status: 404 })
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 
     const match = conversation.matches as any
@@ -35,7 +46,7 @@ export async function GET(
 
   } catch (error) {
     console.error('GET messages error:', error)
-    return NextResponse.json({ error: 'Internal server error', debug: String(error) }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -52,16 +63,24 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Rate limit messages — 30 per minute
+    const limit = rateLimit(user.id, 'messages')
+    if (!limit.success) {
+      return NextResponse.json(
+        { error: 'Sending too fast. Please slow down.', resetIn: limit.resetIn },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
-    const { content, messageType = 'text' } = body
 
-    if (!content?.trim()) {
-      return NextResponse.json({ error: 'Message content is required' }, { status: 400 })
+    // Validate and sanitize message
+    const validation = validateMessage(body.content)
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 
-    if (content.length > 2000) {
-      return NextResponse.json({ error: 'Message too long' }, { status: 400 })
-    }
+    const messageType = body.messageType ?? 'text'
 
     const { data: conversation } = await supabase
       .from('conversations')
@@ -86,7 +105,7 @@ export async function POST(
       conversationId,
       senderId: user.id,
       receiverId,
-      content: content.trim(),
+      content: validation.sanitized!,
       messageType,
       isRead: false,
       isDeleted: false,
@@ -113,6 +132,6 @@ export async function POST(
 
   } catch (error) {
     console.error('POST message error:', error)
-    return NextResponse.json({ error: 'Internal server error', debug: String(error) }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
