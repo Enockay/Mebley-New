@@ -1,0 +1,277 @@
+'use client'
+
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Send, ArrowLeft, Loader2 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase-client'
+import type { Database } from '@/types/database.types'
+
+type Profile = Database['public']['Tables']['profiles']['Row']
+
+// MongoDB message shape from our API
+interface MongoMessage {
+  id: string
+  conversationId: string
+  senderId: string
+  receiverId: string
+  content: string
+  messageType: 'text' | 'image' | 'gif' | 'audio'
+  isRead: boolean
+  createdAt: string
+}
+
+interface ChatProps {
+  conversationId: string
+  otherProfile: Profile
+  onBack: () => void
+}
+
+export default function Chat({ conversationId, otherProfile, onBack }: ChatProps) {
+  const { profile: currentProfile } = useAuth()
+  const [messages, setMessages] = useState<MongoMessage[]>([])
+  const [newMessage, setNewMessage] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const loadMessages = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/messages/${conversationId}`)
+      if (!res.ok) throw new Error('Failed to load messages')
+      const data = await res.json()
+      setMessages(data.messages ?? [])
+    } catch (err) {
+      setError('Could not load messages. Please try again.')
+      console.error('Load messages error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [conversationId])
+
+  // Load messages on mount
+  useEffect(() => {
+    loadMessages()
+  }, [loadMessages])
+
+  // Supabase Realtime — listen for conversation updates
+  // When the other user sends a message, conversation.updated_at changes
+  // triggering us to reload the latest messages from MongoDB
+  useEffect(() => {
+    const channel = supabase
+      .channel(`conversation:${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversations',
+          filter: `id=eq.${conversationId}`,
+        },
+        async () => {
+          // Fetch only the latest message to append
+          try {
+            const res = await fetch(`/api/messages/${conversationId}?limit=1`)
+            if (!res.ok) return
+            const data = await res.json()
+            if (data.messages?.length > 0) {
+              const latest = data.messages[0]
+              setMessages((prev) => {
+                // Avoid duplicates
+                const exists = prev.some((m) => m.id === latest.id)
+                if (exists) return prev
+                return [...prev, latest]
+              })
+            }
+          } catch (err) {
+            console.error('Realtime fetch error:', err)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [conversationId])
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newMessage.trim() || !currentProfile || sending) return
+
+    setSending(true)
+    const content = newMessage.trim()
+    setNewMessage('')
+
+    // Optimistic update — show message immediately
+    const optimisticMsg: MongoMessage = {
+      id: `temp-${Date.now()}`,
+      conversationId,
+      senderId: currentProfile.id,
+      receiverId: otherProfile.id,
+      content,
+      messageType: 'text',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    }
+    setMessages((prev) => [...prev, optimisticMsg])
+
+    try {
+      const res = await fetch(`/api/messages/${conversationId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, messageType: 'text' }),
+      })
+
+      if (!res.ok) {
+        // Remove optimistic message on failure
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id))
+        setNewMessage(content)
+        throw new Error('Failed to send message')
+      }
+
+      const { message } = await res.json()
+
+      // Replace optimistic message with real one
+      setMessages((prev) =>
+        prev.map((m) => (m.id === optimisticMsg.id ? {
+          ...message,
+          createdAt: message.createdAt,
+        } : m))
+      )
+    } catch (err) {
+      console.error('Send message error:', err)
+      setError('Failed to send message. Please try again.')
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const calculateAge = (dateOfBirth: string) => {
+    const today = new Date()
+    const birthDate = new Date(dateOfBirth)
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return age
+  }
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  }
+
+  return (
+    <div className="flex flex-col bg-white" style={{ height: 'calc(100vh - 128px)' }}>
+
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+        <button
+          onClick={onBack}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-900">
+            {otherProfile.full_name}, {calculateAge(otherProfile.date_of_birth)}
+          </h3>
+          {otherProfile.location && (
+            <p className="text-sm text-gray-500">{otherProfile.location}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-2">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center max-w-sm">
+              <div className="text-5xl mb-3">💬</div>
+              <p className="text-gray-600">
+                Start the conversation! Say hello to {otherProfile.full_name}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {messages.map((message) => {
+              const isOwn = message.senderId === currentProfile?.id
+              return (
+                <div
+                  key={message.id}
+                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                      isOwn
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <p className="text-sm">{message.content}</p>
+                    <p className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {formatTime(message.createdAt)}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+
+      {/* Input */}
+      <form onSubmit={handleSend} className="border-t border-gray-200 p-4">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type a message..."
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={sending}
+          />
+          <button
+            type="submit"
+            disabled={!newMessage.trim() || sending}
+            className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50"
+          >
+            {sending
+              ? <Loader2 className="w-5 h-5 animate-spin" />
+              : <Send className="w-5 h-5" />
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
