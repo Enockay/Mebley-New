@@ -21,16 +21,21 @@ export async function GET(request: NextRequest) {
     const pageLimit = parseInt(searchParams.get('limit') ?? '20')
     const offset    = (page - 1) * pageLimit
 
-    // Current user's profile
-    const { data: myProfile } = await supabase
+    // Fetch as unknown first, then cast — avoids generated-types gaps
+    const { data: myProfileRaw } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single()
 
-    if (!myProfile) {
+    if (!myProfileRaw) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
+
+    // Cast to any so we can access columns that exist in DB but may be
+    // missing from the auto-generated Supabase types (e.g. gender_preference,
+    // age_min, age_max, visible, is_active)
+    const myProfile = myProfileRaw as any
 
     // Already-liked IDs
     const { data: likedUsers } = await supabase
@@ -38,11 +43,9 @@ export async function GET(request: NextRequest) {
       .select('likee_id')
       .eq('liker_id', user.id)
 
-    // Exclusion list — own profile + already liked
-    // blocked_users table removed: table does not exist in this schema yet
     const excludeIds = new Set<string>([
       user.id,
-      ...(likedUsers?.map(l => l.likee_id) ?? []),
+      ...(likedUsers?.map((l: any) => l.likee_id) ?? []),
     ])
 
     // Gender filter
@@ -50,7 +53,7 @@ export async function GET(request: NextRequest) {
       ? myProfile.gender_preference
       : ['male', 'female', 'non-binary', 'other']
 
-    // Age range from preferences → date_of_birth range
+    // Age range → date_of_birth range
     const now    = new Date()
     const minDob = myProfile.age_max
       ? new Date(now.getFullYear() - myProfile.age_max, now.getMonth(), now.getDate())
@@ -81,7 +84,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Score candidates ─────────────────────────────────────────────────────
-    const scored = candidates.map(candidate => {
+    const scored = (candidates as any[]).map(candidate => {
       let score = 0
       const reasons: string[] = []
 
@@ -107,7 +110,7 @@ export async function GET(request: NextRequest) {
       }
 
       // 3. Relationship intent (max 20pts)
-      const myIntents    = new Set(myProfile.looking_for ?? [])
+      const myIntents     = new Set(myProfile.looking_for ?? [])
       const sharedIntents = (candidate.looking_for ?? []).filter((i: string) => myIntents.has(i))
       if (sharedIntents.length > 0) {
         score += 20
@@ -140,9 +143,9 @@ export async function GET(request: NextRequest) {
           gender:               candidate.gender,
           bio:                  candidate.bio,
           location:             candidate.location,
-          interests:            candidate.interests    ?? [],
-          photos:               candidate.photos       ?? [],
-          looking_for:          candidate.looking_for  ?? [],
+          interests:            candidate.interests   ?? [],
+          photos:               candidate.photos      ?? [],
+          looking_for:          candidate.looking_for ?? [],
           profile_completeness: candidate.profile_completeness,
           last_active:          candidate.last_active,
         },
