@@ -17,10 +17,10 @@ const nextConfig: NextConfig = {
           { key: 'X-XSS-Protection', value: '1; mode=block' },
           // Referrer policy
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          // Permissions policy
+          // Permissions policy — allow camera + mic for video recording
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(self), interest-cohort=()'
+            value: 'camera=(self), microphone=(self), geolocation=(self), interest-cohort=()'
           },
           // Content Security Policy
           {
@@ -29,13 +29,16 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' blob: data: https:",
+              "img-src 'self' blob: data: https: https://d31vt9enmz8sz2.cloudfront.net",
               "font-src 'self'",
-              `connect-src 'self' https://*.supabase.co wss://*.supabase.co`,
+              // blob: needed for camera preview, CloudFront for video playback
+              "media-src 'self' blob: https://d31vt9enmz8sz2.cloudfront.net",
+              // S3 for direct uploads, Supabase for auth/db, CloudFront for playback
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com https://crotchet-media.s3.eu-north-1.amazonaws.com https://d31vt9enmz8sz2.cloudfront.net",
               "frame-ancestors 'none'",
             ].join('; ')
           },
-          // HSTS (enable in production)
+          // HSTS (production only)
           ...(process.env.NODE_ENV === 'production' ? [
             { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' }
           ] : []),
