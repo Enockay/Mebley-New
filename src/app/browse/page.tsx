@@ -186,10 +186,10 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
     return () => window.removeEventListener('keydown', handler)
   }, [isTop, triggerFly])
 
-  const rotation       = dragDelta * 0.06
-  const likeOpacity    = Math.max(0, Math.min(1, dragDelta / 80))
-  const passOpacity    = Math.max(0, Math.min(1, -dragDelta / 80))
-  const stackScale     = 1 - stackOffset * 0.04
+  const rotation        = dragDelta * 0.06
+  const likeOpacity     = Math.max(0, Math.min(1, dragDelta / 80))
+  const passOpacity     = Math.max(0, Math.min(1, -dragDelta / 80))
+  const stackScale      = 1 - stackOffset * 0.04
   const stackTranslateY = stackOffset * 10
 
   const cardTransform = isFlying
@@ -367,7 +367,7 @@ export default function BrowsePage() {
   const [blockedIds, setBlockedIds]       = useState<Set<string>>(new Set())
   const [showFilters, setShowFilters]     = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
-  const [matchAlert, setMatchAlert]       = useState<string | null>(null)
+  const [matchAlert, setMatchAlert]       = useState<{ name: string; photo: string | null } | null>(null)
   const [expandedCard, setExpandedCard]   = useState<string | null>(null)
   const [openMenu, setOpenMenu]           = useState<string | null>(null)
   const [moderationTarget, setModerationTarget] = useState<{ id: string; name: string } | null>(null)
@@ -393,9 +393,7 @@ export default function BrowsePage() {
       .then(({ data }) => { if (data) setLikedIds(new Set(data.map(r => r.likee_id))) })
   }, [user])
 
-  // ── Load passed IDs from DB on mount ─────────────────────────────────────
-  // Previously this was an empty Set — passes were lost on refresh.
-  // Now we seed from /api/passes so already-passed profiles stay excluded.
+  // Load passed IDs
   useEffect(() => {
     if (!user) return
     fetch('/api/passes').then(r => r.json())
@@ -426,7 +424,6 @@ export default function BrowsePage() {
       if (!res.ok) throw new Error(json.error ?? 'Failed to load profiles')
 
       const incoming: ScoredProfile[] = json.profiles ?? []
-      // Client-side filter is a fast safety net — server already excludes these
       const filtered = incoming.filter(sp =>
         !likedIds.has(sp.profile.id) &&
         !passedIds.has(sp.profile.id) &&
@@ -455,47 +452,43 @@ export default function BrowsePage() {
     return () => document.removeEventListener('click', handler)
   }, [openMenu])
 
-  // ── handleLike ────────────────────────────────────────────────────────────
-
-  const handleLike = async (sp: ScoredProfile) => {
+  // ── handleLike — now calls /api/likes server-side ─────────────────────────
+  const handleLike = useCallback(async (sp: ScoredProfile) => {
     if (!user || actionLoading) return
     const targetProfile = sp.profile
+
+    // Optimistic UI update
     setActionLoading(targetProfile.id)
     setScored(prev => prev.filter(s => s.profile.id !== targetProfile.id))
     setLikedIds(prev => new Set([...prev, targetProfile.id]))
 
     try {
-      const { error: likeError } = await supabase
-        .from('likes').insert({ liker_id: user.id, likee_id: targetProfile.id })
-      if (likeError && likeError.code !== '23505') throw likeError
+      const res  = await fetch('/api/likes', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ likeeId: targetProfile.id }),
+      })
+      const json = await res.json()
 
-      const { data: mutual } = await supabase
-        .from('likes').select('id')
-        .eq('liker_id', targetProfile.id).eq('likee_id', user.id).maybeSingle()
+      if (!res.ok) throw new Error(json.error ?? 'Like failed')
 
-      if (mutual) {
-        await supabase.from('matches').upsert(
-          { user1_id: user.id, user2_id: targetProfile.id },
-          { onConflict: 'user1_id,user2_id' }
-        )
-        setMatchAlert(`🎉 It's a match with ${targetProfile.full_name}!`)
-        setTimeout(() => setMatchAlert(null), 3500)
+      if (json.isMatch) {
+        // Show rich match alert with photo
+        const photoUrl = getPhotoUrl(targetProfile.photos)
+        setMatchAlert({ name: targetProfile.full_name, photo: photoUrl })
+        setTimeout(() => setMatchAlert(null), 4000)
       }
     } catch (err) {
       console.error('Like error:', err)
+      // Roll back optimistic update
       setScored(prev => [sp, ...prev])
       setLikedIds(prev => { const s = new Set(prev); s.delete(targetProfile.id); return s })
     } finally {
       setActionLoading(null)
     }
-  }
+  }, [user, actionLoading])
 
-  // ── handlePass — now persists to DB ──────────────────────────────────────
-  // Optimistic: remove from UI immediately.
-  // Fire-and-forget POST to /api/passes — non-blocking, non-retried.
-  // The discover route also excludes passes server-side, so even if the
-  // POST fails transiently, the client Set prevents re-showing this session.
-
+  // ── handlePass ────────────────────────────────────────────────────────────
   const handlePass = useCallback((profileId: string) => {
     setPassedIds(prev => new Set([...prev, profileId]))
     setScored(prev => prev.filter(s => s.profile.id !== profileId))
@@ -550,9 +543,16 @@ export default function BrowsePage() {
     <div className="h-full overflow-y-auto">
       <div className="max-w-2xl mx-auto px-4 py-4">
 
+        {/* Match alert — richer than before, shows photo */}
         {matchAlert && (
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-pink-500 text-white px-6 py-3 rounded-full shadow-xl animate-bounce whitespace-nowrap">
-            {matchAlert}
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-white border-2 border-pink-200 px-5 py-3 rounded-2xl shadow-xl animate-bounce whitespace-nowrap">
+            {matchAlert.photo && (
+              <img src={matchAlert.photo} alt={matchAlert.name} className="w-10 h-10 rounded-full object-cover border-2 border-pink-300" />
+            )}
+            <div>
+              <p className="text-sm font-bold text-gray-900">🎉 It's a match!</p>
+              <p className="text-xs text-pink-500">You and {matchAlert.name} liked each other</p>
+            </div>
           </div>
         )}
 

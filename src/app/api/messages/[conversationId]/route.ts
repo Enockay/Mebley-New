@@ -1,8 +1,10 @@
+// src/app/api/messages/[conversationId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getMessages, saveMessage } from '@/lib/mongodb'
 import { rateLimit } from '@/lib/rateLimit'
 import { validateMessage } from '@/lib/validation'
+import { notifyMessage } from '@/lib/notifications'
 
 export async function GET(
   request: NextRequest,
@@ -17,7 +19,6 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Rate limit by user
     const limit = rateLimit(user.id, 'api')
     if (!limit.success) {
       return NextResponse.json(
@@ -74,7 +75,6 @@ export async function POST(
 
     const body = await request.json()
 
-    // Validate and sanitize message
     const validation = validateMessage(body.content)
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
@@ -101,14 +101,21 @@ export async function POST(
       ? match.user2_id
       : match.user1_id
 
+    // Fetch sender name for notification
+    const { data: senderProfile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+
     const message = await saveMessage({
       conversationId,
-      senderId: user.id,
+      senderId:       user.id,
       receiverId,
-      content: validation.sanitized!,
+      content:        validation.sanitized!,
       messageType,
-      isRead: false,
-      isDeleted: false,
+      isRead:         false,
+      isDeleted:      false,
       participantIds: [match.user1_id, match.user2_id],
     })
 
@@ -117,16 +124,26 @@ export async function POST(
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId)
 
+    // Fire message notification — non-blocking, never fails the request
+    if (senderProfile?.full_name) {
+      notifyMessage(
+        receiverId,
+        senderProfile.full_name,
+        validation.sanitized!,
+        conversationId,
+      ).catch(err => console.error('[notifyMessage] failed:', err))
+    }
+
     return NextResponse.json({
       message: {
-        id: message._id?.toString(),
+        id:             message._id?.toString(),
         conversationId: message.conversationId,
-        senderId: message.senderId,
-        receiverId: message.receiverId,
-        content: message.content,
-        messageType: message.messageType,
-        isRead: message.isRead,
-        createdAt: message.createdAt,
+        senderId:       message.senderId,
+        receiverId:     message.receiverId,
+        content:        message.content,
+        messageType:    message.messageType,
+        isRead:         message.isRead,
+        createdAt:      message.createdAt,
       }
     }, { status: 201 })
 
