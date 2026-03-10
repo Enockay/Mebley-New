@@ -35,7 +35,7 @@ const nextConfig: NextConfig = {
               // blob: needed for camera preview, CloudFront for video playback
               "media-src 'self' blob: https://d31vt9enmz8sz2.cloudfront.net",
               // S3 for direct uploads, Supabase for auth/db, CloudFront for playback, OneSignal for push
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com https://crotchet-media.s3.eu-north-1.amazonaws.com https://d31vt9enmz8sz2.cloudfront.net https://onesignal.com https://*.onesignal.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com https://crotchet-media.s3.eu-north-1.amazonaws.com https://d31vt9enmz8sz2.cloudfront.net https://onesignal.com https://*.onesignal.com https://api.onesignal.com",
               // Service worker needs to load OneSignal's SW script
               "worker-src 'self' https://cdn.onesignal.com blob:",
               "frame-src 'self' https://onesignal.com",

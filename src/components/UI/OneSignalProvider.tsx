@@ -12,10 +12,14 @@ export default function OneSignalProvider() {
     if (!process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID) return
 
     const initOneSignal = async () => {
-      try {
-        const OneSignal = (await import('react-onesignal')).default
+    try {
+      const OneSignal = (await import('react-onesignal')).default
 
-        await OneSignal.init({
+      // Guard against double init in React strict mode
+      if ((window as any).__oneSignalInitialized) return
+      ;(window as any).__oneSignalInitialized = true
+
+      await OneSignal.init({
           appId:                        process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID!,
           allowLocalhostAsSecureOrigin: true,
           serviceWorkerParam:           { scope: '/' },
