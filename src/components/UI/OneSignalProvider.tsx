@@ -3,7 +3,6 @@
 
 import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { Donegal_One } from 'next/font/google'
 
 export default function OneSignalProvider() {
   const { user } = useAuth()
@@ -20,7 +19,7 @@ export default function OneSignalProvider() {
           appId:                        process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID!,
           allowLocalhostAsSecureOrigin: true,
           serviceWorkerParam:           { scope: '/' },
-          notifyButton: { enable: false } as any,
+          notifyButton:                 { enable: false } as any,
           promptOptions: {
             slidedown: {
               prompts: [
@@ -37,51 +36,53 @@ export default function OneSignalProvider() {
           },
         })
 
-        // If user is logged in, set their external ID so we can
-        // target them by user ID rather than device ID
+        // Set external user ID so OneSignal can target by Supabase user ID
         if (user?.id) {
           await OneSignal.login(user.id)
         }
 
-        // Listen for when user grants permission
-        OneSignal.Notifications.addEventListener(
-          'permissionChange',
-          async (granted: boolean) => {
-            if (!granted) return
-
-            // Give OneSignal a moment to register the subscription
-            await new Promise(res => setTimeout(res, 1500))
-
-            try {
-              const subscription = await OneSignal.User.PushSubscription
-              const playerId     = subscription?.id
-
-              if (playerId) {
-                await fetch('/api/push/subscribe', {
-                  method:  'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body:    JSON.stringify({ playerId, platform: 'web' }),
-                })
-              }
-            } catch (err) {
-              console.error('[OneSignal] failed to save subscription:', err)
-            }
+        // Helper — polls for player ID up to 10 times with 1s delay
+        const getPlayerIdWithRetry = async (): Promise<string | null> => {
+          for (let i = 0; i < 10; i++) {
+            const playerId = OneSignal.User.PushSubscription.id
+            if (playerId) return playerId
+            await new Promise(res => setTimeout(res, 1000))
           }
-        )
+          return null
+        }
 
-        // If already subscribed, make sure player ID is saved
-        const isSubscribed = OneSignal.Notifications.permission
-        if (isSubscribed && user?.id) {
-          const subscription = OneSignal.User.PushSubscription
-          const playerId     = subscription?.id
-
-          if (playerId) {
+        // Save player ID to Supabase
+        const savePlayerId = async () => {
+          const playerId = await getPlayerIdWithRetry()
+          if (!playerId) {
+            console.warn('[OneSignal] no player ID after retries')
+            return
+          }
+          try {
             await fetch('/api/push/subscribe', {
               method:  'POST',
               headers: { 'Content-Type': 'application/json' },
               body:    JSON.stringify({ playerId, platform: 'web' }),
-            }).catch(() => {})
+            })
+            console.log('[OneSignal] player ID saved:', playerId)
+          } catch (err) {
+            console.error('[OneSignal] failed to save player ID:', err)
           }
+        }
+
+        // Listen for permission being granted
+        OneSignal.Notifications.addEventListener(
+          'permissionChange',
+          async (granted: boolean) => {
+            if (!granted) return
+            await savePlayerId()
+          }
+        )
+
+        // If already subscribed, ensure player ID is saved
+        const alreadySubscribed = OneSignal.Notifications.permission
+        if (alreadySubscribed) {
+          await savePlayerId()
         }
 
       } catch (err) {
@@ -92,6 +93,5 @@ export default function OneSignalProvider() {
     initOneSignal()
   }, [user?.id])
 
-  // Renders nothing — purely side-effect provider
   return null
 }
