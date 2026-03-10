@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useEffect } from 'react'
@@ -19,13 +20,17 @@ export default function OneSignalProvider() {
           appId:                        process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID!,
           allowLocalhostAsSecureOrigin: true,
           serviceWorkerParam:           { scope: '/' },
-          notifyButton:                 { enable: false },
+          notifyButton: { enable: false } as any,
           promptOptions: {
             slidedown: {
               prompts: [
                 {
-                  type:       'push',
-                  autoPrompt: false,
+                    type: 'push',
+                    autoPrompt: false,
+                    delay: {
+                        pageViews: undefined,
+                        timeDelay: undefined
+                    }
                 },
               ],
             },

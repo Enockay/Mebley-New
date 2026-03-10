@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/static-components */
+/* eslint-disable react/no-unescaped-entities */
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'

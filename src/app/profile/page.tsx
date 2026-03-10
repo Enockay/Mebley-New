@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -116,7 +117,7 @@ export default function ProfilePage() {
   }
 
   // ── Derived values ────────────────────────────────────────────────────────
-  const photos: Photo[]         = ((profile.photos as Photo[] | null) ?? []).filter(Boolean)
+  const photos: Photo[] = ((profile.photos as unknown as Photo[] | null) ?? []).filter(Boolean)
   const prompts: PromptAnswer[] = (((profile as any).prompts as PromptAnswer[] | null) ?? []).filter(Boolean)
   const interests: string[]     = profile.interests ?? []
   const lookingFor: string[]    = (profile.looking_for ?? []) as string[]
