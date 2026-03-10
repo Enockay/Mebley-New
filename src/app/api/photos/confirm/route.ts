@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import {
+  RekognitionClient,
+  DetectFacesCommand,
+  Attribute,
+} from '@aws-sdk/client-rekognition'
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION!,
@@ -10,6 +15,58 @@ const s3 = new S3Client({
   },
 })
 
+const rekognition = new RekognitionClient({
+  region: process.env.AWS_REGION!,
+  credentials: {
+    accessKeyId:     process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+})
+
+// ── Face detection helper ─────────────────────────────────────────
+// Returns { valid: true } if at least one face found with confidence >= 80%
+// Returns { valid: false, reason: string } otherwise
+async function checkFacePresent(s3Key: string): Promise<{ valid: boolean; reason?: string }> {
+  try {
+    const command = new DetectFacesCommand({
+      Image: {
+        S3Object: {
+          Bucket: process.env.AWS_S3_BUCKET!,
+          Name:   s3Key,
+        },
+      },
+      Attributes: [Attribute.DEFAULT],
+    })
+
+    const result = await rekognition.send(command)
+    const faces  = result.FaceDetails ?? []
+
+    if (faces.length === 0) {
+      return { valid: false, reason: 'No face detected. Please upload a clear photo of yourself.' }
+    }
+
+    // Require at least one face with confidence >= 80%
+    const confident = faces.filter(f => (f.Confidence ?? 0) >= 80)
+    if (confident.length === 0) {
+      return { valid: false, reason: 'Photo is too unclear. Please use a well-lit, front-facing photo.' }
+    }
+
+    // Optional: reject if multiple faces detected (group photos)
+    if (faces.length > 1) {
+      return { valid: false, reason: 'Multiple faces detected. Please upload a photo with just yourself.' }
+    }
+
+    return { valid: true }
+
+  } catch (err: any) {
+    // If Rekognition fails (e.g. unsupported format like HEIC), allow through
+    // rather than blocking the user — log the error for monitoring
+    console.error('[Rekognition] DetectFaces error:', err.message)
+    return { valid: true }  // fail open — better UX than hard blocking
+  }
+}
+
+// ── POST — confirm upload + face check ───────────────────────────
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient()
@@ -21,7 +78,28 @@ export async function POST(request: NextRequest) {
 
     const { slot, s3Key, cloudfrontUrl } = await request.json()
 
-    // Get current photos array
+    // ── Rekognition face check ────────────────────────────────────
+    // Only run on slot 0 (profile picture) — skip for additional photos
+    if (slot === 0) {
+      const faceCheck = await checkFacePresent(s3Key)
+      if (!faceCheck.valid) {
+        // Delete the uploaded file from S3 — don't leave invalid photos
+        try {
+          await s3.send(new DeleteObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET!,
+            Key:    s3Key,
+          }))
+        } catch {
+          // Non-fatal
+        }
+        return NextResponse.json(
+          { error: faceCheck.reason },
+          { status: 400 }
+        )
+      }
+    }
+
+    // ── Save to profiles.photos array ────────────────────────────
     const { data: profile } = await supabase
       .from('profiles')
       .select('photos')
@@ -40,11 +118,10 @@ export async function POST(request: NextRequest) {
           Key:    existing.s3Key,
         }))
       } catch {
-        // Non-fatal — old file may already be gone
+        // Non-fatal
       }
     }
 
-    // Replace slot in photos array
     const updatedPhotos = [
       ...photos.filter(p => p.slot !== slot),
       { slot, url: cloudfrontUrl, s3Key },
@@ -67,6 +144,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// ── DELETE — remove a photo slot ─────────────────────────────────
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient()

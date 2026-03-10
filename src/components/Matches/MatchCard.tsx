@@ -1,7 +1,13 @@
 'use client'
 
 import { Heart, X, MapPin, Clock, CheckCircle, Star } from 'lucide-react'
-import { Match } from '../../services/matchingService'
+import { ScoredProfile } from '../../services/matchingService'
+
+// Match extends ScoredProfile with a conversation id.
+// The Match type was removed from matchingService — define it locally.
+interface Match extends ScoredProfile {
+  id: string
+}
 import { useState } from 'react'
 
 interface MatchCardProps {

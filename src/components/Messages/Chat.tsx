@@ -25,13 +25,23 @@ interface ChatProps {
   onBack: () => void
 }
 
+// ✅ Replaced calculateAge(date_of_birth) with age_range label
+const AGE_RANGE_LABELS: Record<string, string> = {
+  '18_24':  '18–24',
+  '25_34':  '25–34',
+  '35_40':  '35–40',
+  '40_50':  '40–50',
+  '50_65':  '50–65',
+  '65_plus':'65+',
+}
+
 export default function Chat({ conversationId, otherProfile, onBack }: ChatProps) {
   const { profile: currentProfile } = useAuth()
-  const [messages, setMessages]   = useState<MongoMessage[]>([])
+  const [messages, setMessages]     = useState<MongoMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
-  const [loading, setLoading]     = useState(true)
-  const [sending, setSending]     = useState(false)
-  const [error, setError]         = useState<string | null>(null)
+  const [loading, setLoading]       = useState(true)
+  const [sending, setSending]       = useState(false)
+  const [error, setError]           = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -54,47 +64,36 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
     }
   }, [conversationId])
 
-  useEffect(() => {
-    loadMessages()
-  }, [loadMessages])
+  useEffect(() => { loadMessages() }, [loadMessages])
 
   useEffect(() => {
     const channel = supabase
       .channel(`conversation:${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'conversations',
-          filter: `id=eq.${conversationId}`,
-        },
-        async () => {
-          try {
-            const res = await fetch(`/api/messages/${conversationId}?limit=1`)
-            if (!res.ok) return
-            const data = await res.json()
-            if (data.messages?.length > 0) {
-              const latest = data.messages[0]
-              setMessages(prev => {
-                const exists = prev.some(m => m.id === latest.id)
-                if (exists) return prev
-                return [...prev, latest]
-              })
-            }
-          } catch (err) {
-            console.error('Realtime fetch error:', err)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public',
+        table: 'conversations', filter: `id=eq.${conversationId}`,
+      }, async () => {
+        try {
+          const res = await fetch(`/api/messages/${conversationId}?limit=1`)
+          if (!res.ok) return
+          const data = await res.json()
+          if (data.messages?.length > 0) {
+            const latest = data.messages[0]
+            setMessages(prev => {
+              const exists = prev.some(m => m.id === latest.id)
+              if (exists) return prev
+              return [...prev, latest]
+            })
           }
+        } catch (err) {
+          console.error('Realtime fetch error:', err)
         }
-      )
+      })
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
   }, [conversationId])
 
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+  useEffect(() => { scrollToBottom() }, [messages])
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -107,12 +106,12 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
     const optimisticMsg: MongoMessage = {
       id: `temp-${Date.now()}`,
       conversationId,
-      senderId: currentProfile.id,
-      receiverId: otherProfile.id,
+      senderId:    currentProfile.id,
+      receiverId:  otherProfile.id,
       content,
       messageType: 'text',
-      isRead: false,
-      createdAt: new Date().toISOString(),
+      isRead:      false,
+      createdAt:   new Date().toISOString(),
     }
     setMessages(prev => [...prev, optimisticMsg])
 
@@ -130,9 +129,7 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
       }
 
       const { message } = await res.json()
-      setMessages(prev =>
-        prev.map(m => m.id === optimisticMsg.id ? { ...message } : m)
-      )
+      setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? { ...message } : m))
     } catch (err) {
       console.error('Send message error:', err)
       setError('Failed to send message. Please try again.')
@@ -142,17 +139,11 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
     }
   }
 
-  const calculateAge = (dateOfBirth: string) => {
-    const today = new Date()
-    const birth = new Date(dateOfBirth)
-    let age = today.getFullYear() - birth.getFullYear()
-    const m = today.getMonth() - birth.getMonth()
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
-    return age
-  }
-
   const formatTime = (timestamp: string) =>
     new Date(timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+
+  // ✅ Age display from age_range — no date_of_birth needed
+  const ageLabel = AGE_RANGE_LABELS[(otherProfile as any).age_range ?? '']
 
   return (
     <div className="flex flex-col bg-white" style={{ height: 'calc(100vh - 128px)' }}>
@@ -164,7 +155,7 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
         </button>
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900">
-            {otherProfile.full_name}{otherProfile.date_of_birth ? `, ${calculateAge(otherProfile.date_of_birth)}` : ''}
+            {otherProfile.full_name}{ageLabel ? `, ${ageLabel}` : ''}
           </h3>
           {otherProfile.location && (
             <p className="text-sm text-gray-500">{otherProfile.location}</p>
@@ -172,7 +163,6 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
         </div>
       </div>
 
-      {/* Error banner */}
       {error && (
         <div className="bg-red-50 border-b border-red-200 px-4 py-2">
           <p className="text-sm text-red-600">{error}</p>
@@ -183,7 +173,7 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-pink-500" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
@@ -195,24 +185,17 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
             </div>
           </div>
         ) : (
-          /* FIX: replaced <> fragment with a stable div container so React
-             can reliably track keys across the list + the sentinel div.
-             Also added index as key fallback in case two messages share an id. */
           <div className="space-y-3">
             {messages.map((message, index) => {
               const isOwn = message.senderId === currentProfile?.id
               return (
-                <div
-                  key={message.id ?? index}
-                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                      isOwn ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'
-                    }`}
-                  >
+                <div key={message.id ?? index}
+                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                    isOwn ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-900'
+                  }`}>
                     <p className="text-sm">{message.content}</p>
-                    <p className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                    <p className={`text-xs mt-1 ${isOwn ? 'text-pink-100' : 'text-gray-500'}`}>
                       {formatTime(message.createdAt)}
                     </p>
                   </div>
@@ -227,23 +210,13 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
       {/* Input */}
       <form onSubmit={handleSend} className="border-t border-gray-200 p-4">
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={e => setNewMessage(e.target.value)}
+          <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={sending}
-          />
-          <button
-            type="submit"
-            disabled={!newMessage.trim() || sending}
-            className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50"
-          >
-            {sending
-              ? <Loader2 className="w-5 h-5 animate-spin" />
-              : <Send className="w-5 h-5" />
-            }
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            disabled={sending} />
+          <button type="submit" disabled={!newMessage.trim() || sending}
+            className="p-3 bg-pink-500 text-white rounded-full hover:bg-pink-600 transition-colors disabled:opacity-50">
+            {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </button>
         </div>
       </form>

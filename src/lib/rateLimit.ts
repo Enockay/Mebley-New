@@ -14,9 +14,10 @@ interface RateLimitConfig {
 }
 
 const CONFIGS: Record<string, RateLimitConfig> = {
-  auth: { maxRequests: 5, windowMs: 60_000 },        // 5 attempts per minute
-  messages: { maxRequests: 30, windowMs: 60_000 },   // 30 messages per minute
-  api: { maxRequests: 100, windowMs: 60_000 },       // 100 requests per minute
+  auth:     { maxRequests: 5,   windowMs: 60_000 },  // 5 attempts per minute
+  messages: { maxRequests: 30,  windowMs: 60_000 },  // 30 messages per minute
+  api:      { maxRequests: 100, windowMs: 60_000 },  // 100 requests per minute
+  likes:    { maxRequests: 100, windowMs: 60_000 },  // 100 likes per minute
 }
 
 export function rateLimit(
