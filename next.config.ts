@@ -27,14 +27,18 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              // OneSignal SDK needs to load from their CDN
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.onesignal.com https://onesignal.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' blob: data: https: https://d31vt9enmz8sz2.cloudfront.net",
-              "font-src 'self'",
+              "font-src 'self' https://cdn.onesignal.com",
               // blob: needed for camera preview, CloudFront for video playback
               "media-src 'self' blob: https://d31vt9enmz8sz2.cloudfront.net",
-              // S3 for direct uploads, Supabase for auth/db, CloudFront for playback
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com https://crotchet-media.s3.eu-north-1.amazonaws.com https://d31vt9enmz8sz2.cloudfront.net",
+              // S3 for direct uploads, Supabase for auth/db, CloudFront for playback, OneSignal for push
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com https://crotchet-media.s3.eu-north-1.amazonaws.com https://d31vt9enmz8sz2.cloudfront.net https://onesignal.com https://*.onesignal.com",
+              // Service worker needs to load OneSignal's SW script
+              "worker-src 'self' https://cdn.onesignal.com blob:",
+              "frame-src 'self' https://onesignal.com",
               "frame-ancestors 'none'",
             ].join('; ')
           },
