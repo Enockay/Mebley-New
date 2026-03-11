@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               // OneSignal SDK needs to load from their CDN
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.onesignal.com https://onesignal.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.onesignal.com https://onesignal.com https://api.onesignal.com https://*.onesignal.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' blob: data: https: https://d31vt9enmz8sz2.cloudfront.net",
               "font-src 'self' https://cdn.onesignal.com",
