@@ -3,6 +3,7 @@
 import { LogOut } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import CrochetHook from './CrochetHook'
+import CrotchetWordmark from './CrotchetWordmark'
 
 function getPhotoUrl(photos: unknown): string | null {
   if (!Array.isArray(photos) || photos.length === 0) return null
@@ -35,32 +36,15 @@ export default function TopHeader() {
         maxWidth: '960px', margin: '0 auto', width: '100%',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
-        {/* Logo — hook + wordmark */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Hook rotated horizontal */}
+        {/* Logo — hook + thread wordmark */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
-            transform: 'rotate(90deg)',
-            width: '28px', height: '28px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            overflow: 'visible',
-            filter: 'drop-shadow(0 2px 6px rgba(212,160,23,0.4))',
+            filter: 'drop-shadow(0 2px 4px rgba(212,160,23,0.3))',
+            display: 'flex', alignItems: 'center',
           }}>
-            <CrochetHook size={11} finish="gold" />
+            <CrochetHook size={44} finish="gold" />
           </div>
-
-          <span style={{
-            fontFamily: "'Fraunces', Georgia, serif",
-            fontWeight: 700,
-            fontSize: '22px',
-            letterSpacing: '-0.02em',
-            background: 'linear-gradient(135deg, #f43f5e 0%, #ec4899 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            lineHeight: 1,
-          }}>
-            Crotchet
-          </span>
+          <CrotchetWordmark height={28} />
         </div>
 
         {/* Right side */}
