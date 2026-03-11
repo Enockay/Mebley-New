@@ -6,7 +6,7 @@ import BottomNav from '@/components/UI/BottomNav'
 import TopHeader from '@/components/UI/TopHeader'
 
 // Routes with no nav ever
-const NO_NAV_ROUTES = ['/auth', '/terms', '/privacy']
+const NO_NAV_ROUTES = ['/', '/auth', '/terms', '/privacy']
 
 // Routes that only hide nav when profile is incomplete
 const SETUP_ROUTES = ['/setup', '/discover']
@@ -16,7 +16,7 @@ export default function NavWrapper({ children }: { children: React.ReactNode }) 
   const { profile, user, loading } = useAuth()
 
   // Always no nav on these pages
-  if (NO_NAV_ROUTES.some(r => pathname.startsWith(r))) {
+  if (NO_NAV_ROUTES.some(r => pathname === r || (r !== '/' && pathname.startsWith(r)))) {
     return <>{children}</>
   }
 

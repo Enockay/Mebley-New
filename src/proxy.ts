@@ -28,8 +28,9 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  const publicRoutes = ['/auth', '/api/health']
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
+  // '/' is public — logged-out users see the landing page
+  const publicRoutes = ['/', '/auth', '/api/health']
+  const isPublicRoute = publicRoutes.some((route) => pathname === route || (route !== '/' && pathname.startsWith(route)))
   const isApiRoute = pathname.startsWith('/api/')
 
   if (!user && !isPublicRoute && !isApiRoute) {
@@ -42,10 +43,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/discover', request.url))
   }
 
+  // Logged-in users at / → discover. Logged-out users at / → landing page (no redirect)
   if (pathname === '/') {
-    return NextResponse.redirect(
-      new URL(user ? '/discover' : '/auth', request.url)
-    )
+    if (user) return NextResponse.redirect(new URL('/discover', request.url))
+    return supabaseResponse
   }
 
   return supabaseResponse

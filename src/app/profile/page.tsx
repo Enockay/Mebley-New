@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react'
 import EditProfile from '@/components/Profile/EditProfile'
 import DeleteAccount from '@/components/Profile/DeleteAccount'
+import VoiceNoteRecorder from '@/components/Profile/VoiceNoteRecorder'
 import { supabase } from '@/lib/supabase-client'
 import { RELATIONSHIP_INTENTS, PROFILE_PROMPTS } from '@/types/app-constants'
 
@@ -58,7 +60,6 @@ function getCompletenessNudge(
 ): string | null {
   if (!profile.bio)                         return 'Add a bio to get 2× more matches'
   if (promptCount === 0)                    return 'Answer a prompt — it drives first messages'
-  if (videoCount === 0)                     return 'Add an intro video to appear in Discover'
   if ((profile.interests ?? []).length < 5) return 'Add more interests to improve your matches'
   if (promptCount < 3)                      return `Add ${3 - promptCount} more prompt${3 - promptCount > 1 ? 's' : ''} to complete your profile`
   return null
@@ -275,14 +276,14 @@ export default function ProfilePage() {
               </div>
               <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
                 <div
-                  className="bg-gradient-to-r from-rose-400 to-pink-500 h-1.5 rounded-full transition-all duration-700"
+                  className="bg-linear-to-r from-rose-400 to-pink-500 h-1.5 rounded-full transition-all duration-700"
                   style={{ width: `${completeness}%` }}
                 />
               </div>
               {nudge && (
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-500">{nudge}</p>
-                  <ChevronRight size={13} className="text-gray-400 flex-shrink-0" />
+                  <ChevronRight size={13} className="text-gray-400 shrink-0" />
                 </div>
               )}
             </button>
@@ -393,10 +394,10 @@ export default function ProfilePage() {
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                   Intro Video
                 </p>
-                {!introVideo && (
-                  <span className="text-xs text-rose-500 font-semibold bg-rose-50 px-2 py-0.5 rounded-full">
-                    Required for Discover
-                  </span>
+               {!introVideo && (
+                <span className="text-xs text-gray-400 font-medium">
+                  Optional
+                </span>
                 )}
               </div>
               <div className="p-4">
@@ -434,6 +435,24 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
+
+            {/* Voice note */}
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+              <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-gray-50">
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Voice Note
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Let people hear your voice before matching
+                  </p>
+                </div>
+                <span className="text-xs text-gray-400 font-medium">Optional</span>
+              </div>
+              <div className="p-4">
+                <VoiceNoteRecorder userId={user!.id} />
+              </div>
+            </div>      
 
             {/* Stats row */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
