@@ -35,8 +35,14 @@ export async function POST(req: NextRequest) {
     const supabaseAuth = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { getAll: () => cookieStore.getAll() } }
-    )
+      {
+        cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cookies) => cookies.forEach(({ name, value, options }) =>
+          cookieStore.set(name, value, options)
+        ),
+      }
+    })
     const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser()
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

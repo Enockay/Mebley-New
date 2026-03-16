@@ -4,6 +4,8 @@
 import { LogOut, Coins } from 'lucide-react'
 import { usePaywall } from '@/hooks/usePaywall'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import CrochetHook from './CrochetHook'
 import CrotchetWordmark from './CrotchetWordmark'
 
@@ -18,11 +20,12 @@ function getPhotoUrl(photos: unknown): string | null {
 
 export default function TopHeader() {
   const { profile, signOut } = useAuth()
-  const { openPaywall } = usePaywall()
-  const currentPlan    = (profile as any)?.plan ?? 'free'
-  const creditBalance  = (profile as any)?.credit_balance ?? 0
-  const avatarUrl = getPhotoUrl(profile?.photos)
-  const initials = profile?.full_name
+  const { openPaywall }      = usePaywall()
+  const router               = useRouter()
+  const currentPlan          = (profile as any)?.plan ?? 'free'
+  const creditBalance        = (profile as any)?.credit_balance ?? 0
+  const avatarUrl            = getPhotoUrl(profile?.photos)
+  const initials             = profile?.full_name
     ? profile.full_name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
     : '?'
 
@@ -41,20 +44,19 @@ export default function TopHeader() {
         maxWidth: '960px', margin: '0 auto', width: '100%',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
-        {/* Logo — hook + thread wordmark */}
+
+        {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            filter: 'drop-shadow(0 2px 4px rgba(212,160,23,0.3))',
-            display: 'flex', alignItems: 'center',
-          }}>
+          <div style={{ filter: 'drop-shadow(0 2px 4px rgba(212,160,23,0.3))', display: 'flex', alignItems: 'center' }}>
             <CrochetHook size={44} finish="gold" />
           </div>
           <CrotchetWordmark height={28} />
         </div>
 
         {/* Right side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Upgrade button — only for free users */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
+          {/* Upgrade — free users only */}
           {currentPlan === 'free' && (
             <button
               onClick={() => openPaywall('general', 'plans')}
@@ -66,13 +68,12 @@ export default function TopHeader() {
                 fontFamily: "'DM Sans', sans-serif",
                 cursor: 'pointer', whiteSpace: 'nowrap',
                 boxShadow: '0 2px 12px rgba(244,63,94,0.3)',
-              }}
-            >
+              }}>
               ✨ Upgrade
             </button>
           )}
 
-          {/* Credits button — always visible */}
+          {/* Credits */}
           <button
             onClick={() => openPaywall('general', 'credits')}
             style={{
@@ -83,40 +84,59 @@ export default function TopHeader() {
               color: '#c4870a', fontSize: '12px', fontWeight: 700,
               fontFamily: "'DM Sans', sans-serif",
               cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
->
-  <Coins size={13} />
-  {creditBalance > 0 ? creditBalance.toLocaleString() : 'Credits'}
-</button>
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '50%',
-            overflow: 'hidden', flexShrink: 0,
-            background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 12px rgba(244,63,94,0.25)',
-            border: '2px solid rgba(255,255,255,0.8)',
-          }}>
+            }}>
+            <Coins size={13} />
+            {creditBalance > 0 ? creditBalance.toLocaleString() : 'Credits'}
+          </button>
+
+          {/* Avatar — clicks to /profile */}
+          <button
+            onClick={() => router.push('/profile')}
+            title="My profile"
+            style={{
+              width: '36px', height: '36px', borderRadius: '50%',
+              overflow: 'hidden', flexShrink: 0, padding: 0, border: 'none',
+              background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 12px rgba(244,63,94,0.25)',
+              outline: '2px solid rgba(255,255,255,0.8)',
+              cursor: 'pointer',
+            }}>
             {avatarUrl ? (
-              <img src={avatarUrl} alt={profile?.full_name ?? 'Avatar'}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <Image
+                src={avatarUrl}
+                alt={profile?.full_name ?? 'Avatar'}
+                width={36}
+                height={36}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                unoptimized
+              />
             ) : (
               <span style={{
                 color: 'white', fontSize: '13px', fontWeight: '600',
                 fontFamily: "'DM Sans', sans-serif", userSelect: 'none',
-              }}>{initials}</span>
+              }}>
+                {initials}
+              </span>
             )}
-          </div>
+          </button>
 
-          <span style={{
-            fontSize: '13px', fontFamily: "'DM Sans', sans-serif",
-            fontWeight: '500', color: '#6b4c52',
-            maxWidth: '100px', overflow: 'hidden',
-            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }} className="hidden sm:block">
+          {/* Name — hidden on small screens */}
+          <span
+            className="hidden sm:block"
+            style={{
+              fontSize: '13px', fontFamily: "'DM Sans', sans-serif",
+              fontWeight: '500', color: '#6b4c52',
+              maxWidth: '100px', overflow: 'hidden',
+              textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
             {profile?.full_name}
           </span>
 
-          <button onClick={() => signOut()} title="Sign out"
+          {/* Sign out */}
+          <button
+            onClick={() => signOut()}
+            title="Sign out"
             style={{
               width: '36px', height: '36px', borderRadius: '50%',
               border: '1.5px solid rgba(244,63,94,0.12)',
@@ -125,22 +145,20 @@ export default function TopHeader() {
               cursor: 'pointer', transition: 'all 0.2s ease', color: '#a37a82',
             }}
             onMouseEnter={e => {
-              const t = e.currentTarget
-              t.style.background = 'rgba(244,63,94,0.10)'
-              t.style.borderColor = 'rgba(244,63,94,0.25)'
-              t.style.color = '#f43f5e'
-              t.style.transform = 'scale(1.05)'
+              e.currentTarget.style.background  = 'rgba(244,63,94,0.10)'
+              e.currentTarget.style.borderColor = 'rgba(244,63,94,0.25)'
+              e.currentTarget.style.color       = '#f43f5e'
+              e.currentTarget.style.transform   = 'scale(1.05)'
             }}
             onMouseLeave={e => {
-              const t = e.currentTarget
-              t.style.background = 'rgba(244,63,94,0.04)'
-              t.style.borderColor = 'rgba(244,63,94,0.12)'
-              t.style.color = '#a37a82'
-              t.style.transform = 'scale(1)'
-            }}
-          >
+              e.currentTarget.style.background  = 'rgba(244,63,94,0.04)'
+              e.currentTarget.style.borderColor = 'rgba(244,63,94,0.12)'
+              e.currentTarget.style.color       = '#a37a82'
+              e.currentTarget.style.transform   = 'scale(1)'
+            }}>
             <LogOut size={16} />
           </button>
+
         </div>
       </div>
     </header>

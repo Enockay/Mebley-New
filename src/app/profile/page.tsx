@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-no-undef */
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
@@ -6,16 +7,13 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import {
-  Settings, Play, MapPin, Eye, EyeOff, Sparkles,
-  Camera, ChevronRight, Heart, BadgeCheck,
+  Play, MapPin, Eye, EyeOff, Sparkles,
+  Camera, ChevronRight, Heart, BadgeCheck, Edit3,
 } from 'lucide-react'
 import EditProfile from '@/components/Profile/EditProfile'
 import DeleteAccount from '@/components/Profile/DeleteAccount'
-import VoiceNoteRecorder from '@/components/Profile/VoiceNoteRecorder'
 import { supabase } from '@/lib/supabase-client'
 import { RELATIONSHIP_INTENTS, PROFILE_PROMPTS } from '@/types/app-constants'
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface ProfileVideo {
   slot:             number
@@ -35,8 +33,6 @@ interface PromptAnswer {
   answer:   string
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 const AGE_RANGE_LABELS: Record<string, string> = {
   '18_24':   '18–24',
   '25_34':   '25–34',
@@ -52,12 +48,7 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-// Returns one specific actionable nudge based on what's missing
-function getCompletenessNudge(
-  profile: any,
-  videoCount: number,
-  promptCount: number
-): string | null {
+function getCompletenessNudge(profile: any, videoCount: number, promptCount: number): string | null {
   if (!profile.bio)                         return 'Add a bio to get 2× more matches'
   if (promptCount === 0)                    return 'Answer a prompt — it drives first messages'
   if ((profile.interests ?? []).length < 5) return 'Add more interests to improve your matches'
@@ -65,24 +56,33 @@ function getCompletenessNudge(
   return null
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+const s = {
+  page:    { minHeight: '100vh', background: '#fdf8f5', fontFamily: "'DM Sans', sans-serif" },
+  card:    { background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderRadius: 20, border: '1px solid rgba(244,63,94,0.08)', boxShadow: '0 2px 16px rgba(180,60,80,0.06)', padding: '20px' } as React.CSSProperties,
+  label:   { fontSize: 10, fontWeight: 700, color: '#a37a82', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 10 },
+  chip:    (color: string) => ({ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, background: `${color}12`, border: `1px solid ${color}30`, color }),
+  section: { display: 'flex', flexDirection: 'column' as const, gap: 12 },
+}
 
 export default function ProfilePage() {
   const { user, profile, loading, refreshProfile } = useAuth()
   const router = useRouter()
 
-  const [showEdit, setShowEdit]                   = useState(false)
+  const [showEdit, setShowEdit]         = useState(false)
+  const [editTab, setEditTab]           = useState<'basics' | 'prompts' | 'intents' | 'interests' | 'photos' | 'videos'>('basics')
+  const openEdit = (tab: typeof editTab = 'basics') => {
+    setEditTab(tab)
+    setShowEdit(true)
+  }
   const [videos, setVideos]                       = useState<ProfileVideo[]>([])
   const [playingSlot, setPlayingSlot]             = useState<number | null>(null)
   const [visibilityLoading, setVisibilityLoading] = useState(false)
   const [activePhotoIdx, setActivePhotoIdx]       = useState(0)
 
-  // ── Auth guard ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!loading && !user) router.push('/auth')
   }, [user, loading, router])
 
-  // ── Fetch profile videos ──────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return
     ;(supabase as any)
@@ -96,252 +96,304 @@ export default function ProfilePage() {
       })
   }, [user, profile])
 
-  // ── Toggle profile visibility ─────────────────────────────────────────────
   const handleToggleVisibility = async () => {
     if (!user || !profile) return
     setVisibilityLoading(true)
     const newValue = !((profile as any).visible)
-    await (supabase as any)
-      .from('profiles')
-      .update({ visible: newValue })
-      .eq('id', user.id)
+    await (supabase as any).from('profiles').update({ visible: newValue }).eq('id', user.id)
     await refreshProfile()
     setVisibilityLoading(false)
   }
 
   if (loading || !profile) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-400" />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fdf8f5' }}>
+        <div style={{ width: 44, height: 44, borderRadius: '50%', border: '2.5px solid rgba(244,63,94,0.15)', borderTopColor: '#f43f5e', animation: 'spin 0.8s linear infinite' }} />
       </div>
     )
   }
 
-  // ── Derived values ────────────────────────────────────────────────────────
-  const photos: Photo[] = ((profile.photos as unknown as Photo[] | null) ?? []).filter(Boolean)
-  const prompts: PromptAnswer[] = (((profile as any).prompts as PromptAnswer[] | null) ?? []).filter(Boolean)
-  const interests: string[]     = profile.interests ?? []
-  const lookingFor: string[]    = (profile.looking_for ?? []) as string[]
-  const isVisible               = (profile as any).visible ?? false
-  const completeness            = profile.profile_completeness ?? 0
-  const introVideo              = videos.find(v => v.slot === 0)
-  const ageLabel                = AGE_RANGE_LABELS[(profile as any).age_range ?? ''] ?? ''
-  const nudge                   = getCompletenessNudge(profile, videos.length, prompts.length)
-  const intentLabel             = lookingFor.length > 0
-    ? RELATIONSHIP_INTENTS.find(i => i.value === lookingFor[0])
-    : null
-
-  const sortedPhotos  = [...photos].sort((a, b) => a.slot - b.slot)
-  const displayPhoto  = sortedPhotos[activePhotoIdx] ?? null
+  const photos: Photo[]           = ((profile.photos as unknown as Photo[] | null) ?? []).filter(Boolean)
+  const prompts: PromptAnswer[]   = (((profile as any).prompts as PromptAnswer[] | null) ?? []).filter(Boolean)
+  const interests: string[]       = profile.interests ?? []
+  const lookingFor: string[]      = (profile.looking_for ?? []) as string[]
+  const isVisible                 = (profile as any).visible ?? false
+  const completeness              = profile.profile_completeness ?? 0
+  const introVideo                = videos.find(v => v.slot === 0)
+  const ageLabel                  = AGE_RANGE_LABELS[(profile as any).age_range ?? ''] ?? ''
+  const nudge                     = getCompletenessNudge(profile, videos.length, prompts.length)
+  const intentLabel               = lookingFor.length > 0 ? RELATIONSHIP_INTENTS.find(i => i.value === lookingFor[0]) : null
+  const sortedPhotos              = [...photos].sort((a, b) => a.slot - b.slot)
+  const displayPhoto              = sortedPhotos[activePhotoIdx] ?? null
+  const initials                  = profile.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() ?? '?'
 
   return (
     <>
-      <div className="h-full overflow-y-auto bg-gray-50">
-        <div className="max-w-lg mx-auto pb-8">
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
+        .profile-fade { animation: fadeUp 0.4s ease forwards; }
+        .card-hover { transition: all 0.2s ease; }
+        .card-hover:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(180,60,80,0.1) !important; }
+        .toggle-track { transition: background 0.2s ease; }
+      `}</style>
 
-          {/* ── Sticky top bar ──────────────────────────────────────────── */}
-          <div className="sticky top-0 z-10 bg-gray-50/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <Heart size={18} className="text-rose-500 fill-rose-500" />
-              <span className="font-bold text-gray-900 text-base">My Profile</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Visibility pill */}
-              <button
-                onClick={handleToggleVisibility}
-                disabled={visibilityLoading}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${
-                  isVisible
-                    ? 'border-green-400 bg-green-50 text-green-700'
-                    : 'border-gray-300 bg-white text-gray-500'
-                } disabled:opacity-50`}>
-                {visibilityLoading
-                  ? <div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                  : isVisible
-                    ? <><Eye size={12} /> Visible</>
-                    : <><EyeOff size={12} /> Hidden</>
-                }
-              </button>
-              {/* Settings */}
-              <button
-                onClick={() => setShowEdit(true)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm">
-                <Settings size={15} className="text-gray-600" />
-              </button>
-            </div>
-          </div>
+      <div style={s.page}>
+        <div style={{ maxWidth: 520, margin: '0 auto', padding: '80px 16px 100px' }}>
 
-          {/* ── Photo gallery ──────────────────────────────────────────── */}
-          <div className="relative bg-black">
-            {displayPhoto ? (
-              <>
-                <img
-                  src={displayPhoto.url}
-                  alt={profile.full_name ?? 'Profile photo'}
-                  className="w-full object-cover"
-                  style={{ maxHeight: '480px', aspectRatio: '4/5' }}
-                />
+          {/* ── Hero section — circular avatar + name ── */}
+          <div className="profile-fade" style={{ ...s.card, marginBottom: 12, padding: '28px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
 
-                {/* Dark gradient for name legibility */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
-
-                {/* Photo progress dots */}
-                {sortedPhotos.length > 1 && (
-                  <div className="absolute top-3 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
-                    {sortedPhotos.map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-1 rounded-full transition-all duration-300 ${
-                          i === activePhotoIdx ? 'w-6 bg-white' : 'w-1.5 bg-white/50'
-                        }`}
+              {/* Circular avatar */}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{
+                  width: 96, height: 96, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+                  padding: 3,
+                  boxShadow: '0 4px 20px rgba(244,63,94,0.3)',
+                }}>
+                  <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#fdf8f5' }}>
+                    {displayPhoto ? (
+                      <img
+                        src={displayPhoto.url}
+                        alt={profile.full_name ?? ''}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
-                    ))}
-                  </div>
-                )}
-
-                {/* Left / right tap zones for photo navigation */}
-                {sortedPhotos.length > 1 && (
-                  <>
-                    <button
-                      aria-label="Previous photo"
-                      className="absolute left-0 top-0 w-1/3 h-full"
-                      onClick={() => setActivePhotoIdx(i => Math.max(0, i - 1))}
-                    />
-                    <button
-                      aria-label="Next photo"
-                      className="absolute right-0 top-0 w-1/3 h-full"
-                      onClick={() => setActivePhotoIdx(i => Math.min(sortedPhotos.length - 1, i + 1))}
-                    />
-                  </>
-                )}
-
-                {/* Name + location overlay */}
-                <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 pointer-events-none">
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <h1 className="text-2xl font-bold text-white leading-tight">
-                          {profile.full_name}
-                        </h1>
-                        {profile.verified_email && (
-                          <BadgeCheck size={18} className="text-blue-400 flex-shrink-0" />
-                        )}
+                    ) : (
+                      <div style={{
+                        width: '100%', height: '100%', borderRadius: '50%',
+                        background: 'linear-gradient(135deg, rgba(244,63,94,0.15), rgba(236,72,153,0.1))',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <span style={{ fontSize: 28, fontWeight: 700, color: '#f43f5e', fontFamily: "'Fraunces', serif" }}>
+                          {initials}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {ageLabel && (
-                          <span className="text-white/90 text-sm font-medium">{ageLabel}</span>
-                        )}
-                        {profile.location && (
-                          <div className="flex items-center gap-1">
-                            <div className="w-1 h-1 bg-white/50 rounded-full" />
-                            <MapPin size={11} className="text-white/70" />
-                            <span className="text-white/80 text-xs">{profile.location}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {sortedPhotos.length > 1 && (
-                      <span className="text-xs text-white/60 bg-black/30 px-2 py-0.5 rounded-full">
-                        {activePhotoIdx + 1}/{sortedPhotos.length}
-                      </span>
                     )}
                   </div>
                 </div>
-              </>
-            ) : (
-              /* No photo — add prompt */
-              <button
-                onClick={() => setShowEdit(true)}
-                className="w-full bg-gradient-to-br from-rose-100 to-pink-100 flex flex-col items-center justify-center gap-3"
-                style={{ aspectRatio: '4/5', maxHeight: '480px' }}>
-                <div className="w-20 h-20 rounded-full bg-white/60 flex items-center justify-center">
-                  <Camera size={32} className="text-rose-400" />
+
+                {/* Photo count badge */}
+                {sortedPhotos.length > 1 && (
+                  <div style={{
+                    position: 'absolute', bottom: 2, right: 2,
+                    background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+                    borderRadius: 100, padding: '2px 7px',
+                    fontSize: 10, fontWeight: 700, color: 'white',
+                    border: '2px solid white',
+                  }}>
+                    {sortedPhotos.length}
+                  </div>
+                )}
+
+                {/* Add photo button if no photo */}
+                {!displayPhoto && (
+                  <button
+                    onClick={() => openEdit()}
+                    style={{
+                      position: 'absolute', bottom: 0, right: 0,
+                      width: 28, height: 28, borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+                      border: '2px solid white',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}>
+                    <Camera size={13} color="white" />
+                  </button>
+                )}
+              </div>
+
+              {/* Name + details */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <h1 style={{
+                    fontFamily: "'Fraunces', serif",
+                    fontSize: 22, fontWeight: 700,
+                    color: '#2d1b1f', margin: 0,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {profile.full_name || 'Your Name'}
+                  </h1>
+                  {profile.verified_email && (
+                    <BadgeCheck size={16} color="#3b82f6" style={{ flexShrink: 0 }} />
+                  )}
                 </div>
-                <p className="text-rose-500 font-semibold text-sm">Add your first photo</p>
-              </button>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {ageLabel && (
+                    <span style={s.chip('#f43f5e')}>{ageLabel}</span>
+                  )}
+                  {(profile as any).gender && (
+                    <span style={s.chip('#8b5cf6')}>{(profile as any).gender}</span>
+                  )}
+                  {profile.location && (
+                    <span style={{ ...s.chip('#0ea5e9'), display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                      <MapPin size={10} /> {profile.location}
+                    </span>
+                  )}
+                </div>
+
+                <span style={{ fontSize: 12, color: '#a37a82' }}>@{profile.username}</span>
+              </div>
+
+              {/* Edit + visibility buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                <button
+                  onClick={() => openEdit()}
+                  style={{
+                    width: 36, height: 36, borderRadius: '50%',
+                    border: '1.5px solid rgba(244,63,94,0.2)',
+                    background: 'rgba(244,63,94,0.05)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}>
+                  <Edit3 size={15} color="#f43f5e" />
+                </button>
+              </div>
+            </div>
+
+            {/* Photo strip if multiple photos */}
+            {sortedPhotos.length > 1 && (
+              <div style={{ display: 'flex', gap: 6, marginTop: 16, overflowX: 'auto', paddingBottom: 4 }}>
+                {sortedPhotos.map((photo, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActivePhotoIdx(i)}
+                    style={{
+                      width: 52, height: 52, borderRadius: 10, flexShrink: 0,
+                      overflow: 'hidden', padding: 0, cursor: 'pointer',
+                      border: i === activePhotoIdx ? '2.5px solid #f43f5e' : '2px solid transparent',
+                      boxShadow: i === activePhotoIdx ? '0 2px 10px rgba(244,63,94,0.3)' : 'none',
+                      transition: 'all 0.2s ease',
+                    }}>
+                    <img src={photo.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* ── Completeness nudge bar ─────────────────────────────────── */}
+          {/* ── Profile strength ── */}
           {completeness < 100 && (
             <button
-              onClick={() => setShowEdit(true)}
-              className="mx-4 mt-3 w-[calc(100%-2rem)] bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:border-rose-200 transition-colors text-left">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={14} className="text-rose-500" />
-                  <span className="text-sm font-semibold text-gray-800">Profile strength</span>
+              onClick={() => openEdit()}
+              className="card-hover"
+              style={{ ...s.card, marginBottom: 12, width: '100%', textAlign: 'left', cursor: 'pointer', display: 'block' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Sparkles size={14} color="#f43f5e" />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#2d1b1f' }}>Profile strength</span>
                 </div>
-                <span className="text-sm font-bold text-rose-600">{completeness}%</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#f43f5e' }}>{completeness}%</span>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
-                <div
-                  className="bg-linear-to-r from-rose-400 to-pink-500 h-1.5 rounded-full transition-all duration-700"
-                  style={{ width: `${completeness}%` }}
-                />
+              <div style={{ height: 6, borderRadius: 3, background: 'rgba(244,63,94,0.1)', marginBottom: 8, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 3,
+                  background: 'linear-gradient(90deg, #f43f5e, #ec4899)',
+                  width: `${completeness}%`,
+                  transition: 'width 0.8s ease',
+                }} />
               </div>
               {nudge && (
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-500">{nudge}</p>
-                  <ChevronRight size={13} className="text-gray-400 shrink-0" />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, color: '#a37a82' }}>{nudge}</span>
+                  <ChevronRight size={13} color="#c4a0a8" />
                 </div>
               )}
             </button>
           )}
 
-          {/* ── Content cards ─────────────────────────────────────────── */}
-          <div className="mx-4 mt-3 space-y-3">
-
-            {/* Identity + bio */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">About</p>
-                <span className="text-xs text-gray-400">@{profile.username}</span>
+          {/* ── Visibility toggle ── */}
+          <div style={{ ...s.card, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 12,
+                background: isVisible ? 'rgba(34,197,94,0.1)' : 'rgba(180,60,80,0.07)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {isVisible
+                  ? <Eye size={16} color="#16a34a" />
+                  : <EyeOff size={16} color="#a37a82" />
+                }
               </div>
-
-              {/* Attribute chips */}
-              <div className="flex flex-wrap gap-2 mb-3">
-                {(profile as any).gender && (
-                  <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-xs font-medium border border-rose-100">
-                    {(profile as any).gender}
-                  </span>
-                )}
-                {(profile as any).nationality && (
-                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium border border-blue-100">
-                    🌍 {(profile as any).nationality}
-                  </span>
-                )}
-                {intentLabel && (
-                  <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-xs font-medium border border-purple-100">
-                    {intentLabel.emoji} {intentLabel.label}
-                  </span>
-                )}
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#2d1b1f', margin: 0 }}>
+                  {isVisible ? 'Visible in Discover' : 'Hidden from Discover'}
+                </p>
+                <p style={{ fontSize: 11, color: '#a37a82', margin: '2px 0 0' }}>
+                  {isVisible ? 'People can find and like you' : 'Your profile is not shown to anyone'}
+                </p>
               </div>
+            </div>
+            <button
+              onClick={handleToggleVisibility}
+              disabled={visibilityLoading}
+              className="toggle-track"
+              style={{
+                width: 44, height: 24, borderRadius: 12, border: 'none', flexShrink: 0,
+                background: isVisible ? '#22c55e' : 'rgba(180,60,80,0.2)',
+                cursor: 'pointer', position: 'relative', opacity: visibilityLoading ? 0.5 : 1,
+              }}>
+              <div style={{
+                position: 'absolute', top: 2,
+                left: isVisible ? 22 : 2,
+                width: 20, height: 20, borderRadius: '50%',
+                background: 'white',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                transition: 'left 0.2s ease',
+              }} />
+            </button>
+          </div>
 
-              {profile.bio ? (
-                <p className="text-sm text-gray-700 leading-relaxed">{profile.bio}</p>
-              ) : (
-                <button
-                  onClick={() => setShowEdit(true)}
-                  className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-rose-300 hover:text-rose-400 transition-colors">
-                  + Add a bio
-                </button>
+          {/* ── About + bio ── */}
+          <div style={{ ...s.card, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <p style={s.label}>About</p>
+              {intentLabel && (
+                <span style={s.chip('#8b5cf6')}>
+                  {intentLabel.emoji} {intentLabel.label}
+                </span>
               )}
             </div>
 
-            {/* ── Prompts — one card each ───────────────────────────────── */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+              {(profile as any).nationality && (
+                <span style={s.chip('#0ea5e9')}>🌍 {(profile as any).nationality}</span>
+              )}
+            </div>
+
+            {profile.bio ? (
+              <p style={{ fontSize: 14, color: '#4a2d35', lineHeight: 1.7, margin: 0 }}>{profile.bio}</p>
+            ) : (
+              <button
+                onClick={() => openEdit()}
+                style={{
+                  width: '100%', padding: '12px', borderRadius: 12,
+                  border: '1.5px dashed rgba(244,63,94,0.25)',
+                  background: 'rgba(244,63,94,0.02)',
+                  fontSize: 13, color: '#c4a0a8', cursor: 'pointer',
+                  fontFamily: "'DM Sans', sans-serif",
+                }}>
+                + Add a bio
+              </button>
+            )}
+          </div>
+
+          {/* ── Prompts ── */}
+          <div style={{ marginBottom: 12, ...s.section }}>
             {prompts.length > 0 ? (
               prompts.map(prompt => {
                 const meta = PROFILE_PROMPTS.find(p => p.id === prompt.id)
                 return (
-                  <div
-                    key={prompt.id}
-                    className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-base">{meta?.emoji ?? '💬'}</span>
-                      <p className="text-xs font-semibold text-rose-500">{prompt.question}</p>
+                  <div key={prompt.id} style={s.card}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <span style={{ fontSize: 16 }}>{meta?.emoji ?? '💬'}</span>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: '#f43f5e', margin: 0, letterSpacing: '0.03em' }}>
+                        {prompt.question}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-800 leading-relaxed font-medium">
+                    <p style={{ fontSize: 14, color: '#2d1b1f', lineHeight: 1.6, fontWeight: 500, margin: 0 }}>
                       {prompt.answer}
                     </p>
                   </div>
@@ -349,179 +401,141 @@ export default function ProfilePage() {
               })
             ) : (
               <button
-                onClick={() => setShowEdit(true)}
-                className="w-full bg-white rounded-2xl p-5 shadow-sm border-2 border-dashed border-rose-200 hover:border-rose-400 hover:bg-rose-50/30 transition-all text-left">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">💬</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">Answer a prompt</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Give people something to react to</p>
-                  </div>
-                  <ChevronRight size={16} className="text-gray-400 ml-auto flex-shrink-0" />
+              onClick={() => openEdit('prompts')}
+              className="card-hover"
+              style={{
+                ...s.card, width: '100%', textAlign: 'left', cursor: 'pointer',
+                border: '1.5px dashed rgba(244,63,94,0.2)',
+                background: 'rgba(244,63,94,0.02)',
+                display: 'flex', alignItems: 'center', gap: 14,
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 12,
+                  background: 'rgba(244,63,94,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <span style={{ fontSize: 18 }}>💬</span>
                 </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#2d1b1f', margin: 0 }}>Answer a prompt</p>
+                  <p style={{ fontSize: 11, color: '#a37a82', margin: '3px 0 0' }}>Give people something to react to</p>
+                </div>
+                <ChevronRight size={16} color="#c4a0a8" />
               </button>
             )}
+          </div>
 
-            {/* Interests */}
-            {interests.length > 0 ? (
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                  Interests
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {interests.map(interest => (
-                    <span
-                      key={interest}
-                      className="px-3 py-1.5 bg-gray-50 text-gray-700 rounded-full text-xs font-medium border border-gray-200">
-                      {interest}
-                    </span>
-                  ))}
-                </div>
+          {/* ── Interests ── */}
+          {interests.length > 0 ? (
+            <div style={{ ...s.card, marginBottom: 12 }}>
+              <p style={s.label}>Interests</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {interests.map(interest => (
+                  <span key={interest} style={{
+                    padding: '6px 14px', borderRadius: 100,
+                    fontSize: 12, fontWeight: 600,
+                    background: 'rgba(244,63,94,0.06)',
+                    border: '1px solid rgba(244,63,94,0.15)',
+                    color: '#a03050',
+                  }}>
+                    {interest}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => openEdit()}
+              className="card-hover"
+              style={{
+                ...s.card, marginBottom: 12, width: '100%', textAlign: 'left',
+                cursor: 'pointer', border: '1.5px dashed rgba(244,63,94,0.2)',
+                background: 'rgba(244,63,94,0.02)',
+              }}>
+              <p style={{ fontSize: 13, color: '#c4a0a8', margin: 0 }}>+ Add your interests</p>
+            </button>
+          )}
+
+          {/* ── Intro video ── */}
+          <div style={{ ...s.card, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <p style={{ ...s.label, margin: 0 }}>Intro Video</p>
+              {!introVideo && <span style={{ fontSize: 11, color: '#c4a0a8', fontWeight: 500 }}>Optional</span>}
+            </div>
+            {introVideo ? (
+              <div style={{ borderRadius: 14, overflow: 'hidden', background: '#0f0409', aspectRatio: '16/9' }}>
+                {playingSlot === 0 ? (
+                  <video src={introVideo.cloudfront_url} controls autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
+                    <button
+                      onClick={() => setPlayingSlot(0)}
+                      style={{
+                        width: 56, height: 56, borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.15)',
+                        border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backdropFilter: 'blur(8px)',
+                      }}>
+                      <Play size={22} color="white" fill="white" style={{ marginLeft: 3 }} />
+                    </button>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{formatTime(introVideo.duration_seconds)}</span>
+                  </div>
+                )}
               </div>
             ) : (
               <button
-                onClick={() => setShowEdit(true)}
-                className="w-full bg-white rounded-2xl p-4 shadow-sm border-2 border-dashed border-gray-200 hover:border-rose-300 transition-colors text-left">
-                <p className="text-sm text-gray-400">+ Add your interests</p>
+                onClick={() => openEdit()}
+                style={{
+                  width: '100%', aspectRatio: '16/9', borderRadius: 14,
+                  border: '1.5px dashed rgba(244,63,94,0.2)',
+                  background: 'rgba(244,63,94,0.02)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  cursor: 'pointer',
+                }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: '50%',
+                  background: 'rgba(244,63,94,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Play size={20} color="#f43f5e" />
+                </div>
+                <span style={{ fontSize: 13, color: '#c4a0a8', fontFamily: "'DM Sans', sans-serif" }}>Add intro video</span>
               </button>
             )}
-
-            {/* Intro video */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-              <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-gray-50">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Intro Video
-                </p>
-               {!introVideo && (
-                <span className="text-xs text-gray-400 font-medium">
-                  Optional
-                </span>
-                )}
-              </div>
-              <div className="p-4">
-                {introVideo ? (
-                  <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
-                    {playingSlot === 0 ? (
-                      <video
-                        src={introVideo.cloudfront_url}
-                        controls
-                        autoPlay
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                        <button
-                          onClick={() => setPlayingSlot(0)}
-                          className="flex flex-col items-center gap-2">
-                          <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-full flex items-center justify-center hover:bg-white/30 transition-all">
-                            <Play size={24} className="text-white fill-white ml-1" />
-                          </div>
-                          <span className="text-sm text-white/70">
-                            {formatTime(introVideo.duration_seconds)}
-                          </span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowEdit(true)}
-                    className="w-full aspect-video rounded-xl border-2 border-dashed border-rose-200 bg-rose-50/40 flex flex-col items-center justify-center gap-2 hover:bg-rose-50 transition-colors">
-                    <Play size={24} className="text-rose-300" />
-                    <span className="text-sm text-rose-400 font-medium">Add intro video</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Voice note */}
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-              <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-gray-50">
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Voice Note
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Let people hear your voice before matching
-                  </p>
-                </div>
-                <span className="text-xs text-gray-400 font-medium">Optional</span>
-              </div>
-              <div className="p-4">
-                <VoiceNoteRecorder userId={user!.id} />
-              </div>
-            </div>      
-
-            {/* Stats row */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                Profile stats
-              </p>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{sortedPhotos.length}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Photo{sortedPhotos.length !== 1 ? 's' : ''}</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{prompts.length}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Prompt{prompts.length !== 1 ? 's' : ''}</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{interests.length}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Interest{interests.length !== 1 ? 's' : ''}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Visibility toggle card */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    isVisible ? 'bg-green-100' : 'bg-gray-100'
-                  }`}>
-                    {isVisible
-                      ? <Eye size={16} className="text-green-600" />
-                      : <EyeOff size={16} className="text-gray-500" />
-                    }
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {isVisible ? 'Visible in Discover' : 'Hidden from Discover'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {isVisible
-                        ? 'People can find and like your profile'
-                        : 'Your profile is not shown to anyone'}
-                    </p>
-                  </div>
-                </div>
-                {/* Toggle switch */}
-                <button
-                  onClick={handleToggleVisibility}
-                  disabled={visibilityLoading}
-                  className={`relative w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${
-                    isVisible ? 'bg-green-500' : 'bg-gray-300'
-                  } disabled:opacity-50`}>
-                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-                    isVisible ? 'translate-x-5' : 'translate-x-0.5'
-                  }`} />
-                </button>
-              </div>
-            </div>
-
-            {/* Delete account — always at bottom */}
-            <DeleteAccount />
-
           </div>
+
+          {/* ── Profile stats ── */}
+          <div style={{ ...s.card, marginBottom: 12 }}>
+            <p style={s.label}>Profile stats</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
+              {[
+                { value: sortedPhotos.length, label: `Photo${sortedPhotos.length !== 1 ? 's' : ''}` },
+                { value: prompts.length,      label: `Prompt${prompts.length !== 1 ? 's' : ''}` },
+                { value: interests.length,    label: `Interest${interests.length !== 1 ? 's' : ''}` },
+              ].map(({ value, label }) => (
+                <div key={label} style={{
+                  padding: '14px 8px', borderRadius: 14,
+                  background: 'rgba(244,63,94,0.04)',
+                  border: '1px solid rgba(244,63,94,0.08)',
+                }}>
+                  <p style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: '#2d1b1f', margin: 0, lineHeight: 1 }}>{value}</p>
+                  <p style={{ fontSize: 11, color: '#a37a82', margin: '4px 0 0' }}>{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Delete account ── */}
+          <DeleteAccount />
+
         </div>
       </div>
 
       {/* Edit profile modal */}
       {showEdit && (
         <EditProfile
+          initialTab={editTab}
           onClose={() => {
             setShowEdit(false)
             setActivePhotoIdx(0)

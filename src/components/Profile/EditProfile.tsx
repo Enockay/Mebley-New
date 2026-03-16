@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { X, Check, Sparkles, Save, Plus, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase-client'
@@ -9,7 +10,8 @@ import VideoUpload from '@/components/Profile/VideoUpload'
 import PhotoUpload from '@/components/Profile/PhotoUpload'
 
 interface EditProfileProps {
-  onClose: () => void
+  onClose:      () => void
+  initialTab?:  Tab
 }
 
 type Tab = 'basics' | 'prompts' | 'intents' | 'interests' | 'photos' | 'videos'
@@ -42,12 +44,13 @@ function splitLocation(location: string): { city: string; country: string } {
   }
 }
 
-export default function EditProfile({ onClose }: EditProfileProps) {
+export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
   const { profile, refreshProfile } = useAuth()
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')
   const [saved, setSaved]         = useState(false)
-  const [activeTab, setActiveTab] = useState<Tab>('basics')
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'basics')
+  const [, startTransition]       = useTransition()
 
   // ── Basics + intents + interests form state ───────────────────────────────
   const [formData, setFormData] = useState({
@@ -76,19 +79,21 @@ export default function EditProfile({ onClose }: EditProfileProps) {
   useEffect(() => {
     if (profile) {
       const { city, country } = splitLocation((profile as any).location ?? '')
-      setFormData({
-        full_name:   profile.full_name   ?? '',
-        bio:         profile.bio         ?? '',
-        city,
-        country,
-        nationality: (profile as any).nationality ?? '',
-        looking_for: (profile.looking_for ?? []) as string[],
-        interests:   profile.interests   ?? [],
-      })
+      startTransition(() => {
+        setFormData({
+          full_name:   profile.full_name   ?? '',
+          bio:         profile.bio         ?? '',
+          city,
+          country,
+          nationality: (profile as any).nationality ?? '',
+          looking_for: (profile.looking_for ?? []) as string[],
+          interests:   profile.interests   ?? [],
+        })
 
-      // Load saved prompts — stored as jsonb[] on profile
-      const raw = (profile as any).prompts ?? []
-      setPrompts(Array.isArray(raw) ? raw.filter(Boolean) : [])
+        // Load saved prompts — stored as jsonb[] on profile
+        const raw = (profile as any).prompts ?? []
+        setPrompts(Array.isArray(raw) ? raw.filter(Boolean) : [])
+      })
     }
   }, [profile])
 
