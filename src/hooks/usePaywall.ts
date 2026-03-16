@@ -1,7 +1,7 @@
 // src/hooks/usePaywall.ts
 import { create } from 'zustand'
 
-type Trigger    = 'stitch_limit' | 'spotlight' | 'golden_thread' | 'vip_feature' | 'general'
+type Trigger = 'spotlight' | 'golden_thread' | 'vip_feature' | 'general'
 type Tab        = 'plans' | 'credits' | 'moments' | 'boosts'
 
 interface PaywallStore {
