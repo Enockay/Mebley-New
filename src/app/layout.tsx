@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 'use client'
 
+import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { OneSignalProvider } from '@/contexts/OneSignalContext'
 import NavWrapper from '@/components/UI/NavWrapper'
@@ -11,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext'
 
 // Separate client component so we can call hooks
 function AppShell({ children }: { children: React.ReactNode }) {
-  const { open, trigger, closePaywall } = usePaywall()
+  const { open, trigger, defaultTab, closePaywall } = usePaywall()
   const { refreshProfile } = useAuth()
 
   return (
@@ -25,6 +26,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       <PaywallModal
         open={open}
         trigger={trigger}
+        defaultTab={defaultTab}
         onClose={closePaywall}
         onSpendCredits={async (product, cost) => {
           const isBoost = ['quick','day','weekend','power'].includes(product)

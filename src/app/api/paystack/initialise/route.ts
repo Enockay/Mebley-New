@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/paystack/initialize/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
         currency:     'USD',
         reference,
         callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/paystack/verify?ref=${reference}`,
-        channels:     ['card', 'bank', 'ussd', 'mobile_money', 'bank_transfer'],
+        channels:     ['card',],
         metadata: {
           user_id: user.id,
           product,

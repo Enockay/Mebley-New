@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { LogOut } from 'lucide-react'
+import { LogOut, Coins } from 'lucide-react'
+import { usePaywall } from '@/hooks/usePaywall'
 import { useAuth } from '@/contexts/AuthContext'
 import CrochetHook from './CrochetHook'
 import CrotchetWordmark from './CrotchetWordmark'
@@ -16,6 +18,9 @@ function getPhotoUrl(photos: unknown): string | null {
 
 export default function TopHeader() {
   const { profile, signOut } = useAuth()
+  const { openPaywall } = usePaywall()
+  const currentPlan    = (profile as any)?.plan ?? 'free'
+  const creditBalance  = (profile as any)?.credit_balance ?? 0
   const avatarUrl = getPhotoUrl(profile?.photos)
   const initials = profile?.full_name
     ? profile.full_name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
@@ -49,6 +54,40 @@ export default function TopHeader() {
 
         {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Upgrade button — only for free users */}
+          {currentPlan === 'free' && (
+            <button
+              onClick={() => openPaywall('general', 'plans')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '5px',
+                padding: '6px 12px', borderRadius: '100px', border: 'none',
+                background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+                color: 'white', fontSize: '12px', fontWeight: 700,
+                fontFamily: "'DM Sans', sans-serif",
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                boxShadow: '0 2px 12px rgba(244,63,94,0.3)',
+              }}
+            >
+              ✨ Upgrade
+            </button>
+          )}
+
+          {/* Credits button — always visible */}
+          <button
+            onClick={() => openPaywall('general', 'credits')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              padding: '6px 12px', borderRadius: '100px',
+              border: '1.5px solid rgba(232,160,32,0.3)',
+              background: 'rgba(232,160,32,0.08)',
+              color: '#c4870a', fontSize: '12px', fontWeight: 700,
+              fontFamily: "'DM Sans', sans-serif",
+              cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+>
+  <Coins size={13} />
+  {creditBalance > 0 ? creditBalance.toLocaleString() : 'Credits'}
+</button>
           <div style={{
             width: '36px', height: '36px', borderRadius: '50%',
             overflow: 'hidden', flexShrink: 0,

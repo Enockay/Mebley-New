@@ -1,18 +1,22 @@
 // src/hooks/usePaywall.ts
 import { create } from 'zustand'
 
-type Trigger = 'stitch_limit' | 'spotlight' | 'golden_thread' | 'vip_feature' | 'general'
+type Trigger    = 'stitch_limit' | 'spotlight' | 'golden_thread' | 'vip_feature' | 'general'
+type Tab        = 'plans' | 'credits' | 'moments' | 'boosts'
 
 interface PaywallStore {
   open:         boolean
   trigger:      Trigger
-  openPaywall:  (trigger?: Trigger) => void
+  defaultTab:   Tab
+  openPaywall:  (trigger?: Trigger, tab?: Tab) => void
   closePaywall: () => void
 }
 
-export const usePaywall = create<PaywallStore>((set: (state: Partial<PaywallStore>) => void) => ({
+export const usePaywall = create<PaywallStore>((set) => ({
   open:         false,
   trigger:      'general',
-  openPaywall:  (trigger: Trigger = 'general') => set({ open: true, trigger }),
-  closePaywall: ()                     => set({ open: false }),
+  defaultTab:   'plans',
+  openPaywall:  (trigger: Trigger = 'general', tab: Tab = 'plans') =>
+    set({ open: true, trigger, defaultTab: tab }),
+  closePaywall: () => set({ open: false }),
 }))

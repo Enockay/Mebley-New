@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/auth/callback/route.ts
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
@@ -19,25 +21,24 @@ export async function GET(request: NextRequest) {
 
   const cookieStore = await cookies()
 
-  const supabase = createServerClient(
+  const authClient = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.delete({ name, ...options })
-        },
+        get(name: string) { return cookieStore.get(name)?.value },
+        set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }) },
+        remove(name: string, options: CookieOptions) { cookieStore.delete({ name, ...options }) },
       },
     }
   )
 
-  const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+  const db = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data, error: exchangeError } = await authClient.auth.exchangeCodeForSession(code)
 
   if (exchangeError || !data.user) {
     console.error('[Auth callback] exchange error:', exchangeError)
@@ -47,14 +48,13 @@ export async function GET(request: NextRequest) {
   const user     = data.user
   const provider = user.app_metadata?.provider ?? 'email'
 
-  // ── Check if profile already exists ────────────────────────────────────────
-  const { data: existingProfile } = await supabase
+  // ── Check if profile already exists ──────────────────────────────────────
+  const { data: existingProfile } = await db
     .from('profiles')
     .select('id, full_name, username, interests')
     .eq('id', user.id)
     .single()
 
-  // ── Returning user ──────────────────────────────────────────────────────────
   if (existingProfile) {
     const hasSetup = !!(
       existingProfile.full_name &&
@@ -64,78 +64,81 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}${hasSetup ? '/discover' : '/setup'}`)
   }
 
-  // ── New Google user ─────────────────────────────────────────────────────────
+  // ── Shared minimal defaults — satisfies ALL not-null constraints ──────────
+  const minimalProfile = {
+    gender:            '',
+    photos:            [] as any[],
+    tier:              'free',
+    plan:              'free',
+    looking_for:       [] as string[],
+    interests:         [] as string[],
+    gender_preference: [] as string[],
+    verified_email:    true,
+    is_active:         true,
+    visible:           false,
+    distance_max:      500,
+    profile_completeness: 10,
+  }
+
+  // ── New Google user ───────────────────────────────────────────────────────
   if (provider === 'google') {
     const googleName   = user.user_metadata?.full_name ?? user.user_metadata?.name ?? ''
     const firstName    = googleName.split(' ')[0] || 'user'
     const baseUsername = firstName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)
     const username     = `${baseUsername}${Math.random().toString(36).slice(2, 6)}`
 
-    await supabase.from('profiles').upsert({
-      id:                   user.id,
-      full_name:            googleName,
+    const { error: upsertErr } = await db.from('profiles').upsert({
+      ...minimalProfile,
+      id:        user.id,
+      full_name: googleName,
       username,
-      looking_for:          [],
-      interests:            [],
-      gender_preference:    [],
-      verified_email:       true,
-      is_active:            true,
-      visible:              false,
-      distance_max:         500,
       profile_completeness: 10,
     })
 
+    if (upsertErr) console.error('[callback] Google upsert error:', upsertErr.message)
     return NextResponse.redirect(`${origin}/setup`)
   }
 
-  // ── New email user — retrieve pending profile data saved during signup ──────
-  const { data: pending } = await (supabase as any)
+  // ── New email user — check pending_profiles ───────────────────────────────
+  const { data: pending } = await db
     .from('pending_profiles')
     .select('*')
     .eq('user_id', user.id)
     .single()
 
   if (pending) {
-    await (supabase as any).from('profiles').upsert({
+    const { error: upsertErr } = await db.from('profiles').upsert({
+      ...minimalProfile,
       id:                user.id,
-      full_name:         pending.full_name,
+      full_name:         pending.full_name ?? '',
       username:          pending.username,
-      age_range:         pending.age_range,
-      gender:            pending.gender,
+      age_range:         pending.age_range ?? null,
+      gender:            pending.gender ?? '',
       gender_preference: pending.gender_preference ?? [],
-      location:          pending.location,
-      nationality:       pending.nationality,
+      location:          pending.location ?? '',
+      nationality:       pending.nationality ?? '',
       latitude:          pending.latitude  ?? null,
       longitude:         pending.longitude ?? null,
-      looking_for:       [],
-      interests:         [],
-      verified_email:    true,
-      is_active:         true,
-      visible:           false,
-      distance_max:      500,
       profile_completeness: 30,
     })
 
-    // Clean up pending data
-    await (supabase as any).from('pending_profiles').delete().eq('user_id', user.id)
+    if (upsertErr) console.error('[callback] email upsert error:', upsertErr.message)
+
+    await db.from('pending_profiles').delete().eq('user_id', user.id)
+
   } else {
-    // Fallback — pending data missing, create minimal profile
+    // Fallback — no pending data
     const emailName = user.email?.split('@')[0] ?? 'user'
     const username  = `${emailName.replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 12)}${Math.random().toString(36).slice(2, 6)}`
 
-    await supabase.from('profiles').upsert({
-      id:                   user.id,
-      full_name:            '',
+    const { error: upsertErr } = await db.from('profiles').upsert({
+      ...minimalProfile,
+      id:        user.id,
+      full_name: '',
       username,
-      looking_for:          [],
-      interests:            [],
-      gender_preference:    [],
-      verified_email:       true,
-      is_active:            true,
-      visible:              false,
-      distance_max:         500,
-      profile_completeness: 10,
     })
+
+    if (upsertErr) console.error('[callback] fallback upsert error:', upsertErr.message)
   }
 
   return NextResponse.redirect(`${origin}/setup`)

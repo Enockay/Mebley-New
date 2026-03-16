@@ -85,19 +85,12 @@ export default function PushPermissionPrompt() {
 
   const handleEnable = async () => {
     setShow(false)
+    localStorage.setItem(KEY_ACCEPTED, 'true')
     try {
       const OneSignal = (await import('react-onesignal')).default
-      const granted   = await OneSignal.Notifications.requestPermission()
-      if (granted) {
-        // Permanently silence the prompt — user said yes
-        localStorage.setItem(KEY_ACCEPTED, 'true')
-      } else {
-        // Browser dialog dismissed or blocked — treat as a soft dismiss
-        localStorage.setItem(KEY_LAST_DISMISSED, new Date().toISOString())
-      }
-    } catch (err) {
+      await OneSignal.Notifications.requestPermission()
+    }   catch (err) {
       console.error('[PushPrompt]', err)
-      localStorage.setItem(KEY_LAST_DISMISSED, new Date().toISOString())
     }
   }
 

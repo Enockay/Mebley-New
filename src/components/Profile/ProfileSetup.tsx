@@ -1,3 +1,6 @@
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @next/next/no-img-element */
 'use client'
 
 import { useState, useRef } from 'react'
@@ -38,29 +41,16 @@ const GENDER_PREF_OPTIONS = [
 const ACCEPTED_FORMATS = 'image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,image/gif,image/bmp,image/tiff'
 
 const STEPS = [
-  {
-    number:   1,
-    title:    'The basics',
-    subtitle: 'Takes 30 seconds — we promise',
-  },
-  {
-    number:   2,
-    title:    'What you\'re looking for',
-    subtitle: 'Be honest — it leads to better matches',
-  },
-  {
-    number:   3,
-    title:    'Your profile',
-    subtitle: 'Make a great first impression',
-  },
+  { number: 1, title: 'The basics',            subtitle: 'Takes 30 seconds — we promise' },
+  { number: 2, title: "What you're looking for", subtitle: 'Be honest — it leads to better matches' },
+  { number: 3, title: 'Your profile',           subtitle: 'Make a great first impression' },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Auto-generate a username from the user's first name + random suffix
 function generateUsername(fullName: string): string {
-  const first = fullName.trim().split(' ')[0] ?? 'user'
-  const clean = first.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)
+  const first  = fullName.trim().split(' ')[0] ?? 'user'
+  const clean  = first.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)
   const suffix = Math.random().toString(36).slice(2, 6)
   return `${clean}${suffix}`
 }
@@ -70,10 +60,14 @@ function generateUsername(fullName: string): string {
 export default function ProfileSetup() {
   const { user, refreshProfile } = useAuth()
 
-  const [step, setStep]                   = useState(1)
-  const [loading, setLoading]             = useState(false)
-  const [error, setError]                 = useState('')
-  const [underageBlocked, setUnderage]    = useState(false)
+  // Detect Google user and pre-fill name from Google metadata
+  const isGoogleUser = user?.app_metadata?.provider === 'google'
+  const googleName   = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? ''
+
+  const [step, setStep]                     = useState(1)
+  const [loading, setLoading]               = useState(false)
+  const [error, setError]                   = useState('')
+  const [underageBlocked, setUnderage]      = useState(false)
 
   // Photo state
   const [photoFile, setPhotoFile]           = useState<File | null>(null)
@@ -86,7 +80,7 @@ export default function ProfileSetup() {
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = useState({
-    full_name:         '',
+    full_name:         googleName,   // pre-filled for Google users, empty for email users
     age_range:         '',
     gender:            '',
     gender_preference: [] as string[],
@@ -98,7 +92,6 @@ export default function ProfileSetup() {
     nationality:       '',
   })
 
-  // Combined location string for storage — "City, Country"
   const combinedLocation = [formData.city, formData.country].filter(Boolean).join(', ')
 
   // ── Field helpers ─────────────────────────────────────────────────────────
@@ -134,7 +127,6 @@ export default function ProfileSetup() {
       formData.looking_for.length > 0 &&
       formData.interests.length >= 3
     )
-    // Step 3: photo required, everything else optional
     return !!photoUrl
   }
 
@@ -161,38 +153,28 @@ export default function ProfileSetup() {
     if (!photoFile || !user) return
     setPhotoUploading(true)
     setPhotoError('')
-
     try {
       const presignRes = await fetch('/api/photos/upload', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          slot:     0,
-          fileType: photoFile.type || 'image/jpeg',
-          fileSize: photoFile.size,
-        }),
+        body:    JSON.stringify({ slot: 0, fileType: photoFile.type || 'image/jpeg', fileSize: photoFile.size }),
       })
       if (!presignRes.ok) {
         const err = await presignRes.json()
         throw new Error(err.error ?? 'Failed to get upload URL')
       }
-
       const { url, fields, s3Key, cloudfrontUrl } = await presignRes.json()
-
       const fd = new FormData()
       Object.entries(fields).forEach(([k, v]) => fd.append(k, v as string))
       fd.append('file', photoFile)
-
       const uploadRes = await fetch(url, { method: 'POST', body: fd })
       if (!uploadRes.ok) throw new Error('Upload to S3 failed')
-
       const confirmRes  = await fetch('/api/photos/confirm', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slot: 0, s3Key, cloudfrontUrl }),
+        body:    JSON.stringify({ slot: 0, s3Key, cloudfrontUrl }),
       })
       const confirmData = await confirmRes.json()
-
       if (!confirmRes.ok) {
         setPhotoError(confirmData.error ?? 'No face detected. Please upload a clear photo of yourself.')
         setPhotoFile(null)
@@ -200,7 +182,6 @@ export default function ProfileSetup() {
         setPhotoUploading(false)
         return
       }
-
       setPhotoUrl(cloudfrontUrl)
     } catch (err: any) {
       setPhotoError(err.message ?? 'Upload failed. Please try again.')
@@ -226,9 +207,8 @@ export default function ProfileSetup() {
       ? formData.looking_for
       : formData.looking_for ? [formData.looking_for as string] : []
 
-    const photos = photoUrl ? [{ url: photoUrl, slot: 0, s3Key: '' }] : []
-
-    const username = generateUsername(formData.full_name)
+    const photos     = photoUrl ? [{ url: photoUrl, slot: 0, s3Key: '' }] : []
+    const username   = generateUsername(formData.full_name)
 
     const completeness = Math.min(100,
       20 +
@@ -238,24 +218,23 @@ export default function ProfileSetup() {
       (photoUrl                           ? 15 : 0)
     )
 
-    const { error } = await (supabase as any).from('profiles').insert({
-      id:                user.id,
+    // Always UPDATE — profile was already created in auth/callback
+    const { error } = await (supabase as any).from('profiles').update({
       username,
-      full_name:         formData.full_name.trim(),
-      age_range:         formData.age_range,
-      gender:            formData.gender,
-      gender_preference: formData.gender_preference,
-      looking_for:       lookingFor,
-      bio:               formData.bio.trim(),
-      location:          combinedLocation,
-      nationality:       formData.nationality.trim(),
-      interests:         formData.interests,
+      full_name:            formData.full_name.trim(),
+      age_range:            formData.age_range,
+      gender:               formData.gender,
+      gender_preference:    formData.gender_preference,
+      looking_for:          lookingFor,
+      bio:                  formData.bio.trim(),
+      location:             combinedLocation,
+      nationality:          formData.nationality.trim(),
+      interests:            formData.interests,
       photos,
-      verified_email:    true,
-      is_active:         true,
-      visible:           false,
+      is_active:            true,
+      visible:              false,
       profile_completeness: completeness,
-    })
+    }).eq('id', user.id)
 
     if (error) {
       setError(error.message)
@@ -280,16 +259,14 @@ export default function ProfileSetup() {
             <Heart className="text-rose-500 fill-rose-500" size={26} />
             <span className="text-2xl font-bold text-gray-900">Crotchet</span>
           </div>
-
-          {/* Step header */}
           <h1 className="text-2xl font-bold text-gray-900 mb-1">{currentStep.title}</h1>
           <p className="text-gray-500 text-sm">{currentStep.subtitle}</p>
         </div>
 
-        {/* Progress — 3 segments */}
+        {/* Progress */}
         <div className="flex items-center gap-2 mb-6">
           {STEPS.map((s) => (
-            <div key={s.number} className="flex-1 flex flex-col items-center gap-1">
+            <div key={s.number} className="flex-1">
               <div className={`h-1.5 w-full rounded-full transition-all duration-500 ${
                 s.number <= step ? 'bg-rose-500' : 'bg-gray-200'
               }`} />
@@ -319,8 +296,13 @@ export default function ProfileSetup() {
                   onChange={e => handleChange('full_name', e.target.value)}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors"
                   placeholder="First name or full name"
-                  autoFocus
+                  autoFocus={!isGoogleUser}
                 />
+                {isGoogleUser && formData.full_name && (
+                  <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <Check size={11} /> Pre-filled from your Google account
+                  </p>
+                )}
                 <p className="text-xs text-gray-400 mt-1">This is how you'll appear to other people</p>
               </div>
 
@@ -332,10 +314,7 @@ export default function ProfileSetup() {
                     <button
                       key={a.value}
                       type="button"
-                      onClick={() => {
-                        handleChange('age_range', a.value)
-                        setUnderage(false)
-                      }}
+                      onClick={() => { handleChange('age_range', a.value); setUnderage(false) }}
                       className={`py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
                         formData.age_range === a.value
                           ? 'border-rose-500 bg-rose-50 text-rose-700'
@@ -345,7 +324,6 @@ export default function ProfileSetup() {
                     </button>
                   ))}
                 </div>
-                {/* Under 18 hidden but still blocked if somehow selected */}
                 {underageBlocked && (
                   <div className="mt-2 flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-2 rounded-xl">
                     <AlertTriangle size={13} className="text-red-500 flex-shrink-0" />
@@ -384,15 +362,15 @@ export default function ProfileSetup() {
                     <button
                       key={opt.value}
                       type="button"
-                      onClick={() => toggleArray('gender_preference', opt.value)}
+                      onClick={() => selectSingle('gender_preference', opt.value)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
-                        formData.gender_preference.includes(opt.value)
+                        formData.gender_preference[0] === opt.value
                           ? 'border-rose-500 bg-rose-50 text-rose-700'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}>
                       <span className="text-xl">{opt.emoji}</span>
                       <span className="font-medium text-sm">{opt.label}</span>
-                      {formData.gender_preference.includes(opt.value) && <Check size={14} className="ml-auto text-rose-500" />}
+                      {formData.gender_preference[0] === opt.value && <Check size={14} className="ml-auto text-rose-500" />}
                     </button>
                   ))}
                 </div>
@@ -405,7 +383,6 @@ export default function ProfileSetup() {
           {step === 2 && (
             <div className="space-y-6">
 
-              {/* Intent — single select */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">I'm here for</label>
                 <p className="text-xs text-gray-400 mb-3">Pick one — you can change this anytime</p>
@@ -432,9 +409,11 @@ export default function ProfileSetup() {
                         <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${
                           isSelected ? 'border-rose-500 bg-rose-500' : 'border-gray-300'
                         }`}>
-                          {isSelected && <div className="w-full h-full rounded-full flex items-center justify-center">
-                            <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                          </div>}
+                          {isSelected && (
+                            <div className="w-full h-full rounded-full flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                            </div>
+                          )}
                         </div>
                       </button>
                     )
@@ -442,7 +421,6 @@ export default function ProfileSetup() {
                 </div>
               </div>
 
-              {/* Interests — multi select, min 3 */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -450,14 +428,11 @@ export default function ProfileSetup() {
                     <p className="text-xs text-gray-400">Pick at least 3</p>
                   </div>
                   <span className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors ${
-                    formData.interests.length >= 3
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-500'
+                    formData.interests.length >= 3 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                   }`}>
                     {formData.interests.length} selected
                   </span>
                 </div>
-
                 <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
                   {INTERESTS_BY_CATEGORY.map(cat => (
                     <div key={cat.label}>
@@ -492,19 +467,17 @@ export default function ProfileSetup() {
           {step === 3 && (
             <div className="space-y-5">
 
-              {/* Photo — required */}
+              {/* Photo */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-sm font-semibold text-gray-700">Profile photo</label>
                   <span className="text-xs text-rose-500 font-medium">Required</span>
                 </div>
-
                 <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl p-3 mb-3">
                   <p className="text-xs text-gray-600 leading-relaxed">
                     📸 Profiles with a real photo get <strong>3× more matches.</strong> Face detection keeps everyone safe.
                   </p>
                 </div>
-
                 {photoPreview ? (
                   <div className="relative rounded-2xl overflow-hidden mb-3">
                     <img src={photoPreview} alt="Preview" className="w-full h-52 object-cover" />
@@ -529,55 +502,41 @@ export default function ProfileSetup() {
                     <p className="text-sm text-gray-400">No photo selected yet</p>
                   </div>
                 )}
-
                 {photoError && (
                   <div className="flex items-start gap-2 bg-red-50 border border-red-200 px-3 py-2.5 rounded-xl mb-3">
                     <AlertTriangle size={13} className="text-red-500 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-red-600">{photoError}</p>
                   </div>
                 )}
-
                 {!photoUrl && (
                   <div className="grid grid-cols-2 gap-2 mb-2">
-                    <button
-                      type="button"
-                      onClick={() => uploadInputRef.current?.click()}
-                      disabled={photoUploading}
+                    <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={photoUploading}
                       className="flex items-center justify-center gap-2 py-2.5 border-2 border-gray-200 rounded-xl hover:border-rose-400 hover:bg-rose-50/30 transition-all disabled:opacity-50 text-sm font-medium text-gray-700">
                       <Upload size={15} /> Gallery
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => cameraInputRef.current?.click()}
-                      disabled={photoUploading}
+                    <button type="button" onClick={() => cameraInputRef.current?.click()} disabled={photoUploading}
                       className="flex items-center justify-center gap-2 py-2.5 border-2 border-rose-200 bg-rose-50/40 rounded-xl hover:border-rose-400 hover:bg-rose-50 transition-all disabled:opacity-50 text-sm font-medium text-rose-700">
                       <Camera size={15} /> Camera
                     </button>
-                    {/* Gallery — no capture */}
                     <input ref={uploadInputRef} type="file" accept={ACCEPTED_FORMATS} className="hidden" onChange={handlePhotoSelect} />
-                    {/* Camera — capture="environment" opens rear camera on mobile */}
                     <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoSelect} />
                   </div>
                 )}
-
                 {photoPreview && !photoUrl && !photoUploading && (
-                  <button
-                    onClick={handlePhotoUpload}
+                  <button onClick={handlePhotoUpload}
                     className="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-rose-600 hover:to-pink-600 transition-all shadow-md shadow-rose-500/20 mb-2">
                     <Camera size={15} /> Use This Photo
                   </button>
                 )}
-
                 {photoUrl && (
-                  <button
-                    onClick={resetPhoto}
+                  <button onClick={resetPhoto}
                     className="w-full py-2 border-2 border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
                     <RefreshCw size={13} /> Choose different photo
                   </button>
                 )}
               </div>
 
-              {/* Bio — optional */}
+              {/* Bio */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-sm font-semibold text-gray-700">About you</label>
@@ -594,7 +553,7 @@ export default function ProfileSetup() {
                 <p className="text-xs text-gray-400 text-right mt-1">{formData.bio.length}/500</p>
               </div>
 
-              {/* Location — optional but improves matching */}
+              {/* Location */}
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
                   <MapPin size={13} className="text-rose-400" />
@@ -619,7 +578,7 @@ export default function ProfileSetup() {
                 </div>
               </div>
 
-              {/* Nationality — optional */}
+              {/* Nationality */}
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-2 block">Nationality</label>
                 <input
@@ -631,7 +590,7 @@ export default function ProfileSetup() {
                 />
               </div>
 
-              {/* Profile preview card */}
+              {/* Profile preview */}
               {(formData.full_name || formData.interests.length > 0) && (
                 <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -639,9 +598,9 @@ export default function ProfileSetup() {
                     <span className="text-xs font-semibold text-gray-700">Your profile preview</span>
                   </div>
                   <div className="space-y-1 text-xs text-gray-600">
-                    {formData.full_name && <p>👤 {formData.full_name}</p>}
-                    {combinedLocation   && <p>📍 {combinedLocation}</p>}
-                    {formData.nationality && <p>🌍 {formData.nationality}</p>}
+                    {formData.full_name    && <p>👤 {formData.full_name}</p>}
+                    {combinedLocation      && <p>📍 {combinedLocation}</p>}
+                    {formData.nationality  && <p>🌍 {formData.nationality}</p>}
                     {formData.looking_for[0] && (
                       <p>🎯 {RELATIONSHIP_INTENTS.find(i => i.value === formData.looking_for[0])?.label}</p>
                     )}
@@ -669,7 +628,7 @@ export default function ProfileSetup() {
               disabled={!canProceed() || loading}
               className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white py-3 rounded-xl font-semibold hover:from-rose-600 hover:to-pink-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-rose-500/20">
               {loading ? (
-                <><Loader2 size={17} className="animate-spin" /> Creating your profile…</>
+                <><Loader2 size={17} className="animate-spin" /> Setting up your profile…</>
               ) : step < 3 ? (
                 <>Continue <ChevronRight size={17} /></>
               ) : (
@@ -678,10 +637,7 @@ export default function ProfileSetup() {
             </button>
           </div>
 
-          {/* Step counter */}
-          <p className="text-center text-xs text-gray-400 mt-4">
-            Step {step} of 3
-          </p>
+          <p className="text-center text-xs text-gray-400 mt-4">Step {step} of 3</p>
 
         </div>
       </div>

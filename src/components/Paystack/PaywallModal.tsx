@@ -76,10 +76,10 @@ const BOOSTS = [
 type Tab = 'plans' | 'credits' | 'moments' | 'boosts'
 
 interface Props {
-  open:     boolean
-  onClose:  () => void
-  trigger?: 'stitch_limit' | 'spotlight' | 'golden_thread' | 'vip_feature' | 'general'
-  // Called when user spends credits on a moment/boost (already owns credits)
+  open:         boolean
+  onClose:      () => void
+  trigger?:     'stitch_limit' | 'spotlight' | 'golden_thread' | 'vip_feature' | 'general'
+  defaultTab?:  'plans' | 'credits' | 'moments' | 'boosts'
   onSpendCredits?: (product: string, cost: number) => Promise<void>
 }
 
@@ -91,9 +91,9 @@ const TRIGGER_MSG: Record<string, string> = {
   general:       "Unlock the full Crotchet experience.",
 }
 
-export default function PaywallModal({ open, onClose, trigger = 'general', onSpendCredits }: Props) {
+export default function PaywallModal({ open, onClose, trigger = 'general', defaultTab = 'plans', onSpendCredits }: Props) {
   const { user, profile, refreshProfile } = useAuth()
-  const [tab,     setTab    ] = useState<Tab>('plans')
+  const [tab,     setTab    ] = useState<Tab>(defaultTab)
   const [cycle,   setCycle  ] = useState<'weekly' | 'monthly'>('monthly')
   const [loading, setLoading] = useState<string | null>(null)
   const [error,   setError  ] = useState<string | null>(null)
@@ -349,7 +349,7 @@ export default function PaywallModal({ open, onClose, trigger = 'general', onSpe
 
               {/* M-Pesa note */}
               <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 20, lineHeight: 1.6 }}>
-                💚 M-Pesa, card, bank transfer &amp; USSD supported<br/>
+                💳 Visa, Mastercard &amp; all major cards accepted<br/>
                 Powered by Paystack · Credits never expire · Not cashable
               </p>
 
