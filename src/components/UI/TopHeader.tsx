@@ -19,11 +19,10 @@ function getPhotoUrl(photos: unknown): string | null {
 }
 
 export default function TopHeader() {
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, creditBalance } = useAuth()
   const { openPaywall }      = usePaywall()
   const router               = useRouter()
   const currentPlan          = (profile as any)?.plan ?? 'free'
-  const creditBalance        = (profile as any)?.credit_balance ?? 0
   const avatarUrl            = getPhotoUrl(profile?.photos)
   const initials             = profile?.full_name
     ? profile.full_name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()

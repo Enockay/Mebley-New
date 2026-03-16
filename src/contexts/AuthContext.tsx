@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
@@ -12,6 +13,7 @@ interface AuthContextType {
   profile:        Profile | null
   session:        Session | null
   loading:        boolean
+  creditBalance:  number
   signUp:         (email: string, password: string) => Promise<{ error: AuthError | null }>
   signIn:         (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut:        () => Promise<void>
@@ -22,10 +24,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]       = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser]                 = useState<User | null>(null)
+  const [profile, setProfile]           = useState<Profile | null>(null)
+  const [session, setSession]           = useState<Session | null>(null)
+  const [loading, setLoading]           = useState(true)
+  const [creditBalance, setCreditBalance] = useState(0)
 
   const refreshProfile = async () => {
     const currentUser = (await supabase.auth.getUser()).data.user
@@ -36,6 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', currentUser.id)
         .maybeSingle()
       setProfile(data)
+
+      // Fetch credit wallet balance
+      const { data: wallet } = await (supabase as any)
+        .from('credit_wallets')
+        .select('balance')
+        .eq('user_id', currentUser.id)
+        .maybeSingle()
+      setCreditBalance(wallet?.balance ?? 0)
     }
   }
 
@@ -74,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut()
     setProfile(null)
+    setCreditBalance(0)
   }
 
   // Link email+password to current account (e.g. Google user adding email/password)
@@ -95,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, profile, session, loading,
+      user, profile, session, loading, creditBalance,
       signUp, signIn, signOut, refreshProfile, linkEmail,
     }}>
       {children}
