@@ -47,7 +47,12 @@ export interface IMessage {
   senderId: string
   receiverId: string
   content: string
-  messageType: 'text' | 'image' | 'gif' | 'audio'
+  messageType: 'text' | 'image' | 'gif' | 'audio' | 'voice' | 'video_call'
+  mediaUrl?: string
+  mediaKey?: string
+  duration?: number
+  callStatus?: 'initiated' | 'accepted' | 'declined' | 'missed' | 'ended'
+  callDuration?: number
   isRead: boolean
   isDeleted: boolean
   deletedAt?: Date

@@ -76,12 +76,18 @@ export async function POST(
 
     const body = await request.json()
 
-    const validation = validateMessage(body.content)
+    const isMediaMessage = ['image', 'gif', 'voice', 'video_call'].includes(body.messageType)
+    const validation = validateMessage(isMediaMessage ? (body.content || 'media') : body.content)
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 
     const messageType = body.messageType ?? 'text'
+    const mediaUrl    = body.mediaUrl    ?? undefined
+    const mediaKey    = body.mediaKey    ?? undefined
+    const duration    = body.duration    ?? undefined
+    const callStatus  = body.callStatus  ?? undefined
+    const callDuration = body.callDuration ?? undefined
 
     const { data: conversation } = await supabase
       .from('conversations')
@@ -115,6 +121,11 @@ export async function POST(
       receiverId,
       content:        validation.sanitized!,
       messageType,
+      mediaUrl,
+      mediaKey,
+      duration,
+      callStatus,
+      callDuration,
       isRead:         false,
       isDeleted:      false,
       participantIds: [match.user1_id, match.user2_id],
@@ -135,18 +146,23 @@ export async function POST(
       ).catch(err => console.error('[notifyMessage] failed:', err))
     }
 
-    return NextResponse.json({
-      message: {
-        id:             message._id?.toString(),
-        conversationId: message.conversationId,
-        senderId:       message.senderId,
-        receiverId:     message.receiverId,
-        content:        message.content,
-        messageType:    message.messageType,
-        isRead:         message.isRead,
-        createdAt:      message.createdAt,
-      }
-    }, { status: 201 })
+   return NextResponse.json({
+    message: {
+      id:             message._id?.toString(),
+      conversationId: message.conversationId,
+      senderId:       message.senderId,
+      receiverId:     message.receiverId,
+      content:        message.content,
+      messageType:    message.messageType,
+      mediaUrl:       message.mediaUrl,
+      mediaKey:       message.mediaKey,
+      duration:       message.duration,
+      callStatus:     message.callStatus,
+      callDuration:   message.callDuration,
+      isRead:         message.isRead,
+      createdAt:      message.createdAt,
+    }
+   }, { status: 201 })
 
   } catch (error) {
     console.error('POST message error:', error)
