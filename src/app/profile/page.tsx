@@ -12,7 +12,8 @@ import {
 } from 'lucide-react'
 import EditProfile from '@/components/Profile/EditProfile'
 import DeleteAccount from '@/components/Profile/DeleteAccount'
-import { supabase } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client'
+
 import { RELATIONSHIP_INTENTS, PROFILE_PROMPTS } from '@/types/app-constants'
 
 interface ProfileVideo {
@@ -65,6 +66,7 @@ const s = {
 }
 
 export default function ProfilePage() {
+  const supabase = createClient()
   const { user, profile, loading, refreshProfile } = useAuth()
   const router = useRouter()
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Send, ArrowLeft, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client'
 import type { Database } from '@/types/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -36,6 +36,7 @@ const AGE_RANGE_LABELS: Record<string, string> = {
 }
 
 export default function Chat({ conversationId, otherProfile, onBack }: ChatProps) {
+  const supabase = createClient()
   const { profile: currentProfile } = useAuth()
   const [messages, setMessages]     = useState<MongoMessage[]>([])
   const [newMessage, setNewMessage] = useState('')

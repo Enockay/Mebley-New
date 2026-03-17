@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase-client';
+import { createClient } from '@/lib/supabase-client'
 import type { Database } from '@/types/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -20,6 +20,7 @@ interface MatchesProps {
 }
 
 export default function Matches({ onOpenChat }: MatchesProps) {
+  const supabase = createClient()
   const { profile: currentProfile } = useAuth();
   const [matches, setMatches] = useState<MatchWithProfile[]>([]);
   const [loading, setLoading] = useState(true);

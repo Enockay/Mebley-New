@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client'
 
 interface LoginProps {
   onToggle: () => void
@@ -11,6 +11,7 @@ interface LoginProps {
 }
 
 export default function Login({ onToggle, onBack }: LoginProps) {
+  const supabase = createClient()
   const { signIn } = useAuth()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -31,7 +32,7 @@ export default function Login({ onToggle, onBack }: LoginProps) {
     if (!email) { setError('Enter your email address first'); return }
     setLoading(true)
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth?reset=true`,
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth?reset=true`,
     })
     setResetSent(true)
     setLoading(false)
