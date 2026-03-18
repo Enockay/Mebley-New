@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { conversationId, messageId, fileType, mediaType } = await req.json()
-  // mediaType: 'image' | 'voice'
+  // mediaType: 'image' | 
 
   if (!conversationId || !messageId || !fileType || !mediaType) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })

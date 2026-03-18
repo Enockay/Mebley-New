@@ -128,3 +128,20 @@ export async function notifyLike(
     data:               { type: 'like', revealed: String(isPremium) },
   })
 }
+
+export async function notifyIncomingCall(
+  receiverId:   string,
+  callerName:   string,
+  conversationId: string,
+): Promise<void> {
+  const playerIds = await getPlayerIds([receiverId])
+  if (playerIds.length === 0) return
+
+  await sendNotification({
+    headings:           { en: `📹 Incoming video call` },
+    contents:           { en: `${callerName} is calling you` },
+    include_player_ids: playerIds,
+    url:                `/matches`,
+    data:               { type: 'video_call', conversationId },
+  })
+}

@@ -67,22 +67,70 @@ export type Database = {
           },
         ]
       }
+      boosts: {
+        Row: {
+          activated_at: string | null
+          created_at: string | null
+          credits_spent: number
+          duration_hours: number
+          expires_at: string | null
+          id: string
+          purchase_expires_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string | null
+          credits_spent: number
+          duration_hours: number
+          expires_at?: string | null
+          id?: string
+          purchase_expires_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string | null
+          credits_spent?: number
+          duration_hours?: number
+          expires_at?: string | null
+          id?: string
+          purchase_expires_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string | null
           id: string
+          is_archived_by: string[] | null
+          is_muted_by: string[] | null
+          is_pinned_by: string[] | null
+          last_message_at: string | null
           match_id: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
+          is_archived_by?: string[] | null
+          is_muted_by?: string[] | null
+          is_pinned_by?: string[] | null
+          last_message_at?: string | null
           match_id: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
+          is_archived_by?: string[] | null
+          is_muted_by?: string[] | null
+          is_pinned_by?: string[] | null
+          last_message_at?: string | null
           match_id?: string
           updated_at?: string | null
         }
@@ -95,6 +143,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      credit_packs: {
+        Row: {
+          bonus_credits: number
+          created_at: string | null
+          credits: number
+          id: string
+          is_active: boolean
+          name: string
+          price_usd: number
+          sort_order: number
+          stripe_price_id: string | null
+        }
+        Insert: {
+          bonus_credits?: number
+          created_at?: string | null
+          credits: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price_usd: number
+          sort_order?: number
+          stripe_price_id?: string | null
+        }
+        Update: {
+          bonus_credits?: number
+          created_at?: string | null
+          credits?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_usd?: number
+          sort_order?: number
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string | null
+          description: string | null
+          id: string
+          reference_id: string | null
+          reference_type: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credit_wallets: {
+        Row: {
+          balance: number
+          created_at: string | null
+          id: string
+          lifetime_earned: number
+          lifetime_spent: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string | null
+          id?: string
+          lifetime_earned?: number
+          lifetime_spent?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string | null
+          id?: string
+          lifetime_earned?: number
+          lifetime_spent?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       likes: {
         Row: {
@@ -228,6 +378,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      moments: {
+        Row: {
+          created_at: string | null
+          credits_spent: number
+          expires_at: string | null
+          id: string
+          note: string | null
+          receiver_id: string
+          sender_id: string
+          status: string
+          story_photo_url: string | null
+          type: string
+          updated_at: string | null
+          voice_note_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits_spent: number
+          expires_at?: string | null
+          id?: string
+          note?: string | null
+          receiver_id: string
+          sender_id: string
+          status?: string
+          story_photo_url?: string | null
+          type: string
+          updated_at?: string | null
+          voice_note_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits_spent?: number
+          expires_at?: string | null
+          id?: string
+          note?: string | null
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          story_photo_url?: string | null
+          type?: string
+          updated_at?: string | null
+          voice_note_url?: string | null
+        }
+        Relationships: []
+      }
+      otp_verifications: {
+        Row: {
+          attempts: number
+          created_at: string
+          expires_at: string
+          id: string
+          otp_hash: string
+          phone: string
+          verified: boolean
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          expires_at: string
+          id?: string
+          otp_hash: string
+          phone: string
+          verified?: boolean
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          expires_at?: string
+          id?: string
+          otp_hash?: string
+          phone?: string
+          verified?: boolean
+        }
+        Relationships: []
       }
       passes: {
         Row: {
@@ -405,6 +630,8 @@ export type Database = {
           looking_for: string[]
           nationality: string | null
           photos: Json[]
+          plan: string
+          plan_expires: string | null
           profile_completeness: number | null
           prompts: Json[] | null
           tier: string
@@ -434,6 +661,8 @@ export type Database = {
           looking_for?: string[]
           nationality?: string | null
           photos?: Json[]
+          plan?: string
+          plan_expires?: string | null
           profile_completeness?: number | null
           prompts?: Json[] | null
           tier?: string
@@ -463,6 +692,8 @@ export type Database = {
           looking_for?: string[]
           nationality?: string | null
           photos?: Json[]
+          plan?: string
+          plan_expires?: string | null
           profile_completeness?: number | null
           prompts?: Json[] | null
           tier?: string
@@ -549,6 +780,152 @@ export type Database = {
           proj4text?: string | null
           srid?: number
           srtext?: string | null
+        }
+        Relationships: []
+      }
+      stripe_orders: {
+        Row: {
+          amount_usd: number
+          bonus_credits: number
+          completed_at: string | null
+          created_at: string | null
+          credit_pack_id: string | null
+          credits_purchased: number
+          id: string
+          pack_key: string | null
+          paystack_ref: string | null
+          status: string
+          stripe_payment_intent: string | null
+          stripe_session_id: string
+          user_id: string
+        }
+        Insert: {
+          amount_usd: number
+          bonus_credits?: number
+          completed_at?: string | null
+          created_at?: string | null
+          credit_pack_id?: string | null
+          credits_purchased: number
+          id?: string
+          pack_key?: string | null
+          paystack_ref?: string | null
+          status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id: string
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number
+          bonus_credits?: number
+          completed_at?: string | null
+          created_at?: string | null
+          credit_pack_id?: string | null
+          credits_purchased?: number
+          id?: string
+          pack_key?: string | null
+          paystack_ref?: string | null
+          status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_orders_credit_pack_id_fkey"
+            columns: ["credit_pack_id"]
+            isOneToOne: false
+            referencedRelation: "credit_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          billing_period: string
+          cancel_at_period_end: boolean
+          created_at: string | null
+          current_period_end: string
+          current_period_start: string
+          id: string
+          paystack_ref: string | null
+          paystack_sub_code: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: string
+          updated_at: string | null
+          user_id: string
+          weekly_credits_allocated: number
+          weekly_credits_last_reset: string | null
+        }
+        Insert: {
+          billing_period: string
+          cancel_at_period_end?: boolean
+          created_at?: string | null
+          current_period_end: string
+          current_period_start: string
+          id?: string
+          paystack_ref?: string | null
+          paystack_sub_code?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier: string
+          updated_at?: string | null
+          user_id: string
+          weekly_credits_allocated?: number
+          weekly_credits_last_reset?: string | null
+        }
+        Update: {
+          billing_period?: string
+          cancel_at_period_end?: boolean
+          created_at?: string | null
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          paystack_ref?: string | null
+          paystack_sub_code?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
+          updated_at?: string | null
+          user_id?: string
+          weekly_credits_allocated?: number
+          weekly_credits_last_reset?: string | null
+        }
+        Relationships: []
+      }
+      voice_notes: {
+        Row: {
+          cloudfront_url: string
+          created_at: string | null
+          id: string
+          s3_key: string
+          status: string
+          updated_at: string | null
+          user_id: string
+          visibility: string
+        }
+        Insert: {
+          cloudfront_url: string
+          created_at?: string | null
+          id?: string
+          s3_key: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+          visibility?: string
+        }
+        Update: {
+          cloudfront_url?: string
+          created_at?: string | null
+          id?: string
+          s3_key?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+          visibility?: string
         }
         Relationships: []
       }
@@ -936,6 +1313,7 @@ export type Database = {
         Returns: number
       }
       gettransactionid: { Args: never; Returns: unknown }
+      grant_weekly_subscription_credits: { Args: never; Returns: undefined }
       longtransactionsenabled: { Args: never; Returns: boolean }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }

@@ -76,7 +76,7 @@ export async function POST(
 
     const body = await request.json()
 
-    const isMediaMessage = ['image', 'gif', 'voice', 'video_call'].includes(body.messageType)
+    const isMediaMessage = ['image', 'gif', 'video_call'].includes(body.messageType)
     const validation = validateMessage(isMediaMessage ? (body.content || 'media') : body.content)
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 })

@@ -1,13 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @next/next/no-img-element */
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase-client'
 import Chat from '@/components/Messages/Chat'
 import type { Database } from '@/types/database.types'
-import { MessageCircle, Search } from 'lucide-react'
+import {
+  Search, Pin, BellOff, Archive, Shield,
+  MoreVertical, ChevronRight, MessageCircle,
+  Bell, ArchiveRestore, PinOff,
+} from 'lucide-react'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -17,6 +22,9 @@ interface Conversation {
   lastMessage:    string
   lastTime:       string
   unreadCount:    number
+  isPinned:       boolean
+  isMuted:        boolean
+  isArchived:     boolean
 }
 
 function getPhotoUrl(photos: unknown): string | null {
@@ -32,7 +40,7 @@ function timeAgo(iso: string): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (isNaN(d.getTime())) return ''
-  const diff = Date.now() - d.getTime()
+  const diff  = Date.now() - d.getTime()
   const mins  = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)
   const days  = Math.floor(diff / 86400000)
@@ -40,19 +48,21 @@ function timeAgo(iso: string): string {
   if (mins < 60)  return `${mins}m`
   if (hours < 24) return `${hours}h`
   if (days < 7)   return `${days}d`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export default function MatchesPage() {
   const { user, profile, loading } = useAuth()
   const router  = useRouter()
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [fetching, setFetching]           = useState(true)
-  const [search, setSearch]               = useState('')
-  const [chatView, setChatView]           = useState<{
-    conversationId: string
-    profile:        Profile
-  } | null>(null)
+
+  const [conversations, setConversations]   = useState<Conversation[]>([])
+  const [fetching, setFetching]             = useState(true)
+  const [search, setSearch]                 = useState('')
+  const [showArchived, setShowArchived]     = useState(false)
+  const [chatView, setChatView]             = useState<{ conversationId: string; profile: Profile } | null>(null)
+  const [menuOpen, setMenuOpen]             = useState<string | null>(null)
+  const [longPressId, setLongPressId]       = useState<string | null>(null)
+  const longPressTimer                      = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!loading && !user) router.push('/auth')
@@ -76,12 +86,21 @@ export default function MatchesPage() {
 
         const [{ data: otherProfile }, { data: conv }] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', otherId).single(),
-          supabase.from('conversations').select('id').eq('match_id', match.id).single(),
+          supabase.from('conversations').select('id, is_pinned_by, is_muted_by, is_archived_by').eq('match_id', match.id).single(),
         ])
 
         if (!otherProfile || !conv) continue
 
-        // Fetch last message from MongoDB via API
+        // Check if blocked
+        const { data: block } = await supabase
+          .from('blocked_users')
+          .select('id')
+          .eq('blocker_id', profile.id)
+          .eq('blocked_id', otherId)
+          .maybeSingle()
+
+        if (block) continue // skip blocked users
+
         let lastMessage = 'Say hello 👋'
         let lastTime    = match.created_at ?? ''
         let unreadCount = 0
@@ -91,8 +110,8 @@ export default function MatchesPage() {
           const data = await res.json()
           if (data.messages?.length > 0) {
             const msg   = data.messages[data.messages.length - 1]
-            lastMessage = msg.messageType === 'image'      ? '📷 Photo'
-                        : msg.messageType === 'voice'      ? '🎙️ Voice note'
+            lastMessage = msg.isDeleted        ? 'Message deleted'
+                        : msg.messageType === 'image'      ? '📷 Photo'
                         : msg.messageType === 'gif'        ? '🎞️ GIF'
                         : msg.messageType === 'video_call' ? '📹 Video call'
                         : msg.content
@@ -107,8 +126,19 @@ export default function MatchesPage() {
           lastMessage,
           lastTime,
           unreadCount,
+          isPinned:   (conv.is_pinned_by   ?? []).includes(profile.id),
+          isMuted:    (conv.is_muted_by    ?? []).includes(profile.id),
+          isArchived: (conv.is_archived_by ?? []).includes(profile.id),
         })
       }
+
+      // Sort: pinned first, then by time
+      convos.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1
+        if (!a.isPinned && b.isPinned) return 1
+        return new Date(b.lastTime).getTime() - new Date(a.lastTime).getTime()
+      })
+
       setConversations(convos)
     } finally {
       setFetching(false)
@@ -116,6 +146,36 @@ export default function MatchesPage() {
   }, [profile])
 
   useEffect(() => { loadConversations() }, [loadConversations])
+
+  const handleManage = async (action: string, conv: Conversation) => {
+    setMenuOpen(null)
+    setLongPressId(null)
+
+    if (action === 'block') {
+      if (!confirm(`Block ${conv.profile.full_name}? They won't be able to message you.`)) return
+      await fetch('/api/chat/manage', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'block', targetUserId: conv.profile.id, conversationId: conv.conversationId }),
+      })
+      loadConversations()
+      return
+    }
+
+    await fetch('/api/chat/manage', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, conversationId: conv.conversationId }),
+    })
+    loadConversations()
+  }
+
+  // Long press handlers
+  const handlePressStart = (id: string) => {
+    longPressTimer.current = setTimeout(() => setLongPressId(id), 500)
+  }
+
+  const handlePressEnd = () => {
+    if (longPressTimer.current) clearInterval(longPressTimer.current)
+  }
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#fdf8f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -133,158 +193,276 @@ export default function MatchesPage() {
     </div>
   )
 
-  const filtered = conversations.filter(c =>
-    c.profile.full_name?.toLowerCase().includes(search.toLowerCase())
-  )
+  const visible = conversations.filter(c => {
+    if (showArchived) return c.isArchived
+    if (c.isArchived) return false
+    return c.profile.full_name?.toLowerCase().includes(search.toLowerCase())
+  })
 
   return (
     <>
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        .conv-item { transition: all 0.15s ease; }
+        .conv-item:active { transform: scale(0.98); }
+        .menu-item:hover { background: rgba(244,63,94,0.06) !important; }
+      `}</style>
+
+      {/* Long press menu overlay */}
+      {longPressId && (() => {
+        const conv = conversations.find(c => c.conversationId === longPressId)
+        if (!conv) return null
+        return (
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(15,4,9,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 16 }}
+            onClick={() => setLongPressId(null)}
+          >
+            <div
+              style={{ background: '#fdf8f5', borderRadius: 24, padding: '8px 0', width: '100%', maxWidth: 440, animation: 'slideUp 0.2s ease' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Profile header */}
+              <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid rgba(244,63,94,0.08)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', background: 'rgba(244,63,94,0.1)', flexShrink: 0 }}>
+                  {getPhotoUrl(conv.profile.photos)
+                    ? <img src={getPhotoUrl(conv.profile.photos)!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontFamily: "'Fraunces',serif", fontSize: 18, fontWeight: 700, color: '#f43f5e' }}>
+                          {conv.profile.full_name?.[0]}
+                        </span>
+                      </div>
+                  }
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#2d1b1f' }}>{conv.profile.full_name}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: '#a37a82' }}>{conv.profile.location}</p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              {[
+                { icon: conv.isPinned ? PinOff : Pin,           label: conv.isPinned   ? 'Unpin'      : 'Pin to top',      action: conv.isPinned   ? 'unpin'    : 'pin',      color: '#f43f5e' },
+                { icon: conv.isMuted  ? Bell    : BellOff,      label: conv.isMuted    ? 'Unmute'     : 'Mute',            action: conv.isMuted    ? 'unmute'   : 'mute',     color: '#8b5cf6' },
+                { icon: conv.isArchived ? ArchiveRestore : Archive, label: conv.isArchived ? 'Unarchive' : 'Archive',       action: conv.isArchived ? 'unarchive': 'archive',  color: '#0ea5e9' },
+                { icon: Shield,                                  label: 'Block user',                                        action: 'block',                                  color: '#ef4444' },
+              ].map(item => (
+                <button
+                  key={item.action}
+                  className="menu-item"
+                  onClick={() => handleManage(item.action, conv)}
+                  style={{ width: '100%', padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left', fontFamily: "'DM Sans',sans-serif" }}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: 12, background: `${item.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <item.icon size={17} color={item.color} />
+                  </div>
+                  <span style={{ fontSize: 15, fontWeight: 500, color: item.action === 'block' ? '#ef4444' : '#2d1b1f' }}>{item.label}</span>
+                  <ChevronRight size={15} color="#c4a0a8" style={{ marginLeft: 'auto' }} />
+                </button>
+              ))}
+
+              <button
+                onClick={() => setLongPressId(null)}
+                style={{ width: '100%', padding: '14px 20px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 600, color: '#a37a82', fontFamily: "'DM Sans',sans-serif", textAlign: 'center' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )
+      })()}
+
       <div style={{ minHeight: '100vh', background: '#fdf8f5', fontFamily: "'DM Sans', sans-serif", paddingTop: 80, paddingBottom: 90 }}>
         <div style={{ maxWidth: 520, margin: '0 auto', padding: '0 16px' }}>
 
           {/* Header */}
-          <div style={{ marginBottom: 20 }}>
-            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: '#2d1b1f', margin: '0 0 4px' }}>
-              Messages
-            </h1>
-            <p style={{ fontSize: 13, color: '#a37a82', margin: 0 }}>
-              {conversations.length} {conversations.length === 1 ? 'connection' : 'connections'}
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div>
+              <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: '#2d1b1f', margin: '0 0 2px' }}>
+                {showArchived ? 'Archived' : 'Messages'}
+              </h1>
+              <p style={{ fontSize: 13, color: '#a37a82', margin: 0 }}>
+                {visible.length} {visible.length === 1 ? 'conversation' : 'conversations'}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowArchived(!showArchived)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 100, border: '1.5px solid rgba(244,63,94,0.15)', background: showArchived ? 'rgba(244,63,94,0.08)' : 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: showArchived ? '#f43f5e' : '#a37a82', fontFamily: "'DM Sans',sans-serif" }}>
+              <Archive size={13} />
+              {showArchived ? 'Back' : 'Archived'}
+            </button>
           </div>
 
           {/* Search */}
-          <div style={{ position: 'relative', marginBottom: 20 }}>
-            <Search size={15} color="#a37a82" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
-            <input
-              type="text"
-              placeholder="Search conversations…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{
-                width: '100%', padding: '11px 14px 11px 38px',
-                borderRadius: 14, border: '1.5px solid rgba(244,63,94,0.1)',
-                background: 'rgba(255,255,255,0.85)',
-                fontSize: 14, color: '#2d1b1f',
-                fontFamily: "'DM Sans', sans-serif",
-                outline: 'none', boxSizing: 'border-box',
-              }}
-            />
-          </div>
+          {!showArchived && (
+            <div style={{ position: 'relative', marginBottom: 16 }}>
+              <Search size={15} color="#a37a82" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <input
+                type="text"
+                placeholder="Search conversations…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ width: '100%', padding: '11px 14px 11px 38px', borderRadius: 14, border: '1.5px solid rgba(244,63,94,0.1)', background: 'rgba(255,255,255,0.85)', fontSize: 14, color: '#2d1b1f', fontFamily: "'DM Sans',sans-serif", outline: 'none', boxSizing: 'border-box' as const }}
+              />
+            </div>
+          )}
 
           {/* Conversation list */}
           {fetching ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[1,2,3].map(i => (
-                <div key={i} style={{
-                  background: 'rgba(255,255,255,0.85)', borderRadius: 18,
-                  border: '1px solid rgba(244,63,94,0.08)',
-                  padding: '16px', display: 'flex', alignItems: 'center', gap: 14,
-                  animation: 'pulse 1.5s ease-in-out infinite',
-                }}>
-                  <div style={{ width: 54, height: 54, borderRadius: '50%', background: 'rgba(244,63,94,0.08)', flexShrink: 0 }} />
+                <div key={i} style={{ background: 'rgba(255,255,255,0.85)', borderRadius: 18, border: '1px solid rgba(244,63,94,0.08)', padding: '16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 54, height: 54, borderRadius: '50%', background: 'rgba(244,63,94,0.06)', flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ height: 14, background: 'rgba(244,63,94,0.06)', borderRadius: 7, width: '60%', marginBottom: 8 }} />
-                    <div style={{ height: 11, background: 'rgba(244,63,94,0.04)', borderRadius: 6, width: '80%' }} />
+                    <div style={{ height: 14, background: 'rgba(244,63,94,0.05)', borderRadius: 7, width: '55%', marginBottom: 8 }} />
+                    <div style={{ height: 11, background: 'rgba(244,63,94,0.03)', borderRadius: 6, width: '75%' }} />
                   </div>
                 </div>
               ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : visible.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: 56, marginBottom: 16 }}>💝</div>
+              <div style={{ fontSize: 56, marginBottom: 16 }}>
+                {showArchived ? '📦' : '💝'}
+              </div>
               <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: '#2d1b1f', margin: '0 0 8px' }}>
-                {search ? 'No results' : 'No matches yet'}
+                {showArchived ? 'No archived chats' : search ? 'No results' : 'No matches yet'}
               </h3>
               <p style={{ fontSize: 14, color: '#a37a82', margin: 0, lineHeight: 1.6 }}>
-                {search ? 'Try a different name' : 'Start swiping to find your perfect match'}
+                {showArchived ? 'Archived conversations will appear here' : search ? 'Try a different name' : 'Start swiping to find your perfect match'}
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {filtered.map(conv => {
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {visible.map(conv => {
                 const avatarUrl = getPhotoUrl(conv.profile.photos)
                 const initials  = conv.profile.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() ?? '?'
+                const isMenuOpen = menuOpen === conv.conversationId
+
                 return (
-                  <button
-                    key={conv.conversationId}
-                    onClick={() => setChatView({ conversationId: conv.conversationId, profile: conv.profile })}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 14,
-                      padding: '14px 16px', borderRadius: 18,
-                      background: 'rgba(255,255,255,0.85)',
-                      border: `1.5px solid ${conv.unreadCount > 0 ? 'rgba(244,63,94,0.2)' : 'rgba(244,63,94,0.08)'}`,
-                      boxShadow: '0 2px 12px rgba(180,60,80,0.05)',
-                      cursor: 'pointer', textAlign: 'left', width: '100%',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    {/* Avatar */}
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <div style={{
-                        width: 54, height: 54, borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
-                        padding: 2,
-                        boxShadow: conv.unreadCount > 0 ? '0 0 0 2px rgba(244,63,94,0.3)' : 'none',
-                      }}>
-                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#fdf8f5' }}>
-                          {avatarUrl ? (
-                            <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(244,63,94,0.1)' }}>
-                              <span style={{ fontSize: 18, fontWeight: 700, color: '#f43f5e', fontFamily: "'Fraunces', serif" }}>{initials}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {/* Unread badge */}
-                      {conv.unreadCount > 0 && (
-                        <div style={{
-                          position: 'absolute', top: -2, right: -2,
-                          width: 18, height: 18, borderRadius: '50%',
-                          background: '#f43f5e', border: '2px solid #fdf8f5',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 10, fontWeight: 700, color: 'white',
-                        }}>
-                          {conv.unreadCount}
-                        </div>
+                  <div key={conv.conversationId} style={{ position: 'relative' }}>
+                    <button
+                      className="conv-item"
+                      onClick={() => setChatView({ conversationId: conv.conversationId, profile: conv.profile })}
+                      onMouseDown={() => handlePressStart(conv.conversationId)}
+                      onMouseUp={handlePressEnd}
+                      onTouchStart={() => handlePressStart(conv.conversationId)}
+                      onTouchEnd={handlePressEnd}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 14,
+                        padding: '13px 14px', borderRadius: 18, width: '100%',
+                        background: conv.isPinned ? 'rgba(244,63,94,0.04)' : 'rgba(255,255,255,0.85)',
+                        border: `1.5px solid ${conv.isPinned ? 'rgba(244,63,94,0.18)' : conv.unreadCount > 0 ? 'rgba(244,63,94,0.15)' : 'rgba(244,63,94,0.07)'}`,
+                        boxShadow: conv.isPinned ? '0 2px 16px rgba(244,63,94,0.08)' : '0 2px 8px rgba(180,60,80,0.04)',
+                        cursor: 'pointer', textAlign: 'left',
+                      }}
+                    >
+                      {/* Pin indicator */}
+                      {conv.isPinned && (
+                        <Pin size={10} color="#f43f5e" style={{ position: 'absolute', top: 8, right: 48, opacity: 0.6 }} />
                       )}
-                    </div>
 
-                    {/* Content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-                        <span style={{
-                          fontSize: 15, fontWeight: conv.unreadCount > 0 ? 700 : 600,
-                          color: '#2d1b1f',
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          maxWidth: '70%',
+                      {/* Avatar */}
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <div style={{
+                          width: 52, height: 52, borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+                          padding: 2,
+                          boxShadow: conv.unreadCount > 0 ? '0 0 0 2px rgba(244,63,94,0.25)' : 'none',
                         }}>
-                          {conv.profile.full_name}
-                        </span>
-                        <span style={{ fontSize: 11, color: '#a37a82', flexShrink: 0 }}>
-                          {conv.lastTime ? timeAgo(conv.lastTime) : ''}
-                        </span>
+                          <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#fdf8f5' }}>
+                            {avatarUrl
+                              ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(244,63,94,0.08)' }}>
+                                  <span style={{ fontSize: 18, fontWeight: 700, color: '#f43f5e', fontFamily: "'Fraunces',serif" }}>{initials}</span>
+                                </div>
+                            }
+                          </div>
+                        </div>
+                        {/* Unread badge */}
+                        {conv.unreadCount > 0 && (
+                          <div style={{ position: 'absolute', top: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#f43f5e', border: '2px solid #fdf8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'white' }}>
+                            {conv.unreadCount}
+                          </div>
+                        )}
+                        {/* Muted indicator */}
+                        {conv.isMuted && (
+                          <div style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: '50%', background: '#fdf8f5', border: '1px solid rgba(244,63,94,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <BellOff size={9} color="#a37a82" />
+                          </div>
+                        )}
                       </div>
-                      <p style={{
-                        fontSize: 13,
-                        color: conv.unreadCount > 0 ? '#6b2d3e' : '#a37a82',
-                        fontWeight: conv.unreadCount > 0 ? 600 : 400,
-                        margin: 0,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {conv.lastMessage}
-                      </p>
-                    </div>
 
-                    <MessageCircle size={16} color="rgba(244,63,94,0.3)" style={{ flexShrink: 0 }} />
-                  </button>
+                      {/* Content */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                          <span style={{ fontSize: 15, fontWeight: conv.unreadCount > 0 ? 700 : 600, color: '#2d1b1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
+                            {conv.profile.full_name}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#a37a82', flexShrink: 0 }}>
+                            {conv.lastTime ? timeAgo(conv.lastTime) : ''}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: 13, color: conv.unreadCount > 0 ? '#6b2d3e' : '#a37a82', fontWeight: conv.unreadCount > 0 ? 600 : 400, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {conv.isMuted ? <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><BellOff size={11} />{conv.lastMessage}</span> : conv.lastMessage}
+                        </p>
+                      </div>
+
+                      {/* Three dot menu */}
+                      <button
+                        onClick={e => { e.stopPropagation(); setMenuOpen(isMenuOpen ? null : conv.conversationId) }}
+                        style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: isMenuOpen ? 'rgba(244,63,94,0.08)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                        <MoreVertical size={15} color="#a37a82" />
+                      </button>
+                    </button>
+
+                    {/* Inline dropdown menu */}
+                    {isMenuOpen && (
+                      <div
+                        style={{ position: 'absolute', right: 8, top: '100%', zIndex: 100, background: 'white', borderRadius: 16, boxShadow: '0 8px 32px rgba(180,60,80,0.15)', border: '1px solid rgba(244,63,94,0.1)', minWidth: 200, overflow: 'hidden', animation: 'slideUp 0.15s ease' }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        {[
+                          { icon: conv.isPinned ? PinOff : Pin,               label: conv.isPinned   ? 'Unpin'     : 'Pin',     action: conv.isPinned   ? 'unpin'    : 'pin',     color: '#f43f5e' },
+                          { icon: conv.isMuted  ? Bell   : BellOff,           label: conv.isMuted    ? 'Unmute'    : 'Mute',    action: conv.isMuted    ? 'unmute'   : 'mute',    color: '#8b5cf6' },
+                          { icon: conv.isArchived ? ArchiveRestore : Archive,  label: conv.isArchived ? 'Unarchive' : 'Archive', action: conv.isArchived ? 'unarchive': 'archive', color: '#0ea5e9' },
+                          { icon: Shield,                                       label: 'Block user',                              action: 'block',                                 color: '#ef4444' },
+                        ].map(item => (
+                          <button
+                            key={item.action}
+                            className="menu-item"
+                            onClick={() => handleManage(item.action, conv)}
+                            style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontFamily: "'DM Sans',sans-serif", borderBottom: item.action === 'archive' ? '1px solid rgba(244,63,94,0.06)' : 'none' }}
+                          >
+                            <item.icon size={15} color={item.color} />
+                            <span style={{ fontSize: 14, fontWeight: 500, color: item.action === 'block' ? '#ef4444' : '#2d1b1f' }}>{item.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )
               })}
             </div>
           )}
+
+          {/* Archive link at bottom */}
+          {!showArchived && conversations.some(c => c.isArchived) && (
+            <button
+              onClick={() => setShowArchived(true)}
+              style={{ width: '100%', marginTop: 16, padding: '14px', borderRadius: 16, border: '1.5px solid rgba(244,63,94,0.1)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#a37a82', fontFamily: "'DM Sans',sans-serif" }}>
+              <Archive size={15} />
+              View archived chats
+              <ChevronRight size={15} />
+            </button>
+          )}
+
         </div>
       </div>
+
+      {/* Close menu on outside click */}
+      {menuOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setMenuOpen(null)} />
+      )}
     </>
   )
 }

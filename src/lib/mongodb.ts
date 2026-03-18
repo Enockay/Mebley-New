@@ -47,7 +47,7 @@ export interface IMessage {
   senderId: string
   receiverId: string
   content: string
-  messageType: 'text' | 'image' | 'gif' | 'audio' | 'voice' | 'video_call'
+  messageType: 'text' | 'image' | 'gif' | 'audio' | 'video_call'
   mediaUrl?: string
   mediaKey?: string
   duration?: number
