@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, AlertTriangle, Loader2, X } from 'lucide-react'
-import { supabase } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client'
 
 export default function DeleteAccount() {
+  const supabase = createClient()
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
   const [confirm, setConfirm]     = useState('')

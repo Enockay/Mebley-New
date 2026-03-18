@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react/no-unescaped-entities */
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -12,10 +10,14 @@ export default function DiscoverPage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !user) router.push('/auth')
-  }, [user, loading, router])
+    if (loading) return                               // still resolving — wait
+    if (!user) { router.push('/auth'); return }       // no session → login
+    if (!profile) { router.push('/setup'); return }   // no profile → setup
+  }, [user, profile, loading, router])
 
-  if (loading) {
+  // Block render until session AND profile are both confirmed
+  // Prevents the white flash and premature /setup redirect
+  if (loading || !user || !profile) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -36,8 +38,6 @@ export default function DiscoverPage() {
       </div>
     )
   }
-
-  if (!profile) { router.push('/setup'); return null }
 
   return (
     <div style={{ flex: 1 }}>

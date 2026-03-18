@@ -5,7 +5,7 @@
 
 import { useState, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client'
 import { RELATIONSHIP_INTENTS, INTERESTS_BY_CATEGORY } from '@/types/app-constants'
 import {
   Check, ChevronRight, ChevronLeft, Heart,
@@ -58,6 +58,7 @@ function generateUsername(fullName: string): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ProfileSetup() {
+  const supabase = createClient()
   const { user, refreshProfile } = useAuth()
 
   // Detect Google user and pre-fill name from Google metadata

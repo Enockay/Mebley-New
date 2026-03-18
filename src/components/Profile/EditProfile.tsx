@@ -5,7 +5,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import { X, Check, Sparkles, Save, Plus, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client'
 import { RELATIONSHIP_INTENTS, INTERESTS_BY_CATEGORY, PROFILE_PROMPTS } from '@/types/app-constants'
 import VideoUpload from '@/components/Profile/VideoUpload'
 import PhotoUpload from '@/components/Profile/PhotoUpload'
@@ -46,6 +46,7 @@ function splitLocation(location: string): { city: string; country: string } {
 }
 
 export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
+  const supabase = createClient()
   const { profile, refreshProfile } = useAuth()
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')

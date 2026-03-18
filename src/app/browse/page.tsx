@@ -4,7 +4,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client'
+
 import {
   Heart, X, Search, SlidersHorizontal, MapPin,
   RefreshCw, ChevronDown, Sparkles, MessageCircle,
@@ -81,6 +82,7 @@ interface SwipeCardProps {
 }
 
 function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCardProps) {
+  const supabase = createClient()
   const p = sp.profile
   const ageLabel = AGE_RANGE_LABELS[p.age_range] ?? ''
   const initials = getInitials(p.full_name)
@@ -532,6 +534,7 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
 
 // ── Browse Page ───────────────────────────────────────────────────
 export default function BrowsePage() {
+  const supabase = createClient()
   const { user, profile, loading } = useAuth()
   const router = useRouter()
 

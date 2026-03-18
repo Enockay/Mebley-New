@@ -10,7 +10,8 @@ import {
   ArrowLeft, Check, ShieldCheck, AlertTriangle,
   Shield, Star, Zap,
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client'
+
 import { useAuth } from '@/contexts/AuthContext'
 
 function PrivacyNote({ text }: { text: string }) {
@@ -24,6 +25,7 @@ function PrivacyNote({ text }: { text: string }) {
 }
 
 function ConfirmationScreen({ email, onResend }: { email: string; onResend: () => Promise<void> }) {
+  const supabase = createClient()
   const [resent, setResent]     = useState(false)
   const [cooldown, setCooldown] = useState(0)
 
@@ -85,6 +87,7 @@ const Divider = () => (
 )
 
 function AuthPageInner() {
+  const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { signIn } = useAuth()
