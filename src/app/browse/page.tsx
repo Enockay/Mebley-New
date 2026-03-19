@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
@@ -86,8 +87,6 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
   const p = sp.profile
   const ageLabel = AGE_RANGE_LABELS[p.age_range] ?? ''
   const initials = getInitials(p.full_name)
-  const isActive = p.last_active
-    ? Date.now() - new Date(p.last_active).getTime() < 86_400_000 : false
 
   const cardRef    = useRef<HTMLDivElement>(null)
   const startX     = useRef(0)
@@ -101,6 +100,13 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
   const [flyDir, setFlyDir]             = useState<'left' | 'right' | null>(null)
   const [photoIdx, setPhotoIdx]         = useState(0)
   const [infoExpanded, setInfoExpanded] = useState(false)
+  const [isActive, setIsActive]         = useState(false)
+
+  useEffect(() => {
+    const active = p.last_active
+      ? Date.now() - new Date(p.last_active).getTime() < 86_400_000 : false
+    setIsActive(active)
+  }, [p.last_active])
 
   const sortedPhotos = [...(p.photos ?? [])].sort((a, b) => a.slot - b.slot)
   const allMedia = sortedPhotos  // videos would be added here later
@@ -531,6 +537,8 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
     </div>
   )
 }
+
+const supabase = createClient()
 
 // ── Browse Page ───────────────────────────────────────────────────
 export default function BrowsePage() {

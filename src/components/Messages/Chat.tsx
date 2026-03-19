@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client'
 import type { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
 import type { Database } from '@/types/database.types'
 import {
@@ -66,6 +66,8 @@ function formatDuration(seconds: number): string {
 
 export default function Chat({ conversationId, otherProfile, onBack }: ChatProps) {
   const { profile: currentProfile } = useAuth()
+
+  const supabase = createClient()
 
   // Messages
   const [messages, setMessages]         = useState<MongoMessage[]>([])

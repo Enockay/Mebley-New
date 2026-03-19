@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase-client'
+import { createClient } from '@/lib/supabase-client'
 import Chat from '@/components/Messages/Chat'
 import type { Database } from '@/types/database.types'
 import {
@@ -51,6 +51,7 @@ function timeAgo(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+const supabase = createClient()
 export default function MatchesPage() {
   const { user, profile, loading } = useAuth()
   const router  = useRouter()

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * src/app/auth/callback/route.ts
  *
@@ -137,7 +138,7 @@ export async function GET(request: NextRequest) {
   // ── 6. Shared minimal profile defaults ───────────────────────────────────
   const minimalProfile = {
     gender:               '',
-    photos:               [] as unknown[],
+    photos:               [] as any[],
     tier:                 'free',
     plan:                 'free',
     looking_for:          [] as string[],

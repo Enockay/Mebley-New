@@ -17,6 +17,7 @@
     "@supabase/supabase-js": "^2.98.0",
     "agora-rtc-sdk-ng": "^4.24.3",
     "agora-token": "^2.0.5",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
     "form-data": "^4.0.5",
     "framer-motion": "^12.36.0",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.19.35",
     "@types/react": "^19",
     "@types/react-dom": "^19",
