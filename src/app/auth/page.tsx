@@ -44,20 +44,72 @@ function ConfirmationScreen({ email, onResend }: { email: string; onResend: () =
 
   return (
     <div style={{ textAlign: 'center', padding: '8px 0' }}>
-      <div style={{ width: 80, height: 80, background: 'linear-gradient(135deg,#fdf2f8,#fce7f3)', borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', fontSize: 36, boxShadow: '0 8px 32px rgba(244,63,94,0.15)' }}>📧</div>
-      <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 600, color: '#0f172a', margin: '0 0 10px' }}>Check your inbox</h2>
-      <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.7, margin: '0 0 8px' }}>We sent a confirmation link to:</p>
-      <p style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 16px', display: 'inline-block', margin: '0 0 24px' }}>{email}</p>
-      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: 20, marginBottom: 24, textAlign: 'left' }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 12px' }}>What to do next:</p>
+      <div
+        style={{
+          width: 84,
+          height: 84,
+          background: 'radial-gradient(circle at 30% 30%,#ffe9f2,#f7dbe7 58%,#f1ccdb)',
+          borderRadius: 26,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 24px',
+          fontSize: 36,
+          boxShadow: '0 10px 34px rgba(218,96,131,0.2)',
+          border: '1px solid #f2d5e1',
+        }}
+      >
+        📧
+      </div>
+      <h2
+        style={{
+          fontFamily: "'Fraunces',serif",
+          fontSize: 28,
+          fontWeight: 700,
+          margin: '0 0 10px',
+          background: 'linear-gradient(90deg,#1a1120,#3a1a27,#7a3046)',
+          WebkitBackgroundClip: 'text',
+          color: 'transparent',
+        }}
+      >
+        Check your inbox
+      </h2>
+      <p style={{ color: '#62515b', fontSize: 14, lineHeight: 1.7, margin: '0 0 8px' }}>We sent a confirmation link to:</p>
+      <p
+        style={{
+          fontSize: 15,
+          fontWeight: 700,
+          color: '#1b1221',
+          background: 'linear-gradient(180deg,#ffffff,#f8f1ee)',
+          border: '1px solid #dfd3ca',
+          borderRadius: 12,
+          padding: '10px 16px',
+          display: 'inline-block',
+          margin: '0 0 24px',
+        }}
+      >
+        {email}
+      </p>
+      <div
+        style={{
+          background: 'linear-gradient(145deg,#fbf7f4,#f4edf0)',
+          border: '1px solid #ded3d9',
+          borderRadius: 18,
+          padding: 20,
+          marginBottom: 24,
+          textAlign: 'left',
+          boxShadow: '0 10px 28px rgba(40,19,32,0.06)',
+        }}
+      >
+        <p style={{ fontSize: 13, fontWeight: 700, color: '#3a2d36', margin: '0 0 12px' }}>What to do next:</p>
         {[
-          { icon: '📬', text: 'Open the email from Crotchet' },
+          { icon: '📬', text: 'Open the email from Mebley' },
           { icon: '🔗', text: 'Click the "Confirm your email" link' },
           { icon: '🎉', text: "You'll be taken straight into your profile setup" },
         ].map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: i < 2 ? 10 : 0 }}>
             <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{item.icon}</span>
-            <span style={{ fontSize: 13, color: '#475569' }}>{item.text}</span>
+            <span style={{ fontSize: 13, color: '#4a5a70' }}>{item.text}</span>
           </div>
         ))}
       </div>
@@ -67,11 +119,23 @@ function ConfirmationScreen({ email, onResend }: { email: string; onResend: () =
           <span style={{ fontSize: 13, color: '#15803d', fontWeight: 600 }}>Confirmation email resent!</span>
         </div>
       )}
-      <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 12 }}>Didn't get it? Check your spam folder.</p>
+      <p style={{ fontSize: 13, color: '#8b7d87', marginBottom: 12 }}>Didn't get it? Check your spam folder.</p>
       <button
         onClick={handleResend}
         disabled={cooldown > 0}
-        style={{ background: 'none', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '10px 20px', fontSize: 13, fontWeight: 600, color: cooldown > 0 ? '#94a3b8' : '#f43f5e', cursor: cooldown > 0 ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}>
+        style={{
+          background: cooldown > 0 ? '#f7f2f5' : 'linear-gradient(90deg,#fff6fa,#ffeef4)',
+          border: '1.5px solid #e5d3de',
+          borderRadius: 12,
+          padding: '10px 20px',
+          fontSize: 13,
+          fontWeight: 700,
+          color: cooldown > 0 ? '#9ba1ad' : '#e13f68',
+          cursor: cooldown > 0 ? 'not-allowed' : 'pointer',
+          fontFamily: 'inherit',
+          transition: 'all 0.2s',
+          boxShadow: cooldown > 0 ? 'none' : '0 8px 20px rgba(235,86,128,0.14)',
+        }}>
         {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend confirmation email'}
       </button>
     </div>
@@ -155,6 +219,13 @@ function AuthPageInner() {
     if (error) { setError(error.message); setLoading(false); return }
     setLoading(false)
     setAwaiting(true)
+
+    // Optional branded reminder email via Brevo (non-blocking)
+    fetch('/api/auth/send-confirmation-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, kind: 'signup' }),
+    }).catch(() => {})
   }
 
   const handleResend = async () => {
@@ -163,6 +234,13 @@ function AuthPageInner() {
       email,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
+
+    // Branded resend reminder email via Brevo
+    await fetch('/api/auth/send-confirmation-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, kind: 'resend' }),
+    }).catch(() => {})
   }
 
   const handleLogin = async () => {
@@ -186,8 +264,6 @@ function AuthPageInner() {
   }
 
   const s = {
-    wrap:     { fontFamily: "'DM Sans',sans-serif", minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' as const, position: 'relative' as const },
-    card:     { background: 'white', borderRadius: 28, width: '100%', maxWidth: 440, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05),0 20px 60px rgba(0,0,0,0.09)' },
     input:    { width: '100%', padding: '14px 14px 14px 42px', border: '1.5px solid #e2e8f0', borderRadius: 16, fontSize: 14, color: '#0f172a', outline: 'none', background: 'white', fontFamily: 'inherit', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' },
     label:    { display: 'block', fontSize: 11, fontWeight: 600 as const, color: '#64748b', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' as const },
     primary:  { width: '100%', padding: '14px', borderRadius: 16, background: 'linear-gradient(135deg,#f43f5e,#e11d48)', color: 'white', border: 'none', fontSize: 14, fontWeight: 600 as const, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 20px rgba(244,63,94,0.3)', fontFamily: 'inherit' },
@@ -233,52 +309,67 @@ function AuthPageInner() {
         .str-bar { height: 3px; border-radius: 99px; flex: 1; transition: background 0.3s; }
       `}</style>
 
-      <div style={s.wrap}>
-        {/* Mesh background blobs */}
-        <div style={{ position: 'fixed', top: -200, right: -150, width: 500, height: 500, background: 'radial-gradient(circle,rgba(244,63,94,0.08) 0%,transparent 65%)', pointerEvents: 'none', zIndex: 0 }} />
-        <div style={{ position: 'fixed', bottom: -150, left: -100, width: 400, height: 400, background: 'radial-gradient(circle,rgba(251,113,133,0.06) 0%,transparent 65%)', pointerEvents: 'none', zIndex: 0 }} />
+      <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(120deg,#f7f1eb_0%,#f9f3ee_44%,#f5eeea_100%)] font-['DM_Sans']">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(52%_45%_at_82%_10%,rgba(242,122,153,0.24),transparent_72%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(42%_36%_at_12%_88%,rgba(220,146,126,0.18),transparent_76%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(34%_34%_at_50%_58%,rgba(255,255,255,0.55),transparent_75%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.16)_0%,transparent_25%,transparent_75%,rgba(255,255,255,0.12)_100%)]" />
 
-        {/* Logo */}
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', paddingTop: 40, paddingBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 46, height: 46, background: 'linear-gradient(135deg,#f43f5e,#e11d48)', borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(244,63,94,0.35)' }}>
-              <Heart size={22} color="white" fill="white" />
-            </div>
-            <span style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 600, color: '#0f172a' }}>Crotchet</span>
+        {/* Brand */}
+        <div className="relative z-10 flex justify-center pb-3 pt-10">
+          <div className="inline-flex items-center gap-3 rounded-full border border-[#e4d6ca] bg-[#fff9f4]/90 px-4 py-2 shadow-[0_8px_28px_rgba(55,26,36,0.09)] backdrop-blur-sm">
+            <img src="/icon.svg" alt="Mebley logo" className="h-10 w-10 rounded-full" />
+            <span className="font-['Fraunces'] text-3xl font-bold text-[#1f131a]">Mebley</span>
           </div>
         </div>
 
         {/* Card */}
-        <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8px 16px 48px' }}>
-          <div className="card-in" style={s.card}>
+        <div className="relative z-10 flex flex-1 items-start justify-center px-4 pb-12 pt-2">
+          <div className="card-in w-full max-w-[460px] overflow-hidden rounded-[30px] border border-[#eadfd4] bg-[#fffdfb]/95 shadow-[0_4px_30px_rgba(30,14,21,0.08),0_24px_80px_rgba(30,14,21,0.12)] backdrop-blur-[2px]">
 
             {/* ── LANDING ── */}
             {mode === 'landing' && (
-              <div style={{ padding: 36 }}>
-                <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                  <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 32, fontWeight: 600, color: '#0f172a', margin: '0 0 10px', lineHeight: 1.2 }}>Find your person</h2>
-                  <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.7, margin: 0 }}>Real connections. Real people.<br />Across the globe.</p>
+              <div className="p-9 md:p-10">
+                <div className="mb-8 text-center">
+                  <h2 className="m-0 font-['Fraunces'] text-5xl font-black leading-[0.95] tracking-tight text-[#1b1017] md:text-7xl">
+                    Find your
+                    <span className="mt-1 block bg-gradient-to-r from-[#ef5f7f] via-[#d97a68] to-[#c8915d] bg-clip-text font-semibold italic text-transparent">
+                      person
+                    </span>
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-[#5f4f58] md:text-base">
+                    Real connections. Real people.
+                    <br />
+                    Across the globe.
+                  </p>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 32, flexWrap: 'wrap' as const }}>
+                <div className="mb-8 flex flex-wrap justify-center gap-x-5 gap-y-3">
                   {[{ icon: Shield, label: 'End-to-end encrypted' }, { icon: Star, label: '100k+ members' }, { icon: Zap, label: 'Global matching' }].map(({ icon: Icon, label }) => (
-                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b' }}>
-                      <Icon size={13} color="#f43f5e" /><span>{label}</span>
+                    <div key={label} className="flex items-center gap-1.5 text-xs text-[#65545d]">
+                      <Icon size={13} color="#e75273" />
+                      <span>{label}</span>
                     </div>
                   ))}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <button onClick={() => { setMode('signup'); setError('') }} className="primary-btn" style={s.primary}>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => { setMode('signup'); setError('') }}
+                    className="primary-btn w-full rounded-2xl bg-gradient-to-r from-[#ee5d7d] to-[#d77b5d] px-4 py-3.5 text-base font-semibold text-white shadow-[0_10px_28px_rgba(231,94,124,0.32)] transition"
+                  >
                     Create Account — It's Free
                   </button>
-                  <button onClick={() => { setMode('signin'); setError('') }} className="secondary-btn" style={s.secondary}>
+                  <button
+                    onClick={() => { setMode('signin'); setError('') }}
+                    className="secondary-btn w-full rounded-2xl border border-[#e4d8ce] bg-[#fffdfb] px-4 py-3.5 text-base font-medium text-[#493b43] transition hover:bg-[#faf2eb]"
+                  >
                     Sign In
                   </button>
                 </div>
-                <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 20, lineHeight: 1.7 }}>
+                <p className="mt-5 text-center text-[11px] leading-relaxed text-[#8a7781]">
                   By continuing you agree to our{' '}
-                  <a href="/terms" target="_blank" style={{ color: '#f43f5e', textDecoration: 'none', fontWeight: 600 }}>Terms</a>
+                  <a href="/terms" target="_blank" className="font-semibold text-[#c54e66] no-underline">Terms</a>
                   {' '}and{' '}
-                  <a href="/privacy" target="_blank" style={{ color: '#f43f5e', textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</a>
+                  <a href="/privacy" target="_blank" className="font-semibold text-[#c54e66] no-underline">Privacy Policy</a>
                 </p>
               </div>
             )}
@@ -290,7 +381,7 @@ function AuthPageInner() {
                   <ArrowLeft size={15} /> Back
                 </button>
                 <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 600, color: '#0f172a', margin: '0 0 4px' }}>Welcome back</h2>
-                <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 24px' }}>Sign in to continue your journey</p>
+                <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 24px' }}>Sign in to continue where you left off.</p>
 
                 {resetSent && (
                   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -313,6 +404,7 @@ function AuthPageInner() {
                         type="email"
                         value={loginEmail}
                         onChange={e => setLE(e.target.value)}
+                        placeholder="you@example.com"
                         autoComplete="email"
                         className="auth-input"
                         style={s.input}
@@ -333,6 +425,7 @@ function AuthPageInner() {
                         type={showLP ? 'text' : 'password'}
                         value={loginPass}
                         onChange={e => setLP(e.target.value)}
+                        placeholder="Enter your password"
                         onKeyDown={e => e.key === 'Enter' && handleLogin()}
                         autoComplete="current-password"
                         className="auth-input"
@@ -369,7 +462,7 @@ function AuthPageInner() {
                       <ArrowLeft size={15} /> Back
                     </button>
                     <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 600, color: '#0f172a', margin: '0 0 4px' }}>Create your account</h2>
-                    <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 24px' }}>Join thousands finding real connections</p>
+                    <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 24px' }}>Join thousands building meaningful connections.</p>
 
                     <Err />
 
@@ -386,6 +479,7 @@ function AuthPageInner() {
                             type="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
+                            placeholder="you@example.com"
                             autoComplete="email"
                             className="auth-input"
                             style={s.input}
@@ -402,6 +496,7 @@ function AuthPageInner() {
                             type={showPass ? 'text' : 'password'}
                             value={password}
                             onChange={e => setPassword(e.target.value)}
+                            placeholder="At least 8 characters"
                             autoComplete="new-password"
                             className="auth-input"
                             style={s.input}
@@ -431,6 +526,7 @@ function AuthPageInner() {
                             type={showConfirm ? 'text' : 'password'}
                             value={confirmPass}
                             onChange={e => setConfirm(e.target.value)}
+                            placeholder="Re-enter your password"
                             autoComplete="new-password"
                             className="auth-input"
                             style={s.input}
@@ -456,7 +552,7 @@ function AuthPageInner() {
                         disabled={!canSignUp || loading}
                         className="primary-btn"
                         style={s.primary}>
-                        {loading ? <><Loader2 size={15} className="animate-spin" /> Creating account…</> : '🎉 Create My Account'}
+                        {loading ? <><Loader2 size={15} className="animate-spin" /> Creating account…</> : 'Create account'}
                       </button>
 
                       <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', lineHeight: 1.7, margin: 0 }}>

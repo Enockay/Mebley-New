@@ -49,6 +49,42 @@ function AppShell({ children }: { children: React.ReactNode }) {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <title>Mebley | Modern Connections</title>
+        <meta
+          name="description"
+          content="Mebley is a modern dating experience built for depth, voice-first chemistry, and intentional connections across 40+ countries."
+        />
+        <meta
+          name="keywords"
+          content="Mebley, dating app, modern connections, intentional dating, voice notes, relationships, global dating"
+        />
+        <meta name="author" content="Mebley" />
+        <meta name="robots" content="index, follow" />
+        <meta name="theme-color" content="#1f0b12" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Mebley" />
+        <meta property="og:title" content="Mebley | Modern Connections" />
+        <meta
+          property="og:description"
+          content="Dating built for people who want something real. Intentional matches, voice-first chemistry, and meaningful conversations."
+        />
+        <meta property="og:image" content="/icon.svg" />
+        <meta property="og:url" content="https://mebley.com" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Mebley | Modern Connections" />
+        <meta
+          name="twitter:description"
+          content="Mebley helps ambitious people build real relationships through thoughtful profiles and intentional matching."
+        />
+        <meta name="twitter:image" content="/icon.svg" />
+
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon.svg" />
+        <link rel="canonical" href="https://mebley.com" />
+      </head>
       <body>
         <AuthProvider>
           <OneSignalProvider>

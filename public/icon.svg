@@ -1,0 +1,40 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6B1428"/>
+      <stop offset="100%" stop-color="#3A0A14"/>
+    </linearGradient>
+    <linearGradient id="gold1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F0D080"/>
+      <stop offset="100%" stop-color="#B8882A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#9D2040" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <circle cx="100" cy="100" r="92" fill="url(#bg1)"/>
+  <circle cx="100" cy="100" r="92" fill="url(#glow)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="url(#gold1)" stroke-width="2"/>
+  <circle cx="100" cy="100" r="98" fill="none" stroke="#C9A96E" stroke-width="0.7" opacity="0.4"/>
+
+  <path d="M100 136
+           C100 136, 60 111, 60 85
+           C60 70, 71 61, 83 61
+           C91 61, 98 66, 100 72
+           C102 66, 109 61, 117 61
+           C129 61, 140 70, 140 85
+           C140 111, 100 136, 100 136Z"
+        fill="none"
+        stroke="url(#gold1)"
+        stroke-width="2.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <path d="M80 98 Q85 86,90 98 Q95 86,101 98 Q107 86,112 98 Q117 86,122 98"
+        fill="none" stroke="#F0D080" stroke-width="1.9"
+        stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+
+  <polygon points="100,62 104,68 100,74 96,68" fill="#E8C97A" opacity="0.75"/>
+</svg>

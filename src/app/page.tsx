@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react'
 import {
-  motion, useScroll, useTransform, useSpring,
+  motion, useSpring,
   AnimatePresence, useMotionValue,
 } from 'framer-motion'
 
@@ -161,6 +161,23 @@ const HOW = [
   { n: '01', icon: '📝', title: 'Build your story',      desc: 'Photos, a voice note, prompts that reveal who you actually are — no bio templates.' },
   { n: '02', icon: '🧵', title: 'Stitch intentionally',  desc: 'Send a Stitch — a personalised like with a note attached. Quality over quantity.' },
   { n: '03', icon: '💬', title: 'Connect for real',      desc: 'When you both Stitch, a thread forms. Your first message already has something to say.' },
+]
+const HERO_PILLARS = [
+  {
+    n: '01',
+    title: 'Thoughtful Profiles',
+    desc: "Go beyond photos. Share your voice, values, and what you're truly looking for in a partner.",
+  },
+  {
+    n: '02',
+    title: 'Voice Chemistry',
+    desc: "Hear someone's laugh before a first date. Voice notes reveal chemistry no algorithm can fake.",
+  },
+  {
+    n: '03',
+    title: 'Quality Over Quantity',
+    desc: 'Curated daily matches based on depth - not just distance and photos.',
+  },
 ]
 const STATS = [{ v: '40+', l: 'Countries' }, { v: '12k+', l: 'Matches' }, { v: '4.8★', l: 'App rating' }, { v: '78%', l: 'Reply rate' }]
 const VALUES = [
@@ -351,11 +368,6 @@ function Spine({ thread }: { thread: string }) {
 export default function LandingPage() {
   const [scrollY,  setScrollY ] = useState(0)
   const [activeT,  setActiveT ] = useState(0)
-  const pageRef = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({ target: pageRef })
-
-  // Parallax: photos scroll slightly slower than content → depth illusion
-  const photoY = useTransform(scrollYProgress, [0, 1], ['0%', '12%'])
 
   useEffect(() => {
     const fn = () => setScrollY(window.scrollY)
@@ -368,482 +380,367 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700&family=DM+Sans:wght@300;400;500;600&display=swap');
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        :root{--r:#f43f5e;--p:#ec4899;--g:#e8a020;--gl:#f5d07a;--m:#0f0409}
-        html{scroll-behavior:smooth}
-        body{font-family:'DM Sans',sans-serif;background:var(--m);color:#fff;overflow-x:hidden}
-
-        /* ── keyframes ── */
-        @keyframes bfl{0%,100%{transform:rotate(-6deg) translateX(5px) translateY(0)}50%{transform:rotate(-6deg) translateX(5px) translateY(-9px)}}
-        @keyframes bfr{0%,100%{transform:rotate(6deg) translateX(-5px) translateY(0)}50%{transform:rotate(6deg) translateX(-5px) translateY(-9px)}}
-        @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
-        @keyframes heartbeat{0%,100%{transform:scale(1)}15%{transform:scale(1.3)}30%{transform:scale(1)}45%{transform:scale(1.15)}}
-        @keyframes threadfall{0%{transform:translateY(-5%);opacity:0}10%{opacity:1}90%{opacity:.35}100%{transform:translateY(105vh);opacity:0}}
-        @keyframes scrollbar{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
-
-        /* ── text effects ── */
-        .gold{background:linear-gradient(135deg,var(--gl) 0%,var(--g) 40%,var(--gl) 70%,var(--g) 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite}
-        .rose{background:linear-gradient(135deg,#f43f5e,#ec4899,#f43f5e);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 4s linear infinite}
-
-        /* ═══════════════════════════════════════════════
-           FULL-PAGE PHOTO BACKGROUND
-           position:absolute on .page-wrap stretches to
-           full document height, not just the viewport.
-        ═══════════════════════════════════════════════ */
-        .page-wrap{position:relative;overflow:hidden}
-
-        /* Photo mosaic — absolute, fills full page height */
-        .photo-bg{
-          position:absolute;
-          top:0;left:0;right:0;bottom:0;
-          z-index:0;
-          display:grid;
-          grid-template-columns:repeat(8,1fr);
-          grid-auto-rows:minmax(180px,1fr);
-        }
-        .photo-bg img{
-          width:100%;height:100%;
-          object-fit:cover;object-position:center top;
-          display:block;
-        }
-        /* Multi-layer overlay darkens the mosaic enough to read over */
-        .photo-overlay{
-          position:absolute;top:0;left:0;right:0;bottom:0;z-index:1;
-          background:
-            /* centre vignette keeps brand black */
-            radial-gradient(ellipse 90% 60% at 50% 30%,rgba(15,4,9,.82) 0%,rgba(15,4,9,.60) 50%,rgba(15,4,9,.38) 100%),
-            /* top & bottom fade to solid black */
-            linear-gradient(180deg,
-              rgba(15,4,9,.88) 0%,
-              rgba(15,4,9,.38) 12%,
-              rgba(15,4,9,.28) 35%,
-              rgba(15,4,9,.28) 65%,
-              rgba(15,4,9,.38) 88%,
-              rgba(15,4,9,.92) 100%);
-        }
-
-        /* All content sits above photos */
-        .page-content{position:relative;z-index:10}
-
-        /* ─── NAV ─── */
-        nav{position:fixed;top:0;left:0;right:0;z-index:300;padding:20px 48px;display:flex;align-items:center;justify-content:space-between;transition:background .35s}
-        nav.solid{background:rgba(15,4,9,.93);backdrop-filter:blur(22px);border-bottom:1px solid rgba(244,63,94,.1)}
-        .nav-logo{display:flex;align-items:center;gap:10px;font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:#fff;text-decoration:none}
-        .nav-links{display:flex;align-items:center;gap:36px;list-style:none}
-        .nav-links a{color:rgba(255,255,255,.58);text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}
-        .nav-links a:hover{color:#fff}
-        .btn-nav{background:linear-gradient(135deg,var(--r),var(--p));color:#fff;border:none;padding:10px 24px;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-block}
-
-        /* ─── GLASS panel ─── */
-        .glass{background:rgba(15,4,9,.52);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);border:1px solid rgba(255,255,255,.08);border-radius:26px}
-
-        /* ─── HERO ─── */
-        .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 32px 90px;text-align:center;position:relative;overflow:hidden}
-        .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(244,63,94,.13);border:1px solid rgba(244,63,94,.32);border-radius:100px;padding:7px 18px;font-size:12px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.88);margin-bottom:28px}
-        .hero-title{font-family:'Fraunces',serif;font-size:clamp(56px,9.5vw,118px);font-weight:900;line-height:.95;letter-spacing:-.04em;color:#fff;margin-bottom:10px}
-        .hero-em{display:block;font-style:italic;font-weight:300;font-size:clamp(52px,9vw,112px)}
-        .hero-sub{font-size:clamp(16px,2vw,21px);color:rgba(255,255,255,.48);line-height:1.7;max-width:540px;margin:26px auto 52px;font-weight:300}
-        .ctas{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:22px}
-        .btn-primary{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--r),var(--p));color:#fff;border:none;padding:17px 34px;border-radius:100px;font-size:16px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none}
-        .btn-ghost{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.22);padding:17px 34px;border-radius:100px;font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;backdrop-filter:blur(14px)}
-        .store-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
-        .store-pill{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:11px 18px;text-decoration:none;color:#fff;transition:background .2s,transform .2s}
-        .store-pill:hover{background:rgba(255,255,255,.14);transform:translateY(-2px)}
-        .spl{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em}
-        .spn{font-size:14px;font-weight:700;font-family:'Fraunces',serif}
-        .scroll-hint{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.4}
-        .sh-line{width:1px;height:48px;background:linear-gradient(to bottom,#fff,transparent);animation:scrollbar 1.8s ease-in-out infinite}
-
-        /* ─── SECTIONS ─── */
-        .section{padding:112px 48px;position:relative}
-        .section.center{text-align:center}
-        .s-eye{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--r);margin-bottom:14px}
-        .s-title{font-family:'Fraunces',serif;font-size:clamp(36px,5.5vw,68px);font-weight:700;line-height:1.06;letter-spacing:-.025em;color:#fff;margin-bottom:18px}
-        .s-sub{font-size:16px;color:rgba(255,255,255,.4);line-height:1.78;max-width:490px;font-weight:300}
-
-        /* ─── BOOKS ─── */
-        .books-wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:100px;align-items:center}
-        .book-row{display:flex;flex-direction:column;align-items:center;gap:14px}
-        .book-pair{display:flex;align-items:flex-start;justify-content:center}
-        .book-caption{font-size:12px;color:rgba(255,255,255,.3);letter-spacing:.05em}
-
-        /* ─── STATS ─── */
-        .stats-bar{display:flex;max-width:740px;margin:0 auto;border-radius:22px;overflow:hidden}
-        .stat-cell{flex:1;padding:30px 14px;text-align:center;border-right:1px solid rgba(255,255,255,.07)}
-        .stat-cell:last-child{border-right:none}
-        .stat-val{font-family:'Fraunces',serif;font-size:40px;font-weight:900;color:#fff;line-height:1}
-        .stat-lbl{font-size:11px;color:rgba(255,255,255,.34);margin-top:5px;font-weight:300;letter-spacing:.04em}
-
-        /* ─── FEATURES ─── */
-        .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;max-width:960px;margin:58px auto 0;border-radius:24px;overflow:hidden}
-        .feat-card{padding:36px 30px;transition:background .3s;cursor:default;position:relative;overflow:hidden}
-        .feat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(244,63,94,.4),transparent);opacity:0;transition:opacity .3s}
-        .feat-card:hover{background:rgba(244,63,94,.05)}
-        .feat-card:hover::after{opacity:1}
-        .fi{font-size:30px;margin-bottom:18px;display:block}
-        .ft{font-family:'Fraunces',serif;font-size:21px;font-weight:700;color:#fff;margin-bottom:5px}
-        .fs{font-size:10px;font-weight:700;color:var(--r);text-transform:uppercase;letter-spacing:.1em;margin-bottom:11px}
-        .fd{font-size:13px;color:rgba(255,255,255,.4);line-height:1.72;font-weight:300}
-
-        /* ─── HOW ─── */
-        .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:880px;margin:58px auto 0;border-radius:22px;overflow:hidden}
-        .how-card{padding:38px 28px;border-right:1px solid rgba(255,255,255,.07);transition:background .3s}
-        .how-card:last-child{border-right:none}
-        .how-card:hover{background:rgba(244,63,94,.04)}
-        .hn{font-family:'Fraunces',serif;font-size:10px;font-weight:700;color:rgba(244,63,94,.5);letter-spacing:.17em;text-transform:uppercase;margin-bottom:14px}
-        .hi{font-size:28px;margin-bottom:14px;display:block}
-        .ht{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:#fff;margin-bottom:10px}
-        .hd{font-size:13px;color:rgba(255,255,255,.4);line-height:1.72;font-weight:300}
-
-        /* ─── VALUES ─── */
-        .val-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:880px;margin:58px auto 0}
-        .val-card{padding:36px 28px;border-radius:22px;border:1px solid rgba(255,255,255,.08);transition:transform .3s,border-color .3s}
-        .val-card:hover{transform:translateY(-5px);border-color:rgba(244,63,94,.2)}
-        .vi{font-size:30px;margin-bottom:18px;display:block}
-        .vt{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:#fff;margin-bottom:10px}
-        .vd{font-size:13px;color:rgba(255,255,255,.4);line-height:1.72;font-weight:300}
-
-        /* ─── TESTIMONIALS ─── */
-        .testi-card{max-width:640px;margin:54px auto 0;padding:44px 48px;position:relative}
-        .testi-card::before{content:'"';font-family:'Fraunces',serif;font-size:120px;color:rgba(244,63,94,.1);position:absolute;top:-16px;left:22px;line-height:1;pointer-events:none}
-        .ttext{font-family:'Fraunces',serif;font-size:clamp(17px,2.2vw,25px);font-weight:300;font-style:italic;color:rgba(255,255,255,.88);line-height:1.55;margin-bottom:28px;position:relative;z-index:1}
-        .tauth{display:flex;align-items:center;justify-content:center;gap:12px}
-        .tav{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--r),var(--p));display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:14px;flex-shrink:0}
-        .tn{font-weight:600;font-size:14px;color:#fff}
-        .ts{font-size:11px;color:rgba(255,255,255,.35);margin-top:1px}
-        .tm{font-size:10px;color:var(--r);font-weight:600;letter-spacing:.05em}
-        .tdots{display:flex;justify-content:center;gap:7px;margin-top:24px}
-        .tdot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.18);border:none;cursor:pointer;padding:0;transition:background .3s,transform .3s}
-        .tdot.on{background:var(--r);transform:scale(1.4)}
-
-        /* ─── CTA ─── */
-        .cta-inner{max-width:560px;margin:0 auto;text-align:center}
-        .cta-title{font-family:'Fraunces',serif;font-size:clamp(44px,7.5vw,92px);font-weight:900;line-height:1;letter-spacing:-.035em;color:#fff;margin-bottom:20px}
-        .cta-sub{font-size:17px;color:rgba(255,255,255,.4);line-height:1.68;max-width:420px;margin:0 auto 44px;font-weight:300}
-        .store-row-lg{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:26px}
-        .store-pill-lg{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:14px 24px;text-decoration:none;color:#fff;transition:background .2s,transform .2s;min-width:168px}
-        .store-pill-lg:hover{background:rgba(255,255,255,.12);transform:translateY(-3px)}
-        .store-pill-lg .spn{font-size:17px}
-        .wl{font-size:12px;color:rgba(255,255,255,.22);letter-spacing:.05em}
-
-        /* ─── FOOTER ─── */
-        footer{padding:48px 48px 30px;max-width:1100px;margin:0 auto;border-top:1px solid rgba(255,255,255,.06)}
-        .fi2{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:36px;margin-bottom:42px}
-        .fb p{font-size:13px;color:rgba(255,255,255,.26);margin-top:10px;max-width:230px;line-height:1.65;font-weight:300}
-        .fc h4{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.33);margin-bottom:13px}
-        .fc ul{list-style:none;display:flex;flex-direction:column;gap:9px}
-        .fc a{font-size:13px;color:rgba(255,255,255,.4);text-decoration:none;transition:color .2s;font-weight:300}
-        .fc a:hover{color:#fff}
-        .fbtm{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding-top:22px;border-top:1px solid rgba(255,255,255,.05)}
-        .fbtm p{font-size:11px;color:rgba(255,255,255,.2);font-weight:300}
-        .sl{display:flex;gap:10px}
-        .sl a{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.34);text-decoration:none;font-size:11px;transition:background .2s,color .2s}
-        .sl a:hover{background:rgba(244,63,94,.16);color:var(--r);border-color:rgba(244,63,94,.3)}
-
-        /* ─── MOBILE ─── */
-        @media(max-width:768px){
-          nav{padding:14px 20px}.nav-links{display:none}
-          .section{padding:72px 20px}
-          .feat-grid,.how-grid,.val-grid{grid-template-columns:1fr}
-          .how-card{border-right:none;border-bottom:1px solid rgba(255,255,255,.07)}
-          .testi-card{padding:28px 22px}
-          footer{padding:36px 20px 22px}
-          /* on mobile use 3-col photo grid */
-          .photo-bg{grid-template-columns:repeat(3,1fr)}
-        }
-      `}</style>
-
-      {/* ════════════════════════════════════════════
-          PAGE WRAPPER — position:relative so the
-          absolute photo-bg fills its full height
-      ════════════════════════════════════════════ */}
-      <div className="page-wrap" ref={pageRef}>
-
-        {/* ── FULL-PAGE PHOTO MOSAIC (absolute, whole document) ── */}
-        {/* We repeat the photo array 4× so it tiles down the entire page */}
-        <motion.div className="photo-bg" style={{ y: photoY }} aria-hidden="true">
-          {Array.from({ length: 69 }, (_, i) => (
-            <MosaicCell key={i} index={i} />
-          ))}
-        </motion.div>
-
-        {/* ── OVERLAY (same absolute, full height) ── */}
-        <div className="photo-overlay" aria-hidden="true"/>
-
-        {/* ── ALL CONTENT ── */}
-        <div className="page-content">
-
-          {/* NAV */}
-          <nav className={scrollY > 50 ? 'solid' : ''}>
-            <a href="/" className="nav-logo"><HookIcon size={24}/>Crotchet</a>
-            <ul className="nav-links">
-              <li><a href="#features">Features</a></li>
-              <li><a href="#how">How it works</a></li>
-              <li><a href="#values">Our values</a></li>
-              <li><a href="#stories">Stories</a></li>
-            </ul>
-            <MagBtn href="/auth" className="btn-nav">Get started</MagBtn>
-          </nav>
-
-          {/* ══ HERO ══ */}
-          <section className="hero">
-            {/* thread particles */}
-            {Array.from({length:9},(_,i)=>(
-              <div key={i} style={{position:'absolute',left:`${10+i*9}%`,top:'-5%',animation:`threadfall ${10+i*1.4}s ${i*1.7}s infinite linear`,opacity:0,pointerEvents:'none'}}>
-                <svg width="2" height="48" viewBox="0 0 2 48"><line x1="1" y1="0" x2="1" y2="48" stroke="rgba(244,63,94,0.3)" strokeWidth="1.5" strokeDasharray="4 4"/></svg>
-              </div>
+    <div
+      className="relative min-h-screen overflow-x-hidden bg-[#f8f2ec] text-white"
+    >
+      <div className="relative z-10">
+        <nav
+          className={`fixed top-0 z-40 flex w-full items-center justify-between border-b border-[#22161d]/10 px-4 py-3 backdrop-blur-md transition-all md:px-10 ${
+            scrollY > 50 ? 'bg-[#f8f2ec]/95 shadow-[0_8px_30px_rgba(25,12,20,0.06)]' : 'bg-[#f8f2ec]/90'
+          }`}
+        >
+          <a href="/" className="flex items-center gap-3 text-[#22161d]">
+            <img
+              src="/icon.svg"
+              alt="Mebley logo"
+              className="h-11 w-11 rounded-full object-cover shadow-[0_8px_20px_rgba(229,90,111,0.22)]"
+            />
+            <span className="leading-none">
+              <span className="block font-['Fraunces'] text-[2rem] font-bold leading-none">Mebley</span>
+              <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-[#22161d]/75">Modern Connections</span>
+            </span>
+          </a>
+          <ul className="hidden items-center gap-3 md:flex">
+            {[
+              { href: '#features', label: 'Features', icon: '✦' },
+              { href: '#stories', label: 'Stories', icon: '♡' },
+              { href: '/about', label: 'About', icon: 'i' },
+              { href: '/blog', label: 'Blog', icon: '✎' },
+              { href: '/contact', label: 'Contact', icon: '✉' },
+            ].map(({ href, label, icon }) => (
+              <li key={href}>
+                <a
+                  href={href}
+                  className="group relative inline-flex items-center gap-2 rounded-full border border-transparent px-4 py-2 text-sm font-semibold text-[#22161d]/80 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d9c8bc] hover:bg-gradient-to-r hover:from-[#fff3ee] hover:to-[#f5e7de] hover:text-[#22161d] hover:shadow-[0_10px_20px_rgba(54,24,34,0.12)]"
+                >
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#f1e5dc] text-[11px] font-bold text-[#8e5a56] transition group-hover:bg-[#ef6180]/20 group-hover:text-[#b24657]">
+                    {icon}
+                  </span>
+                  {label}
+                  <span className="pointer-events-none absolute inset-x-4 -bottom-0.5 h-[2px] scale-x-0 rounded-full bg-gradient-to-r from-[#ef6180] to-[#d98762] transition-transform duration-300 group-hover:scale-x-100" />
+                </a>
+              </li>
             ))}
+          </ul>
+          <MagBtn href="/auth" className="group inline-flex items-center gap-2 rounded-full border border-[#4a2532] bg-gradient-to-r from-[#2a0d19] via-[#3a1322] to-[#2f101d] px-7 py-3 text-sm font-semibold text-[#fff5f0] shadow-[0_10px_24px_rgba(33,12,22,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#6a3444] hover:shadow-[0_14px_28px_rgba(201,93,121,0.25)]">
+            <span>Get started</span>
+            <span className="text-[#f6b3c4] transition-transform duration-300 group-hover:translate-x-0.5">→</span>
+          </MagBtn>
+        </nav>
 
-            <motion.div initial={{opacity:0,y:18}} animate={{opacity:1,y:0}} transition={{duration:0.6,delay:0.2}}>
-              <div className="hero-eyebrow">
-                <span style={{animation:'heartbeat 2s ease-in-out infinite'}}>🧵</span>
-                A new kind of connection
+        <section className="relative min-h-screen overflow-hidden px-6 pb-20 pt-36 md:px-12">
+          <div className="absolute inset-0 -z-10 bg-[#f8f2ec]" />
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(50%_50%_at_80%_12%,rgba(244,173,194,0.32),transparent_72%)]" />
+
+          <div className="mx-auto grid max-w-7xl items-center gap-10 md:grid-cols-[1.05fr_0.72fr]">
+            <div className="text-left text-[#22161d]">
+          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
+                <div className="mb-10 inline-flex items-center gap-2 rounded-full border border-[#c7baa9] bg-[#fbf7f3] px-5 py-2 text-[12px] font-semibold uppercase tracking-[0.17em] text-[#b05b54]">
+                  <span className="text-[#e05d71]">●</span>
+                  Intentional dating, reimagined
               </div>
             </motion.div>
 
-            <h1 className="hero-title">
-              <SplitWords text="Stitch your" delay={0.3}/>
-              <span className="hero-em rose" style={{overflow:'hidden', display:'block'}}>
-                <motion.span
-                  initial={{y:'108%',opacity:0}} animate={{y:0,opacity:1}}
-                  transition={{duration:0.9,delay:0.68,ease:EASE}}
-                  style={{display:'inline-block'}}>
-                  story.
-                </motion.span>
+              <h1 className="max-w-4xl font-['Fraunces'] text-5xl font-black leading-[0.96] tracking-tight md:text-7xl">
+                Find your person,
+                <span className="mt-2 block bg-gradient-to-r from-[#ec5f79] via-[#d87b6f] to-[#c69a5e] bg-clip-text font-light italic text-transparent">
+                  not just another match.
               </span>
             </h1>
 
-            <motion.p className="hero-sub"
-              initial={{opacity:0,y:22}} animate={{opacity:1,y:0}}
-              transition={{duration:0.8,delay:0.96,ease:EASE}}>
-              Dating built for depth. Voice notes, intentional matches, and a feed that rewards authenticity over volume — across 40+ countries.
+          <motion.p
+                className="mt-8 max-w-3xl text-lg leading-relaxed text-[#4a3a41]/90 md:text-[2rem]"
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.96, ease: EASE }}
+          >
+                Mebley helps ambitious people build real relationships through thoughtful profiles, voice-first chemistry, and quality matches across 40+ countries.
             </motion.p>
 
-            <motion.div className="ctas"
-              initial={{opacity:0,y:18}} animate={{opacity:1,y:0}}
-              transition={{duration:0.7,delay:1.12}}>
-              <MagBtn href="/auth" className="btn-primary">✦ Start for free</MagBtn>
-              <MagBtn href="#how" className="btn-ghost">See how it works</MagBtn>
+          <motion.div
+                className="mt-10 flex w-full max-w-xl flex-col items-stretch gap-4 sm:w-auto sm:max-w-none sm:flex-row sm:items-center"
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 1.12 }}
+          >
+                <MagBtn href="/auth" className="w-full rounded-full bg-gradient-to-r from-[#ec5575] to-[#c9784a] px-10 py-4 text-center text-base font-semibold text-white shadow-[0_18px_36px_rgba(227,102,112,0.32)] sm:w-auto">
+                  Start free →
+            </MagBtn>
+                <MagBtn href="#features" className="w-full rounded-full border border-[#c8baab] bg-[#f8f2ec] px-10 py-4 text-center text-base font-medium text-[#22161d] transition hover:bg-[#f2e8df] sm:w-auto">
+                  Explore how it works
+            </MagBtn>
             </motion.div>
 
-            <motion.div className="store-row"
-              initial={{opacity:0}} animate={{opacity:1}}
-              transition={{duration:0.7,delay:1.32}}>
-              <a href="https://apps.apple.com/app/crotchet" target="_blank" rel="noopener noreferrer" className="store-pill">
-                <span style={{fontSize:20}}>🍎</span>
-                <div><div className="spl">Download on the</div><div className="spn">App Store</div></div>
-              </a>
-              <a href="https://play.google.com/store/apps/details?id=com.crotchet" target="_blank" rel="noopener noreferrer" className="store-pill">
-                <span style={{fontSize:20}}>▶</span>
-                <div><div className="spl">Get it on</div><div className="spn">Google Play</div></div>
-              </a>
-            </motion.div>
+              <motion.div
+                className="mt-12 flex flex-wrap items-center gap-3 text-sm text-[#4a3a41]/85"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 1.22 }}
+              >
+                <span className="rounded-full border border-[#d8ccbf] bg-[#fcf9f6] px-5 py-2">✦ Trusted by 12k+ users</span>
+                <span className="rounded-full border border-[#d8ccbf] bg-[#fcf9f6] px-5 py-2">★ 4.8 app experience</span>
+                <span className="rounded-full border border-[#d8ccbf] bg-[#fcf9f6] px-5 py-2">◎ Privacy-first matching</span>
+              </motion.div>
+            </div>
 
-            <div className="scroll-hint"><div className="sh-line"/></div>
-          </section>
-
-          {/* ══ STITCHED BOOKS — 3 global pairings ══ */}
-          <section className="section center">
-            <Reveal><SD/></Reveal>
-            <Reveal delay={0.1}>
-              <div style={{marginTop:52}}>
-                <span className="s-eye">Global matching</span>
-                <h2 className="s-title">Every stitch connects<br/><span className="gold">two stories.</span></h2>
-                <p className="s-sub" style={{margin:'0 auto'}}>People from different continents, cultures, and cities — finding each other one intentional match at a time.</p>
+            <motion.div
+              className="relative mx-auto hidden w-full max-w-[420px] md:block"
+              initial={{ opacity: 0, x: 28 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.72, delay: 0.62, ease: EASE }}
+            >
+              <div className="rounded-[34px] border border-[#e9ddd3] bg-[#fcfbf9] p-7 shadow-[0_30px_60px_rgba(54,31,44,0.14)]">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#f0c4b5] to-[#d9aa8f] text-3xl">
+                  🌸
+                </div>
+                <div className="font-['Fraunces'] text-4xl font-bold text-[#24161d]">Amara K., 28</div>
+                <div className="text-xl text-[#5e4a51]">Nairobi · Architect</div>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {['Art lover', 'Traveller', 'Bookworm'].map((tag) => (
+                    <span key={tag} className="rounded-full bg-[#f3e6dc] px-3 py-1 text-xs font-medium text-[#9f6559]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-9 flex items-end justify-between text-lg">
+                  <span className="text-[#4a3a41]">Compatibility</span>
+                  <span className="font-['Fraunces'] font-bold text-[#df5f76]">94%</span>
+                </div>
               </div>
-            </Reveal>
-            <motion.div className="books-wrap" style={{marginTop:64}}
-              initial="hidden" whileInView="show" viewport={{once:true,margin:'-60px'}}
-              variants={stagger(0.1)}>
-              {PAIRS.map((pair,pi)=>(
-                <motion.div key={pi} variants={scaleIn} className="book-row">
-                  <div className="book-pair">
-                    <BookCard side="left"  data={pair.left}  thread={pair.thread}/>
-                    <Spine thread={pair.thread}/>
-                    <BookCard side="right" data={pair.right} thread={pair.thread}/>
+
+              <div className="mt-6 flex items-center justify-between rounded-[22px] bg-gradient-to-r from-[#2a0f1d] to-[#4c1f33] px-6 py-5 text-[#fff0f3] shadow-[0_20px_40px_rgba(36,13,25,0.2)]">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f05279] text-lg">🎙️</div>
+                  <div className="text-[#f6b1c1]">▮▮▮▮▯▮</div>
+                </div>
+                <span className="text-base">Voice intro</span>
+              </div>
+
+              <div className="mt-5 ml-8 rounded-[20px] border border-[#ece0d5] bg-[#fffdfb] px-6 py-5 shadow-[0_16px_30px_rgba(32,18,25,0.11)]">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8d7df] text-[#e25173]">💌</div>
+                  <div>
+                    <div className="text-xl font-semibold text-[#23161d]">New connection!</div>
+                    <div className="text-base text-[#55424a]">James liked your profile</div>
                   </div>
-                  <p className="book-caption">{pair.caption}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </section>
-
-          {/* ══ STATS ══ */}
-          <section className="section">
-            <motion.div className="stats-bar glass"
-              initial="hidden" whileInView="show" viewport={{once:true,margin:'-60px'}}
-              variants={stagger(0)}>
-              {STATS.map((s,i)=>(
-                <motion.div key={i} className="stat-cell" variants={fadeUp}>
-                  <div className="stat-val">{s.v}</div>
-                  <div className="stat-lbl">{s.l}</div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </section>
-
-          {/* ══ FEATURES ══ */}
-          <section id="features" className="section center">
-            <Reveal><SD/></Reveal>
-            <Reveal delay={0.08}>
-              <div style={{marginTop:52}}>
-                <span className="s-eye">Built different</span>
-                <h2 className="s-title">Dating that actually<br/><span className="gold">feels like something.</span></h2>
-                <p className="s-sub" style={{margin:'0 auto'}}>We replaced swipe fatigue with intentional tools designed to spark real conversation.</p>
+                </div>
               </div>
-            </Reveal>
-            <motion.div className="feat-grid glass"
-              initial="hidden" whileInView="show" viewport={{once:true,margin:'-60px'}}
-              variants={stagger(0.08)}>
-              {FEATURES.map((f,i)=>(
-                <motion.div key={i} className="feat-card" variants={fadeUp}>
-                  <span className="fi">{f.icon}</span>
-                  <div className="ft">{f.title}</div>
-                  <div className="fs">{f.sub}</div>
-                  <p className="fd">{f.desc}</p>
-                </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        <section id="features" className="pb-10">
+          <div className="w-full bg-[#17090f] px-6 py-10 text-[#f3e8df] md:px-12 md:py-14">
+            <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-3 md:gap-0">
+              {HERO_PILLARS.map((item, i) => (
+                <div
+                  key={item.n}
+                  className={`relative px-5 py-5 md:px-12 md:py-8 ${
+                    i !== HERO_PILLARS.length - 1 ? 'md:border-r md:border-[#f7e2d0]/10' : ''
+                  } ${i === 0 ? 'bg-[#341720]/70 md:-ml-2' : ''}`}
+                >
+                  <div className="font-['Fraunces'] text-5xl text-[#b48a7f]">{item.n}</div>
+                  <div className="mt-4 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#f0617a] to-[#d47a56]" />
+                  <h3
+                    className="mt-8 font-['Fraunces'] text-4xl font-bold leading-tight text-rose-50"
+                    style={{ color: '#fff4ee', textShadow: '0 2px 12px rgba(0,0,0,0.35)' }}
+                  >
+                    {item.title}
+                  </h3>
+                  <p className="mt-5 max-w-md text-2xl leading-relaxed text-[#e5d6cd]/95">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <motion.div className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-3 rounded-3xl border border-white/15 bg-white/[0.04] p-4 backdrop-blur-xl md:grid-cols-4">
+              {STATS.map((s) => (
+                <div key={s.l} className="text-center">
+                  <div className="font-['Fraunces'] text-4xl font-black text-white">{s.v}</div>
+                  <div className="text-xs tracking-wide text-white/70">{s.l}</div>
+                </div>
               ))}
             </motion.div>
+          </div>
           </section>
 
-          {/* ══ HOW IT WORKS ══ */}
-          <section id="how" className="section center">
-            <Reveal><SD color="rgba(232,160,32,0.22)"/></Reveal>
-            <Reveal delay={0.08}>
-              <div style={{marginTop:52}}>
-                <span className="s-eye" style={{color:'var(--g)'}}>How it works</span>
-                <h2 className="s-title">Three steps to<br/><span className="gold">something real.</span></h2>
-                <p className="s-sub" style={{margin:'0 auto'}}>No swiping for sport. Every action on Crotchet is designed to mean something.</p>
+        <section className="bg-[#f8f2ec] px-6 py-16 md:px-12 md:py-20">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid items-center gap-10 md:grid-cols-[1fr_1fr] md:gap-14">
+              <div className="text-[#23161d]">
+                <h2 className="max-w-lg font-['Fraunces'] text-5xl font-black leading-[0.95] tracking-tight md:text-7xl">
+                  Real love starts with
+                  <span className="mt-2 block bg-gradient-to-r from-[#ec5f79] to-[#d97d68] bg-clip-text font-light italic text-transparent">
+                    real intent.
+                  </span>
+                </h2>
+                <p className="mt-8 max-w-xl text-xl leading-relaxed text-[#4b3b42]/90 md:text-[2rem]">
+                  We built Mebley because the world deserved a dating app where ambition meets authenticity - and where great relationships actually begin.
+                </p>
               </div>
-            </Reveal>
-            <motion.div className="how-grid glass"
-              initial="hidden" whileInView="show" viewport={{once:true,margin:'-60px'}}
-              variants={stagger(0.12)}>
-              {HOW.map((h,i)=>(
-                <motion.div key={i} className="how-card" variants={fadeUp}>
-                  <div className="hn">{h.n}</div>
-                  <span className="hi">{h.icon}</span>
-                  <div className="ht">{h.title}</div>
-                  <p className="hd">{h.desc}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </section>
 
-          {/* ══ OUR VALUES ══ */}
-          <section id="values" className="section center">
-            <Reveal><SD color="rgba(139,92,246,0.25)"/></Reveal>
-            <Reveal delay={0.08}>
-              <div style={{marginTop:52}}>
-                <span className="s-eye" style={{color:'#8b5cf6'}}>Our values</span>
-                <h2 className="s-title">We believe dating<br/><span style={{background:'linear-gradient(135deg,#8b5cf6,#ec4899)',backgroundSize:'200% auto',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',animation:'shimmer 3s linear infinite'}}>should feel human.</span></h2>
-                <p className="s-sub" style={{margin:'0 auto'}}>Every product decision we make comes back to three things.</p>
+              <div className="grid overflow-hidden rounded-[30px] border border-[#e7d9ce] bg-[#f4e8dc] md:grid-cols-2">
+                <div className="border-b border-r border-[#e7d9ce] p-8 md:p-10">
+                  <div className="font-['Fraunces'] text-6xl font-bold text-[#22161d]">12<span className="text-[#ec5f79]">k+</span></div>
+                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#594951]">Active users</div>
+                </div>
+                <div className="border-b border-[#e7d9ce] p-8 md:p-10">
+                  <div className="font-['Fraunces'] text-6xl font-bold text-[#22161d]">40<span className="text-[#ec5f79]">+</span></div>
+                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#594951]">Countries</div>
+                </div>
+                <div className="border-r border-[#e7d9ce] p-8 md:p-10">
+                  <div className="font-['Fraunces'] text-6xl font-bold text-[#22161d]">4.8<span className="text-[#ec5f79]">★</span></div>
+                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#594951]">App rating</div>
+                </div>
+                <div className="bg-[#1d0b12] p-8 md:p-10">
+                  <div className="font-['Fraunces'] text-6xl font-bold text-[#f2e8e0]">3<span className="text-[#ec5f79]">k+</span></div>
+                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#b6a4ad]">Couples formed</div>
+                </div>
               </div>
-            </Reveal>
-            <motion.div className="val-grid"
-              initial="hidden" whileInView="show" viewport={{once:true,margin:'-60px'}}
-              variants={stagger(0.1)}>
-              {VALUES.map((v,i)=>(
-                <motion.div key={i} className="val-card glass" variants={scaleIn}>
-                  <span className="vi">{v.icon}</span>
-                  <div className="vt">{v.title}</div>
-                  <p className="vd">{v.desc}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </section>
+            </div>
 
-          {/* ══ TESTIMONIALS ══ */}
-          <section id="stories" className="section center">
-            <Reveal><SD/></Reveal>
-            <Reveal delay={0.08}>
-              <div style={{marginTop:52}}>
-                <span className="s-eye">Real stories</span>
-                <h2 className="s-title">The thread that<br/><span className="rose">connects them.</span></h2>
+            <div className="relative mt-14 overflow-hidden rounded-[34px] bg-[radial-gradient(65%_120%_at_0%_0%,rgba(241,102,131,0.16),transparent_50%),radial-gradient(40%_80%_at_80%_90%,rgba(209,112,85,0.15),transparent_60%),linear-gradient(135deg,#2a0f18,#421723_52%,#31111a)] px-6 py-16 text-center md:px-12 md:py-20">
+              <div className="absolute -left-20 top-4 h-64 w-64 rounded-full bg-[#74344f]/20 blur-2xl" />
+              <div className="absolute -right-20 bottom-4 h-64 w-64 rounded-full bg-[#6e3b2f]/20 blur-2xl" />
+              <div className="relative z-10">
+                <h3
+                  className="font-['Fraunces'] text-5xl font-black leading-[0.96] text-rose-100 md:text-7xl"
+                  style={{ color: '#ffe8f0', textShadow: '0 2px 16px rgba(0,0,0,0.5)' }}
+                >
+                  Your person is
+                  <span className="mt-2 block bg-gradient-to-r from-[#ffb1c7] to-[#f29c84] bg-clip-text font-light italic text-transparent">
+                    already here.
+                  </span>
+                </h3>
+                <p className="mx-auto mt-6 max-w-3xl text-xl leading-relaxed text-[#d8c7ce] md:text-[2rem]">
+                  Join thousands building something real. Start free - no card required.
+                </p>
+                <div className="mt-10">
+                  <MagBtn href="/auth" className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#ee5d7d] to-[#d77b5d] px-12 py-4 text-base font-semibold text-white shadow-[0_16px_36px_rgba(236,95,121,0.3)]">
+                    Create your profile →
+              </MagBtn>
+                </div>
               </div>
-            </Reveal>
+                </div>
+                </div>
+        </section>
+
+        <section id="stories" className="bg-[#f8f2ec] px-6 pb-16 md:px-12 md:pb-20">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-8 text-center md:mb-10">
+              <h2 className="font-['Fraunces'] text-5xl font-black leading-[0.95] text-[#21141b] md:text-7xl">
+                Stories stitched with
+                <span className="ml-2 bg-gradient-to-r from-[#ef6180] to-[#d98762] bg-clip-text font-light italic text-transparent">
+                  intention.
+                </span>
+              </h2>
+              <p className="mx-auto mt-5 max-w-3xl text-lg text-[#524049]/90 md:text-2xl">
+                Real people. Real chemistry. Real conversations that led to something meaningful.
+              </p>
+            </div>
+
             <AnimatePresence mode="wait">
-              <motion.div key={activeT} className="testi-card glass"
-                initial={{opacity:0,x:28}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-28}}
-                transition={{duration:0.42,ease:EASE}}>
-                <p className="ttext">&ldquo;{TESTIMONIALS[activeT].text}&rdquo;</p>
-                <div className="tauth">
-                  <div className="tav">{TESTIMONIALS[activeT].name[0]}</div>
-                  <div style={{textAlign:'left'}}>
-                    <div className="tn">{TESTIMONIALS[activeT].name}, {TESTIMONIALS[activeT].age}</div>
-                    <div className="ts">{TESTIMONIALS[activeT].city}</div>
-                    <div className="tm">{TESTIMONIALS[activeT].match}</div>
+              <motion.div
+                key={activeT}
+                className="relative overflow-hidden rounded-[32px] border border-[#4b2732]/20 bg-[radial-gradient(70%_120%_at_0%_0%,rgba(241,102,131,0.14),transparent_56%),radial-gradient(40%_80%_at_80%_90%,rgba(209,112,85,0.14),transparent_60%),linear-gradient(135deg,#200c14,#3a1520_52%,#2c0f18)] p-8 text-[#f5e9e2] shadow-[0_24px_60px_rgba(31,11,19,0.35)] md:p-12"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                transition={{ duration: 0.4, ease: EASE }}
+              >
+                <div className="absolute -left-24 top-6 h-72 w-72 rounded-full bg-[#7c3550]/20 blur-3xl" />
+                <div className="absolute -right-24 bottom-6 h-72 w-72 rounded-full bg-[#734033]/20 blur-3xl" />
+                <div className="relative z-10">
+                  <p className="font-['Fraunces'] text-3xl font-light italic leading-relaxed text-[#f9efe8] md:text-5xl">
+                    &ldquo;{TESTIMONIALS[activeT].text}&rdquo;
+                  </p>
+                  <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#ef6180] to-[#d98762] font-['Fraunces'] text-lg font-bold text-white">
+                        {TESTIMONIALS[activeT].name[0]}
+                      </div>
+                      <div>
+                        <div className="text-base font-semibold text-[#f7ece5] md:text-lg">
+                          {TESTIMONIALS[activeT].name}, {TESTIMONIALS[activeT].age}
+                        </div>
+                        <div className="text-sm text-[#cab6be] md:text-base">{TESTIMONIALS[activeT].city}</div>
+                        <div className="text-sm font-semibold text-[#ffadc2]">{TESTIMONIALS[activeT].match}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {TESTIMONIALS.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setActiveT(i)}
+                          aria-label={`Show story ${i + 1}`}
+                          className={`h-2.5 rounded-full transition-all ${
+                            i === activeT ? 'w-8 bg-[#ef6180]' : 'w-2.5 bg-white/35 hover:bg-white/50'
+                          }`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               </motion.div>
             </AnimatePresence>
-            <div className="tdots">
-              {TESTIMONIALS.map((_,i)=>(
-                <button key={i} className={`tdot${i===activeT?' on':''}`} onClick={()=>setActiveT(i)}/>
-              ))}
-            </div>
-          </section>
+          </div>
+        </section>
 
-          {/* ══ CTA ══ */}
-          <section className="section">
-            <Reveal y={40}>
-              <div className="cta-inner">
-                <span className="s-eye">Download</span>
-                <h2 className="cta-title">Your story<br/>starts <em className="rose" style={{fontFamily:'Fraunces,serif'}}>now.</em></h2>
-                <p className="cta-sub">Free to start. No credit card. Join thousands finding deeper connections across 40+ countries.</p>
-                <div className="store-row-lg">
-                  <a href="https://apps.apple.com/app/crotchet" target="_blank" rel="noopener noreferrer" className="store-pill-lg glass">
-                    <span style={{fontSize:26}}>🍎</span>
-                    <div><div className="spl">Download on the</div><div className="spn">App Store</div></div>
-                  </a>
-                  <a href="https://play.google.com/store/apps/details?id=com.crotchet" target="_blank" rel="noopener noreferrer" className="store-pill-lg glass">
-                    <span style={{fontSize:26}}>▶</span>
-                    <div><div className="spl">Get it on</div><div className="spn">Google Play</div></div>
-                  </a>
-                </div>
-                <div style={{marginBottom:20}}>
-                  <MagBtn href="/auth" className="btn-primary">✦ Or sign up on web</MagBtn>
-                </div>
-                <p className="wl">Coming soon to iOS &amp; Android · Web available now</p>
+        <footer className="bg-[radial-gradient(80%_120%_at_0%_0%,rgba(235,95,125,0.07),transparent_58%),linear-gradient(135deg,#1f0b12,#2b1018_55%,#220d14)] px-6 pb-10 pt-12 md:px-12">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-8 flex flex-wrap items-start justify-between gap-10">
+              <div>
+                <a href="/" className="flex items-center gap-2 text-white">
+                  <img
+                    src="/icon.svg"
+                    alt="Mebley logo"
+                    className="h-6 w-6 rounded-full object-cover"
+                  />
+                  <span className="font-['Fraunces'] text-2xl font-bold">Mebley</span>
+                </a>
+                <p className="mt-3 max-w-xs text-sm text-white/70">
+                  Dating built for people who want something real. Stitch your story.
+                </p>
               </div>
-            </Reveal>
-          </section>
-
-          {/* ══ FOOTER ══ */}
-          <footer>
-            <Reveal>
-              <div className="fi2">
-                <div className="fb">
-                  <a href="/" className="nav-logo" style={{display:'inline-flex'}}><HookIcon size={22}/>Crotchet</a>
-                  <p>Dating built for people who want something real. Stitch your story.</p>
+              <div className="grid grid-cols-2 gap-8 text-sm text-white/75 md:grid-cols-3">
+                <div>
+                  <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/90">Product</h4>
+                  <div className="space-y-2">
+                    <a href="#features">Features</a>
+                    <a href="#stories" className="block">Stories</a>
+                    <a href="/auth" className="block">Sign up</a>
+                  </div>
                 </div>
-                <div className="fc">
-                  <h4>Product</h4>
-                  <ul><li><a href="#features">Features</a></li><li><a href="#how">How it works</a></li><li><a href="/auth">Sign up</a></li></ul>
+                <div>
+                  <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/90">Company</h4>
+                  <div className="space-y-2">
+                    <a href="/about">About</a>
+                    <a href="/blog" className="block">Blog</a>
+                    <a href="/contact" className="block">Contact</a>
+                  </div>
                 </div>
-                <div className="fc">
-                  <h4>Company</h4>
-                  <ul><li><a href="/about">About</a></li><li><a href="/blog">Blog</a></li><li><a href="/contact">Contact</a></li></ul>
+                <div>
+                  <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/90">Legal</h4>
+                  <div className="space-y-2">
+                    <a href="/privacy">Privacy</a>
+                    <a href="/terms" className="block">Terms</a>
+                  </div>
                 </div>
-                <div className="fc">
-                  <h4>Legal</h4>
-                  <ul><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li></ul>
-                </div>
-              </div>
-            </Reveal>
-            <div className="fbtm">
-              <p>© 2026 Crotchet. All rights reserved.</p>
-              <div className="sl">
-                {['𝕏','IG','TT','YT'].map(s=><a key={s} href="#">{s}</a>)}
               </div>
             </div>
-          </footer>
-
-        </div>{/* end page-content */}
-      </div>{/* end page-wrap */}
-    </>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-xs text-white/60">
+              <p>© 2025 Mebley Inc. All rights reserved.</p>
+              <div className="flex gap-2">
+                {['𝕏', 'IG', 'TT', 'YT'].map((s) => (
+                  <a key={s} href="#" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[11px]">
+                    {s}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
   )
 }
