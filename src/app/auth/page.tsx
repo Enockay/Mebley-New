@@ -155,6 +155,9 @@ function AuthPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { signIn } = useAuth()
+  const appBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (typeof window !== 'undefined' ? window.location.origin : '')
 
   const initialMode: 'landing' | 'signin' | 'signup' =
     typeof window !== 'undefined' && searchParams.get('reset') === 'true'
@@ -200,7 +203,7 @@ function AuthPageInner() {
     setError('')
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${appBaseUrl}/auth/callback` },
     })
     if (error) setError(error.message)
     setGoogleLoading(false)
@@ -214,7 +217,7 @@ function AuthPageInner() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${appBaseUrl}/auth/callback` },
     })
     if (error) { setError(error.message); setLoading(false); return }
     setLoading(false)
@@ -232,7 +235,7 @@ function AuthPageInner() {
     await supabase.auth.resend({
       type: 'signup',
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${appBaseUrl}/auth/callback` },
     })
 
     // Branded resend reminder email via Brevo
@@ -257,7 +260,7 @@ function AuthPageInner() {
     if (!loginEmail) { setError('Enter your email address first'); return }
     setLoading(true)
     await supabase.auth.resetPasswordForEmail(loginEmail, {
-      redirectTo: `${window.location.origin}/auth?reset=true`,
+      redirectTo: `${appBaseUrl}/auth?reset=true`,
     })
     setResetSent(true)
     setLoading(false)
