@@ -16,7 +16,7 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm ci
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
