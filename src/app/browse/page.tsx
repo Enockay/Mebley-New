@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-client'
+import Image from 'next/image'
 
 import {
   Heart, X, Search, SlidersHorizontal, MapPin,
@@ -15,7 +16,6 @@ import {
 import { RELATIONSHIP_INTENTS, INTERESTS_BY_CATEGORY } from '@/types/app-constants'
 import BlockReport from '@/components/Moderation/BlockReport'
 import StitchDivider from '@/components/UI/StitchDivider'
-import CrochetHook from '@/components/UI/CrochetHook'
 
 // ── Types ─────────────────────────────────────────────────────────
 interface PromptAnswer { id: string; question: string; answer: string }
@@ -675,7 +675,7 @@ export default function BrowsePage() {
         minHeight: '100vh', flexDirection: 'column', gap: 16,
       }}>
         <div style={{ position: 'relative', animation: 'float 3s ease-in-out infinite' }}>
-          <CrochetHook size={32} finish="gold" />
+          <Image src="/icon.svg" alt="Mebley logo" width={32} height={32} />
         </div>
         <p style={{ color: '#a37a82', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
           Finding your matches…
@@ -921,7 +921,7 @@ export default function BrowsePage() {
         {fetching ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', gap: 20 }}>
             <div style={{ animation: 'float 2.5s ease-in-out infinite' }}>
-              <CrochetHook size={36} finish="gold" />
+              <Image src="/icon.svg" alt="Mebley logo" width={36} height={36} />
             </div>
             <p style={{ color: '#a37a82', fontFamily: "'DM Sans', sans-serif", fontSize: 14, margin: 0 }}>
               Finding your matches…
@@ -944,8 +944,8 @@ export default function BrowsePage() {
 
         ) : scored.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 16, textAlign: 'center' }}>
-            <div style={{ opacity: 0.15, marginBottom: 8 }}>
-              <CrochetHook size={48} finish="gold" />
+            <div style={{ opacity: 0.25, marginBottom: 8 }}>
+              <Image src="/icon.svg" alt="Mebley logo" width={48} height={48} />
             </div>
             <h3 style={{ margin: 0, fontFamily: "'Fraunces', Georgia, serif", fontSize: 22, color: '#2d1b1f' }}>
               No profiles found

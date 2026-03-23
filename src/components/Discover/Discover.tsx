@@ -143,7 +143,9 @@ export default function Discover() {
   const { profile, score, reasons } = current
 
   return (
-    <div className="flex flex-col items-center justify-start p-4 overflow-y-auto">
+    <div className="flex flex-col items-center justify-start overflow-y-auto bg-[linear-gradient(120deg,#f7f1eb_0%,#f9f3ee_44%,#f5eeea_100%)] p-4">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(52%_45%_at_82%_10%,rgba(242,122,153,0.16),transparent_72%)]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(42%_36%_at_12%_88%,rgba(220,146,126,0.12),transparent_76%)]" />
 
       {matchAlert && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-pink-500 text-white px-6 py-3 rounded-full shadow-lg z-50 animate-bounce">

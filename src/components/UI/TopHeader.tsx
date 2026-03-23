@@ -6,8 +6,6 @@ import { usePaywall } from '@/hooks/usePaywall'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import CrochetHook from './CrochetHook'
-import CrotchetWordmark from './CrotchetWordmark'
 
 function getPhotoUrl(photos: unknown): string | null {
   if (!Array.isArray(photos) || photos.length === 0) return null
@@ -46,10 +44,27 @@ export default function TopHeader() {
 
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ filter: 'drop-shadow(0 2px 4px rgba(212,160,23,0.3))', display: 'flex', alignItems: 'center' }}>
-            <CrochetHook size={44} finish="gold" />
-          </div>
-          <CrotchetWordmark height={28} />
+          <Image
+            src="/icon.svg"
+            alt="Mebley logo"
+            width={34}
+            height={34}
+            style={{ borderRadius: '999px' }}
+            priority
+          />
+          <span
+            style={{
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontSize: '30px',
+              fontWeight: 700,
+              background: 'linear-gradient(90deg,#e95075 0%,#de5f8c 42%,#cb4faf 100%)',
+              WebkitBackgroundClip: 'text',
+              color: 'transparent',
+              lineHeight: 1,
+            }}
+          >
+            Mebley
+          </span>
         </div>
 
         {/* Right side */}

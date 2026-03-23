@@ -28,6 +28,7 @@ function ConfirmationScreen({ email, onResend }: { email: string; onResend: () =
   const supabase = createClient()
   const [resent, setResent]     = useState(false)
   const [cooldown, setCooldown] = useState(0)
+  const [resending, setResending] = useState(false)
 
   useEffect(() => {
     if (cooldown <= 0) return
@@ -36,10 +37,16 @@ function ConfirmationScreen({ email, onResend }: { email: string; onResend: () =
   }, [cooldown])
 
   const handleResend = async () => {
-    await onResend()
-    setResent(true)
-    setCooldown(60)
-    setTimeout(() => setResent(false), 4000)
+    if (resending || cooldown > 0) return
+    setResending(true)
+    try {
+      await onResend()
+      setResent(true)
+      setCooldown(60)
+      setTimeout(() => setResent(false), 4000)
+    } finally {
+      setResending(false)
+    }
   }
 
   return (
@@ -122,21 +129,30 @@ function ConfirmationScreen({ email, onResend }: { email: string; onResend: () =
       <p style={{ fontSize: 13, color: '#8b7d87', marginBottom: 12 }}>Didn't get it? Check your spam folder.</p>
       <button
         onClick={handleResend}
-        disabled={cooldown > 0}
+        disabled={cooldown > 0 || resending}
         style={{
-          background: cooldown > 0 ? '#f7f2f5' : 'linear-gradient(90deg,#fff6fa,#ffeef4)',
+          background: cooldown > 0 || resending ? '#f7f2f5' : 'linear-gradient(90deg,#fff6fa,#ffeef4)',
           border: '1.5px solid #e5d3de',
           borderRadius: 12,
           padding: '10px 20px',
           fontSize: 13,
           fontWeight: 700,
-          color: cooldown > 0 ? '#9ba1ad' : '#e13f68',
-          cursor: cooldown > 0 ? 'not-allowed' : 'pointer',
+          color: cooldown > 0 || resending ? '#9ba1ad' : '#e13f68',
+          cursor: cooldown > 0 || resending ? 'not-allowed' : 'pointer',
           fontFamily: 'inherit',
           transition: 'all 0.2s',
-          boxShadow: cooldown > 0 ? 'none' : '0 8px 20px rgba(235,86,128,0.14)',
+          boxShadow: cooldown > 0 || resending ? 'none' : '0 8px 20px rgba(235,86,128,0.14)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
         }}>
-        {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend confirmation email'}
+        {resending ? (
+          <>
+            <Loader2 size={14} className="animate-spin" />
+            Sending...
+          </>
+        ) : cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend confirmation email'}
       </button>
     </div>
   )
@@ -312,23 +328,23 @@ function AuthPageInner() {
         .str-bar { height: 3px; border-radius: 99px; flex: 1; transition: background 0.3s; }
       `}</style>
 
-      <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(120deg,#f7f1eb_0%,#f9f3ee_44%,#f5eeea_100%)] font-['DM_Sans']">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(52%_45%_at_82%_10%,rgba(242,122,153,0.24),transparent_72%)]" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(42%_36%_at_12%_88%,rgba(220,146,126,0.18),transparent_76%)]" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(34%_34%_at_50%_58%,rgba(255,255,255,0.55),transparent_75%)]" />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.16)_0%,transparent_25%,transparent_75%,rgba(255,255,255,0.12)_100%)]" />
+      <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(34%_46%_at_22%_26%,rgba(174,16,127,0.3),transparent_72%),radial-gradient(38%_52%_at_82%_12%,rgba(88,12,120,0.37),transparent_70%),radial-gradient(45%_55%_at_84%_86%,rgba(207,18,111,0.24),transparent_72%),linear-gradient(135deg,#120018_0%,#2b043f_48%,#70004b_78%,#d1005f_100%)] font-['DM_Sans']">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(52%_45%_at_82%_10%,rgba(248,159,196,0.18),transparent_72%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(42%_36%_at_12%_88%,rgba(201,116,187,0.14),transparent_76%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(34%_34%_at_50%_58%,rgba(255,255,255,0.1),transparent_75%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.06)_0%,transparent_25%,transparent_75%,rgba(255,255,255,0.05)_100%)]" />
 
         {/* Brand */}
         <div className="relative z-10 flex justify-center pb-3 pt-10">
-          <div className="inline-flex items-center gap-3 rounded-full border border-[#e4d6ca] bg-[#fff9f4]/90 px-4 py-2 shadow-[0_8px_28px_rgba(55,26,36,0.09)] backdrop-blur-sm">
+          <div className="inline-flex items-center gap-3 rounded-full border border-white/25 bg-white/10 px-4 py-2 shadow-[0_8px_28px_rgba(12,4,17,0.35)] backdrop-blur-sm">
             <img src="/icon.svg" alt="Mebley logo" className="h-10 w-10 rounded-full" />
-            <span className="font-['Fraunces'] text-3xl font-bold text-[#1f131a]">Mebley</span>
+            <span className="font-['Fraunces'] text-3xl font-bold text-[#fff4fb]">Mebley</span>
           </div>
         </div>
 
         {/* Card */}
         <div className="relative z-10 flex flex-1 items-start justify-center px-4 pb-12 pt-2">
-          <div className="card-in w-full max-w-[460px] overflow-hidden rounded-[30px] border border-[#eadfd4] bg-[#fffdfb]/95 shadow-[0_4px_30px_rgba(30,14,21,0.08),0_24px_80px_rgba(30,14,21,0.12)] backdrop-blur-[2px]">
+          <div className="card-in w-full max-w-[460px] overflow-hidden rounded-[18px] border border-[#e8d7e3] bg-[linear-gradient(145deg,rgba(255,248,251,0.96),rgba(249,239,246,0.94))] shadow-[0_8px_36px_rgba(18,7,25,0.3),0_24px_90px_rgba(18,7,25,0.22)] backdrop-blur-[3px]">
 
             {/* ── LANDING ── */}
             {mode === 'landing' && (
@@ -357,13 +373,13 @@ function AuthPageInner() {
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => { setMode('signup'); setError('') }}
-                    className="primary-btn w-full rounded-2xl bg-gradient-to-r from-[#ee5d7d] to-[#d77b5d] px-4 py-3.5 text-base font-semibold text-white shadow-[0_10px_28px_rgba(231,94,124,0.32)] transition"
+                    className="primary-btn w-full rounded-xl bg-gradient-to-r from-[#ee5d7d] to-[#d77b5d] px-4 py-3.5 text-base font-semibold text-white shadow-[0_10px_28px_rgba(231,94,124,0.32)] transition"
                   >
                     Create Account — It's Free
                   </button>
                   <button
                     onClick={() => { setMode('signin'); setError('') }}
-                    className="secondary-btn w-full rounded-2xl border border-[#e4d8ce] bg-[#fffdfb] px-4 py-3.5 text-base font-medium text-[#493b43] transition hover:bg-[#faf2eb]"
+                    className="secondary-btn w-full rounded-xl border border-[#e4d8ce] bg-[#fffdfb] px-4 py-3.5 text-base font-medium text-[#493b43] transition hover:bg-[#faf2eb]"
                   >
                     Sign In
                   </button>
@@ -580,7 +596,7 @@ function AuthPageInner() {
 export default function AuthPage() {
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#120018 0%,#2b043f 48%,#70004b 78%,#d1005f 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Loader2 size={28} color="#f43f5e" className="animate-spin" />
       </div>
     }>

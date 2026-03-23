@@ -180,10 +180,87 @@ const HERO_PILLARS = [
   },
 ]
 const STATS = [{ v: '40+', l: 'Countries' }, { v: '12k+', l: 'Matches' }, { v: '4.8★', l: 'App rating' }, { v: '78%', l: 'Reply rate' }]
+const HERO_AMARAS = [
+  {
+    emoji: '🌸',
+    name: 'Amara K., 28',
+    role: 'Nairobi · Architect',
+    tags: ['Art lover', 'Traveller', 'Bookworm'],
+    compatibility: '94%',
+  },
+  {
+    emoji: '🌺',
+    name: 'Lina M., 27',
+    role: 'Kigali · Product Designer',
+    tags: ['Runner', 'Podcast fan', 'Brunch person'],
+    compatibility: '92%',
+  },
+  {
+    emoji: '🌼',
+    name: 'Nia T., 29',
+    role: 'Accra · Brand Strategist',
+    tags: ['Foodie', 'Skincare', 'Live music'],
+    compatibility: '96%',
+  },
+  {
+    emoji: '🌷',
+    name: 'Zuri A., 26',
+    role: 'Lagos · Data Analyst',
+    tags: ['Beach walks', 'Poetry', 'Gym'],
+    compatibility: '90%',
+  },
+]
+const HERO_FEED = [
+  {
+    icon: '💌',
+    title: 'New connection!',
+    text: 'James liked your profile',
+    user: 'James W.',
+    meta: 'Matched 4m ago',
+    gradient: 'linear-gradient(135deg,#fffdfb 0%,#ffeef3 48%,#ffe4d9 100%)',
+  },
+  {
+    icon: '✨',
+    title: 'You are trending',
+    text: '6 people viewed your profile today',
+    user: 'Lina M.',
+    meta: 'Viewed 8m ago',
+    gradient: 'linear-gradient(135deg,#fffdfb 0%,#e8f3ff 52%,#def8ef 100%)',
+  },
+  {
+    icon: '💬',
+    title: 'Message waiting',
+    text: 'Ayo sent you a voice note',
+    user: 'Ayo R.',
+    meta: 'Sent 11m ago',
+    gradient: 'linear-gradient(135deg,#fffdfb 0%,#efe9ff 46%,#ffe7f2 100%)',
+  },
+  {
+    icon: '🔥',
+    title: 'Hot match nearby',
+    text: 'Nia matches 92% with you',
+    user: 'Nia P.',
+    meta: 'Updated 14m ago',
+    gradient: 'linear-gradient(135deg,#fffdfb 0%,#ffeede 44%,#ffe4f2 100%)',
+  },
+  {
+    icon: '🧵',
+    title: 'Intent score up',
+    text: 'Your profile rank improved',
+    user: 'Remi D.',
+    meta: 'Updated 18m ago',
+    gradient: 'linear-gradient(135deg,#fffdfb 0%,#e8f4ff 42%,#f0f6e5 100%)',
+  },
+]
 const VALUES = [
   { icon: '💎', title: 'Depth over swipes',   desc: 'We designed every feature to push past the surface. No swipe gamification, no endless scroll.' },
   { icon: '🌐', title: 'Globally inclusive',  desc: 'Built from day one to connect people across race, culture and continent without bias in the algorithm.' },
   { icon: '🔒', title: 'Safe by design',      desc: 'Photo verification, report tools, and proactive moderation so you can be open without being exposed.' },
+]
+const FAQS = [
+  { q: 'How does matching work on Mebley?', a: 'Matches are ranked by intent, profile quality, shared values, and engagement patterns - not swipe volume.' },
+  { q: 'Is Mebley free to start?', a: 'Yes. You can create a profile, discover people, and begin matching for free.' },
+  { q: 'How does Mebley keep users safe?', a: 'We use profile controls, moderation tooling, and reporting systems to keep conversations respectful and secure.' },
 ]
 
 /* ══════════════════════════════════════════════════════════════
@@ -308,7 +385,7 @@ function BookCard({ side, data, thread }: { side: 'left'|'right'; data: any; thr
           <div style={{ position: 'absolute', top: 8, right: 8, background: 'linear-gradient(135deg,#f5d07a,#e8a020)', borderRadius: 100, padding: '2px 7px', fontSize: 8, fontWeight: 800, color: '#1a0a0f' }}>{data.badge}</div>
         )}
         <div style={{ position: 'absolute', bottom: 8, left: 10 }}>
-          <div style={{ fontFamily: 'Fraunces,serif', fontSize: 14, fontWeight: 800, color: '#fff' }}>{data.name}</div>
+          <div style={{ fontFamily: 'inherit', fontSize: 14, fontWeight: 800, color: '#fff' }}>{data.name}</div>
           <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.45)' }}>{data.loc}</div>
         </div>
       </div>
@@ -368,6 +445,7 @@ function Spine({ thread }: { thread: string }) {
 export default function LandingPage() {
   const [scrollY,  setScrollY ] = useState(0)
   const [activeT,  setActiveT ] = useState(0)
+  const [activeAmara, setActiveAmara] = useState(0)
 
   useEffect(() => {
     const fn = () => setScrollY(window.scrollY)
@@ -378,29 +456,40 @@ export default function LandingPage() {
     const t = setInterval(() => setActiveT(i => (i+1) % TESTIMONIALS.length), 4600)
     return () => clearInterval(t)
   }, [])
+  useEffect(() => {
+    const t = setInterval(() => setActiveAmara((i) => (i + 1) % HERO_AMARAS.length), 2800)
+    return () => clearInterval(t)
+  }, [])
 
   return (
     <div
-      className="relative min-h-screen overflow-x-hidden bg-[#f8f2ec] text-white"
+      className="relative min-h-screen overflow-x-hidden bg-[radial-gradient(34%_46%_at_22%_26%,rgba(174,16,127,0.26),transparent_72%),radial-gradient(38%_52%_at_82%_12%,rgba(88,12,120,0.33),transparent_70%),linear-gradient(135deg,#120018_0%,#2b043f_48%,#70004b_78%,#d1005f_100%)] text-white"
     >
       <div className="relative z-10">
         <nav
           className={`fixed top-0 z-40 flex w-full items-center justify-between border-b border-[#22161d]/10 px-4 py-3 backdrop-blur-md transition-all md:px-10 ${
-            scrollY > 50 ? 'bg-[#f8f2ec]/95 shadow-[0_8px_30px_rgba(25,12,20,0.06)]' : 'bg-[#f8f2ec]/90'
+            scrollY > 50 ? 'bg-[#18031f]/88 shadow-[0_8px_30px_rgba(8,2,12,0.35)]' : 'bg-[#14021c]/78'
           }`}
         >
-          <a href="/" className="flex items-center gap-3 text-[#22161d]">
+          <a href="/" className="flex items-center gap-3 text-white/95">
             <img
               src="/icon.svg"
               alt="Mebley logo"
               className="h-11 w-11 rounded-full object-cover shadow-[0_8px_20px_rgba(229,90,111,0.22)]"
             />
             <span className="leading-none">
-              <span className="block font-['Fraunces'] text-[2rem] font-bold leading-none">Mebley</span>
-              <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-[#22161d]/75">Modern Connections</span>
+              <motion.span
+                className="block bg-gradient-to-r from-[#1e3a8a] via-[#ef6180] via-[#df7a77] to-[#c88d62] bg-clip-text font-sans text-[2rem] font-bold leading-none text-transparent"
+                style={{ backgroundSize: '220% 220%' }}
+                animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                Mebley
+              </motion.span>
+              <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">Modern Connections</span>
             </span>
           </a>
-          <ul className="hidden items-center gap-3 md:flex">
+          <ul className="hidden items-center gap-2 md:flex">
             {[
               { href: '#features', label: 'Features', icon: '✦' },
               { href: '#stories', label: 'Stories', icon: '♡' },
@@ -411,7 +500,7 @@ export default function LandingPage() {
               <li key={href}>
                 <a
                   href={href}
-                  className="group relative inline-flex items-center gap-2 rounded-full border border-transparent px-4 py-2 text-sm font-semibold text-[#22161d]/80 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d9c8bc] hover:bg-gradient-to-r hover:from-[#fff3ee] hover:to-[#f5e7de] hover:text-[#22161d] hover:shadow-[0_10px_20px_rgba(54,24,34,0.12)]"
+                  className="group relative inline-flex items-center gap-2 rounded-full border border-transparent px-4 py-2 text-base font-semibold text-white/80 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/12 hover:text-white hover:shadow-[0_10px_20px_rgba(7,2,12,0.35)]"
                 >
                   <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#f1e5dc] text-[11px] font-bold text-[#8e5a56] transition group-hover:bg-[#ef6180]/20 group-hover:text-[#b24657]">
                     {icon}
@@ -429,27 +518,55 @@ export default function LandingPage() {
         </nav>
 
         <section className="relative min-h-screen overflow-hidden px-6 pb-20 pt-36 md:px-12">
-          <div className="absolute inset-0 -z-10 bg-[#f8f2ec]" />
+          <div className="absolute inset-0 -z-10 bg-transparent" />
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(50%_50%_at_80%_12%,rgba(244,173,194,0.32),transparent_72%)]" />
 
           <div className="mx-auto grid max-w-7xl items-center gap-10 md:grid-cols-[1.05fr_0.72fr]">
-            <div className="text-left text-[#22161d]">
+            <div className="text-left text-[#f8edf4]">
           <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
-                <div className="mb-10 inline-flex items-center gap-2 rounded-full border border-[#c7baa9] bg-[#fbf7f3] px-5 py-2 text-[12px] font-semibold uppercase tracking-[0.17em] text-[#b05b54]">
-                  <span className="text-[#e05d71]">●</span>
-                  Intentional dating, reimagined
-              </div>
+                <motion.div
+                  className="group relative mb-10 inline-flex items-center gap-3 overflow-hidden rounded-full border border-[#c6b3a5] bg-gradient-to-r from-[#fdf7f2] via-[#fffaf6] to-[#fbeee6] px-6 py-2.5 text-[12px] font-bold uppercase tracking-[0.19em] text-[#a34f4c] shadow-[0_8px_20px_rgba(188,91,103,0.14)]"
+                  animate={{
+                    borderColor: ['#c6b3a5', '#d48aa0', '#8ea4d9', '#c6b3a5'],
+                    color: ['#a34f4c', '#bf4b73', '#5f5ab8', '#a34f4c'],
+                    boxShadow: [
+                      '0 8px 20px rgba(188,91,103,0.14)',
+                      '0 8px 22px rgba(197,79,125,0.2)',
+                      '0 8px 22px rgba(108,110,214,0.2)',
+                      '0 8px 20px rgba(188,91,103,0.14)',
+                    ],
+                  }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <motion.span
+                    className="text-[#e05d71]"
+                    animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    ●
+                  </motion.span>
+                  <span className="relative z-10">Intentional dating, reimagined</span>
+                  <motion.span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 -left-24 w-20 bg-gradient-to-r from-transparent via-white/80 to-transparent"
+                    animate={{ x: [-60, 760] }}
+                    transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1.1 }}
+                  />
+              </motion.div>
             </motion.div>
 
-              <h1 className="max-w-4xl font-['Fraunces'] text-5xl font-black leading-[0.96] tracking-tight md:text-7xl">
+              <h1
+                className="max-w-4xl text-[2.8rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-[3.6rem]"
+                style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
+              >
                 Find your person,
-                <span className="mt-2 block bg-gradient-to-r from-[#ec5f79] via-[#d87b6f] to-[#c69a5e] bg-clip-text font-light italic text-transparent">
+                <span className="mt-2 block bg-gradient-to-r from-[#ec5f79] via-[#d87b6f] to-[#c69a5e] bg-clip-text text-[0.88em] font-sans font-light text-transparent">
                   not just another match.
               </span>
             </h1>
 
           <motion.p
-                className="mt-8 max-w-3xl text-lg leading-relaxed text-[#4a3a41]/90 md:text-[2rem]"
+                className="mt-8 max-w-3xl text-lg leading-relaxed text-[#f0dce7]/95 md:text-[2rem]"
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.96, ease: EASE }}
@@ -466,21 +583,11 @@ export default function LandingPage() {
                 <MagBtn href="/auth" className="w-full rounded-full bg-gradient-to-r from-[#ec5575] to-[#c9784a] px-10 py-4 text-center text-base font-semibold text-white shadow-[0_18px_36px_rgba(227,102,112,0.32)] sm:w-auto">
                   Start free →
             </MagBtn>
-                <MagBtn href="#features" className="w-full rounded-full border border-[#c8baab] bg-[#f8f2ec] px-10 py-4 text-center text-base font-medium text-[#22161d] transition hover:bg-[#f2e8df] sm:w-auto">
+                <MagBtn href="#features" className="w-full rounded-full border border-white/35 bg-white/10 px-10 py-4 text-center text-base font-medium text-white transition hover:bg-white/15 sm:w-auto">
                   Explore how it works
             </MagBtn>
             </motion.div>
 
-              <motion.div
-                className="mt-12 flex flex-wrap items-center gap-3 text-sm text-[#4a3a41]/85"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1.22 }}
-              >
-                <span className="rounded-full border border-[#d8ccbf] bg-[#fcf9f6] px-5 py-2">✦ Trusted by 12k+ users</span>
-                <span className="rounded-full border border-[#d8ccbf] bg-[#fcf9f6] px-5 py-2">★ 4.8 app experience</span>
-                <span className="rounded-full border border-[#d8ccbf] bg-[#fcf9f6] px-5 py-2">◎ Privacy-first matching</span>
-              </motion.div>
             </div>
 
             <motion.div
@@ -489,26 +596,36 @@ export default function LandingPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.72, delay: 0.62, ease: EASE }}
             >
-              <div className="rounded-[34px] border border-[#e9ddd3] bg-[#fcfbf9] p-7 shadow-[0_30px_60px_rgba(54,31,44,0.14)]">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#f0c4b5] to-[#d9aa8f] text-3xl">
-                  🌸
-                </div>
-                <div className="font-['Fraunces'] text-4xl font-bold text-[#24161d]">Amara K., 28</div>
-                <div className="text-xl text-[#5e4a51]">Nairobi · Architect</div>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {['Art lover', 'Traveller', 'Bookworm'].map((tag) => (
-                    <span key={tag} className="rounded-full bg-[#f3e6dc] px-3 py-1 text-xs font-medium text-[#9f6559]">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-9 flex items-end justify-between text-lg">
-                  <span className="text-[#4a3a41]">Compatibility</span>
-                  <span className="font-['Fraunces'] font-bold text-[#df5f76]">94%</span>
-                </div>
+              <div className="rounded-[5px] border border-[#e4d4df] bg-[linear-gradient(135deg,#f5edf2_0%,#f0e6ef_58%,#eadfea_100%)] p-7 shadow-[0_30px_60px_rgba(54,31,44,0.2)]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={HERO_AMARAS[activeAmara].name}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.35, ease: 'easeOut' }}
+                  >
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#f0c4b5] to-[#d9aa8f] text-3xl">
+                      {HERO_AMARAS[activeAmara].emoji}
+                    </div>
+                    <div className="font-sans text-4xl font-bold text-[#24161d]">{HERO_AMARAS[activeAmara].name}</div>
+                    <div className="text-xl text-[#5e4a51]">{HERO_AMARAS[activeAmara].role}</div>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {HERO_AMARAS[activeAmara].tags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-[#f3e6dc] px-3 py-1 text-xs font-medium text-[#9f6559]">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="mt-9 flex items-end justify-between text-lg">
+                      <span className="text-[#4a3a41]">Compatibility</span>
+                      <span className="font-sans font-bold text-[#df5f76]">{HERO_AMARAS[activeAmara].compatibility}</span>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
               </div>
 
-              <div className="mt-6 flex items-center justify-between rounded-[22px] bg-gradient-to-r from-[#2a0f1d] to-[#4c1f33] px-6 py-5 text-[#fff0f3] shadow-[0_20px_40px_rgba(36,13,25,0.2)]">
+              <div className="mt-6 flex items-center justify-between rounded-[5px] border border-[#5f3040]/45 bg-gradient-to-r from-[#2a0f1d] to-[#4c1f33] px-6 py-5 text-[#fff0f3] shadow-[0_20px_40px_rgba(36,13,25,0.2)]">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f05279] text-lg">🎙️</div>
                   <div className="text-[#f6b1c1]">▮▮▮▮▯▮</div>
@@ -516,18 +633,56 @@ export default function LandingPage() {
                 <span className="text-base">Voice intro</span>
               </div>
 
-              <div className="mt-5 ml-8 rounded-[20px] border border-[#ece0d5] bg-[#fffdfb] px-6 py-5 shadow-[0_16px_30px_rgba(32,18,25,0.11)]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8d7df] text-[#e25173]">💌</div>
-                  <div>
-                    <div className="text-xl font-semibold text-[#23161d]">New connection!</div>
-                    <div className="text-base text-[#55424a]">James liked your profile</div>
-                  </div>
-                </div>
-              </div>
             </motion.div>
           </div>
-        </section>
+
+          <motion.div
+            className="mx-auto mt-10 max-w-7xl"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.95 }}
+          >
+            <div className="overflow-hidden pb-2">
+              <motion.div
+                className="flex w-max gap-4"
+                animate={{ x: ['0%', '-50%'] }}
+                transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
+              >
+                {[...HERO_FEED, ...HERO_FEED].map((item, i) => (
+                  <motion.div
+                    key={`${item.title}-${item.user}-${i}`}
+                    className="min-w-[290px] rounded-[5px] border border-[#eadcd0] px-5 py-4 shadow-[0_14px_26px_rgba(49,24,35,0.11)] md:min-w-[340px]"
+                    style={{ backgroundImage: item.gradient, backgroundSize: '170% 170%' }}
+                    animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                    transition={{ duration: 7 + (i % HERO_FEED.length), repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8d7df] text-[#e25173]">{item.icon}</div>
+                      <div>
+                        <div className="text-lg font-semibold text-[#23161d]">{item.title}</div>
+                        <div className="text-sm text-[#5a4850]">{item.text}</div>
+                        <div className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-[#8f6c74]">
+                          {item.user} · {item.meta}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            className="mx-auto mt-8 flex max-w-7xl flex-wrap items-center gap-3 text-sm text-[#4a3a41]/85"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 1.22 }}
+          >
+            <span className="rounded-full border border-white/30 bg-white/10 px-5 py-2 text-white/90">✦ Trusted by 12k+ users</span>
+            <span className="rounded-full border border-white/30 bg-white/10 px-5 py-2 text-white/90">★ 4.8 app experience</span>
+            <span className="rounded-full border border-white/30 bg-white/10 px-5 py-2 text-white/90">◎ Privacy-first matching</span>
+            </motion.div>
+          </section>
 
         <section id="features" className="pb-10">
           <div className="w-full bg-[#17090f] px-6 py-10 text-[#f3e8df] md:px-12 md:py-14">
@@ -539,60 +694,63 @@ export default function LandingPage() {
                     i !== HERO_PILLARS.length - 1 ? 'md:border-r md:border-[#f7e2d0]/10' : ''
                   } ${i === 0 ? 'bg-[#341720]/70 md:-ml-2' : ''}`}
                 >
-                  <div className="font-['Fraunces'] text-5xl text-[#b48a7f]">{item.n}</div>
+                  <div className="text-4xl font-semibold text-[#b48a7f] md:text-[2.6rem]">{item.n}</div>
                   <div className="mt-4 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#f0617a] to-[#d47a56]" />
                   <h3
-                    className="mt-8 font-['Fraunces'] text-4xl font-bold leading-tight text-rose-50"
+                    className="mt-8 text-2xl font-sans font-bold leading-tight text-rose-50 md:text-[2rem]"
                     style={{ color: '#fff4ee', textShadow: '0 2px 12px rgba(0,0,0,0.35)' }}
                   >
                     {item.title}
                   </h3>
-                  <p className="mt-5 max-w-md text-2xl leading-relaxed text-[#e5d6cd]/95">{item.desc}</p>
+                  <p className="mt-5 max-w-md text-lg leading-relaxed text-[#e5d6cd]/95 md:text-[1.18rem]">{item.desc}</p>
                 </div>
               ))}
             </div>
 
             <motion.div className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-3 rounded-3xl border border-white/15 bg-white/[0.04] p-4 backdrop-blur-xl md:grid-cols-4">
-              {STATS.map((s) => (
-                <div key={s.l} className="text-center">
-                  <div className="font-['Fraunces'] text-4xl font-black text-white">{s.v}</div>
-                  <div className="text-xs tracking-wide text-white/70">{s.l}</div>
-                </div>
+            {STATS.map((s) => (
+              <div key={s.l} className="text-center">
+                  <div className="text-3xl font-extrabold text-white md:text-[2.1rem]">{s.v}</div>
+                  <div className="text-xs font-medium tracking-wide text-white/70">{s.l}</div>
+              </div>
               ))}
             </motion.div>
           </div>
           </section>
 
-        <section className="bg-[#f8f2ec] px-6 py-16 md:px-12 md:py-20">
+        <section className="bg-[radial-gradient(55%_60%_at_15%_15%,rgba(199,33,122,0.24),transparent_70%),radial-gradient(42%_52%_at_85%_18%,rgba(93,22,131,0.26),transparent_72%),linear-gradient(135deg,#130119_0%,#280334_46%,#53073b_78%,#7a0e4d_100%)] px-6 py-16 md:px-12 md:py-20">
           <div className="mx-auto max-w-7xl">
             <div className="grid items-center gap-10 md:grid-cols-[1fr_1fr] md:gap-14">
-              <div className="text-[#23161d]">
-                <h2 className="max-w-lg font-['Fraunces'] text-5xl font-black leading-[0.95] tracking-tight md:text-7xl">
+              <div className="text-[#f6eaf1]">
+                <h2
+                  className="max-w-lg text-2xl font-sans font-bold leading-tight tracking-tight text-white md:text-[2rem]"
+                  style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
+                >
                   Real love starts with
-                  <span className="mt-2 block bg-gradient-to-r from-[#ec5f79] to-[#d97d68] bg-clip-text font-light italic text-transparent">
+                  <span className="mt-2 block bg-gradient-to-r from-[#ec5f79] to-[#d97d68] bg-clip-text font-sans font-semibold text-transparent">
                     real intent.
                   </span>
                 </h2>
-                <p className="mt-8 max-w-xl text-xl leading-relaxed text-[#4b3b42]/90 md:text-[2rem]">
+                <p className="mt-8 max-w-xl text-lg leading-relaxed text-[#f0dce7]/90 md:text-[2rem]">
                   We built Mebley because the world deserved a dating app where ambition meets authenticity - and where great relationships actually begin.
                 </p>
               </div>
 
-              <div className="grid overflow-hidden rounded-[30px] border border-[#e7d9ce] bg-[#f4e8dc] md:grid-cols-2">
-                <div className="border-b border-r border-[#e7d9ce] p-8 md:p-10">
-                  <div className="font-['Fraunces'] text-6xl font-bold text-[#22161d]">12<span className="text-[#ec5f79]">k+</span></div>
-                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#594951]">Active users</div>
+              <div className="grid overflow-hidden rounded-[30px] border border-white/20 bg-white/8 backdrop-blur-md md:grid-cols-2">
+                <div className="border-b border-r border-white/15 p-8 md:p-10">
+                  <div className="font-sans text-6xl font-extrabold text-[#fff5fb]">12<span className="text-[#ec5f79]">k+</span></div>
+                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#ecd8e3]">Active users</div>
                 </div>
-                <div className="border-b border-[#e7d9ce] p-8 md:p-10">
-                  <div className="font-['Fraunces'] text-6xl font-bold text-[#22161d]">40<span className="text-[#ec5f79]">+</span></div>
-                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#594951]">Countries</div>
+                <div className="border-b border-white/15 p-8 md:p-10">
+                  <div className="font-sans text-6xl font-extrabold text-[#fff5fb]">40<span className="text-[#ec5f79]">+</span></div>
+                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#ecd8e3]">Countries</div>
                 </div>
-                <div className="border-r border-[#e7d9ce] p-8 md:p-10">
-                  <div className="font-['Fraunces'] text-6xl font-bold text-[#22161d]">4.8<span className="text-[#ec5f79]">★</span></div>
-                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#594951]">App rating</div>
+                <div className="border-r border-white/15 p-8 md:p-10">
+                  <div className="font-sans text-6xl font-extrabold text-[#fff5fb]">4.8<span className="text-[#ec5f79]">★</span></div>
+                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#ecd8e3]">App rating</div>
                 </div>
-                <div className="bg-[#1d0b12] p-8 md:p-10">
-                  <div className="font-['Fraunces'] text-6xl font-bold text-[#f2e8e0]">3<span className="text-[#ec5f79]">k+</span></div>
+                <div className="bg-[#1d0b12]/80 p-8 md:p-10">
+                  <div className="font-sans text-6xl font-extrabold text-[#f2e8e0]">3<span className="text-[#ec5f79]">k+</span></div>
                   <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#b6a4ad]">Couples formed</div>
                 </div>
               </div>
@@ -603,15 +761,15 @@ export default function LandingPage() {
               <div className="absolute -right-20 bottom-4 h-64 w-64 rounded-full bg-[#6e3b2f]/20 blur-2xl" />
               <div className="relative z-10">
                 <h3
-                  className="font-['Fraunces'] text-5xl font-black leading-[0.96] text-rose-100 md:text-7xl"
-                  style={{ color: '#ffe8f0', textShadow: '0 2px 16px rgba(0,0,0,0.5)' }}
+                  className="text-2xl font-sans font-bold leading-tight tracking-tight text-white md:text-[2rem]"
+                  style={{ color: '#ffffff', textShadow: '0 2px 12px rgba(0,0,0,0.45)' }}
                 >
                   Your person is
-                  <span className="mt-2 block bg-gradient-to-r from-[#ffb1c7] to-[#f29c84] bg-clip-text font-light italic text-transparent">
+                  <span className="mt-2 block bg-gradient-to-r from-[#ffb1c7] to-[#f29c84] bg-clip-text font-sans font-semibold text-transparent">
                     already here.
                   </span>
                 </h3>
-                <p className="mx-auto mt-6 max-w-3xl text-xl leading-relaxed text-[#d8c7ce] md:text-[2rem]">
+                <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-[#d8c7ce] md:text-[2rem]">
                   Join thousands building something real. Start free - no card required.
                 </p>
                 <div className="mt-10">
@@ -621,26 +779,159 @@ export default function LandingPage() {
                 </div>
               </div>
                 </div>
-                </div>
-        </section>
+          </div>
+          </section>
 
-        <section id="stories" className="bg-[#f8f2ec] px-6 pb-16 md:px-12 md:pb-20">
+        <section className="relative overflow-hidden bg-[radial-gradient(62%_80%_at_14%_8%,rgba(195,36,124,0.18),transparent_70%),radial-gradient(48%_62%_at_90%_18%,rgba(85,19,129,0.2),transparent_72%),linear-gradient(135deg,#120119_0%,#24032d_45%,#430736_72%,#671045_100%)] px-6 py-16 md:px-12 md:py-20">
+          <motion.div
+            className="pointer-events-none absolute -left-20 top-10 h-64 w-64 rounded-full bg-[#d23b8f]/20 blur-3xl"
+            animate={{ x: [0, 20, 0], y: [0, -12, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="pointer-events-none absolute -right-24 bottom-8 h-72 w-72 rounded-full bg-[#6e2fb0]/20 blur-3xl"
+            animate={{ x: [0, -24, 0], y: [0, 10, 0] }}
+            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <div className="mx-auto max-w-7xl">
+            <motion.div
+              className="mb-8 flex items-end justify-between gap-6"
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.55, ease: EASE }}
+            >
+              <h2
+                className="text-2xl font-sans font-bold tracking-tight text-white md:text-[2rem]"
+                style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
+              >
+                How Mebley works
+              </h2>
+              <motion.span
+                className="rounded-full border border-white/25 bg-white/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
+                whileHover={{ scale: 1.04 }}
+              >
+                Simple by design
+              </motion.span>
+            </motion.div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {HOW.map((item, i) => (
+                <motion.div
+                  key={item.n}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-60px' }}
+                  transition={{ duration: 0.55, delay: i * 0.08, ease: EASE }}
+                  whileHover={{ y: -4 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="rounded-[18px] border border-white/15 bg-white/6 p-6 backdrop-blur-md"
+                >
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#ef6180]/20 text-lg">{item.icon}</div>
+                  <div className="mt-4 text-sm font-semibold uppercase tracking-[0.12em] text-[#ffc1d3]">{item.n}</div>
+                  <h3
+                    className="mt-2 text-xl font-sans font-bold text-white"
+                    style={{ color: '#fff8fd', textShadow: '0 2px 12px rgba(4,1,9,0.55)' }}
+                  >
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 text-base leading-relaxed text-[#ead8e4]">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+          </section>
+
+        <section className="relative overflow-hidden bg-[radial-gradient(58%_70%_at_12%_18%,rgba(187,32,119,0.16),transparent_68%),radial-gradient(42%_58%_at_88%_20%,rgba(80,16,122,0.18),transparent_70%),linear-gradient(135deg,#100117_0%,#21042b_48%,#3a0734_74%,#5d0f42_100%)] px-6 py-16 md:px-12 md:py-20">
+          <motion.div
+            className="pointer-events-none absolute left-12 top-10 h-56 w-56 rounded-full bg-[#7d2ab7]/16 blur-3xl"
+            animate={{ scale: [1, 1.06, 1], opacity: [0.6, 0.85, 0.6] }}
+            transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-2">
+            <motion.div
+              className="rounded-[24px] border border-white/15 bg-white/7 p-7 backdrop-blur-md"
+              initial={{ opacity: 0, x: -24 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.6, ease: EASE }}
+            >
+              <h2
+                className="text-2xl font-sans font-bold tracking-tight text-white md:text-[2rem]"
+                style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
+              >
+                Safety and verification
+              </h2>
+              <p className="mt-4 text-base leading-relaxed text-[#ecdbe6]">Built with trust-first controls so great conversations can happen safely.</p>
+              <div className="mt-6 grid gap-3">
+                {VALUES.map((item, i) => (
+                  <motion.div
+                    key={item.title}
+                    className="rounded-[14px] border border-white/12 bg-black/15 p-4"
+                    initial={{ opacity: 0, y: 14 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.45, delay: i * 0.08, ease: EASE }}
+                    whileHover={{ y: -2, borderColor: 'rgba(255,255,255,0.28)' }}
+                  >
+                    <div className="text-sm font-semibold uppercase tracking-[0.1em] text-[#ffb9cd]">{item.icon} {item.title}</div>
+                    <p className="mt-2 text-sm leading-relaxed text-[#e8d5e1]">{item.desc}</p>
+              </motion.div>
+              ))}
+              </div>
+            </motion.div>
+            <motion.div
+              className="rounded-[24px] border border-white/15 bg-white/7 p-7 backdrop-blur-md"
+              initial={{ opacity: 0, x: 24 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.6, ease: EASE }}
+            >
+              <h2
+                className="text-2xl font-sans font-bold tracking-tight text-white md:text-[2rem]"
+                style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
+              >
+                Questions people ask
+              </h2>
+              <div className="mt-6 space-y-3">
+                {FAQS.map((item, i) => (
+                  <motion.details
+                    key={item.q}
+                    className="rounded-[14px] border border-white/12 bg-black/15 p-4"
+                    initial={{ opacity: 0, y: 14 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.45, delay: i * 0.08, ease: EASE }}
+                    whileHover={{ y: -2, borderColor: 'rgba(255,255,255,0.28)' }}
+                  >
+                    <summary className="cursor-pointer list-none text-base font-semibold text-white">{item.q}</summary>
+                    <p className="mt-2 text-sm leading-relaxed text-[#e8d5e1]">{item.a}</p>
+                  </motion.details>
+                ))}
+              </div>
+            </motion.div>
+            </div>
+          </section>
+
+        <section id="stories" className="bg-[radial-gradient(55%_70%_at_10%_8%,rgba(190,28,116,0.24),transparent_66%),radial-gradient(45%_60%_at_86%_20%,rgba(82,16,120,0.24),transparent_70%),linear-gradient(135deg,#110118_0%,#260331_45%,#4d0838_76%,#740f4a_100%)] px-6 pb-16 md:px-12 md:pb-20">
           <div className="mx-auto max-w-7xl">
             <div className="mb-8 text-center md:mb-10">
-              <h2 className="font-['Fraunces'] text-5xl font-black leading-[0.95] text-[#21141b] md:text-7xl">
+              <h2
+                className="text-2xl font-sans font-bold leading-tight tracking-tight text-white md:text-[2rem]"
+                style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
+              >
                 Stories stitched with
-                <span className="ml-2 bg-gradient-to-r from-[#ef6180] to-[#d98762] bg-clip-text font-light italic text-transparent">
+                <span className="ml-2 bg-gradient-to-r from-[#ef6180] to-[#d98762] bg-clip-text font-sans font-semibold text-transparent">
                   intention.
                 </span>
               </h2>
-              <p className="mx-auto mt-5 max-w-3xl text-lg text-[#524049]/90 md:text-2xl">
+              <p className="mx-auto mt-5 max-w-3xl text-base text-[#f0dce7]/90 md:text-xl">
                 Real people. Real chemistry. Real conversations that led to something meaningful.
               </p>
             </div>
 
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeT}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeT}
                 className="relative overflow-hidden rounded-[32px] border border-[#4b2732]/20 bg-[radial-gradient(70%_120%_at_0%_0%,rgba(241,102,131,0.14),transparent_56%),radial-gradient(40%_80%_at_80%_90%,rgba(209,112,85,0.14),transparent_60%),linear-gradient(135deg,#200c14,#3a1520_52%,#2c0f18)] p-8 text-[#f5e9e2] shadow-[0_24px_60px_rgba(31,11,19,0.35)] md:p-12"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -650,96 +941,98 @@ export default function LandingPage() {
                 <div className="absolute -left-24 top-6 h-72 w-72 rounded-full bg-[#7c3550]/20 blur-3xl" />
                 <div className="absolute -right-24 bottom-6 h-72 w-72 rounded-full bg-[#734033]/20 blur-3xl" />
                 <div className="relative z-10">
-                  <p className="font-['Fraunces'] text-3xl font-light italic leading-relaxed text-[#f9efe8] md:text-5xl">
-                    &ldquo;{TESTIMONIALS[activeT].text}&rdquo;
-                  </p>
+                  <p className="font-sans text-2xl font-medium leading-relaxed text-[#f9efe8] md:text-[2rem]">
+                &ldquo;{TESTIMONIALS[activeT].text}&rdquo;
+              </p>
                   <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#ef6180] to-[#d98762] font-['Fraunces'] text-lg font-bold text-white">
-                        {TESTIMONIALS[activeT].name[0]}
-                      </div>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#ef6180] to-[#d98762] font-sans text-lg font-bold text-white">
+                  {TESTIMONIALS[activeT].name[0]}
+                </div>
                       <div>
                         <div className="text-base font-semibold text-[#f7ece5] md:text-lg">
                           {TESTIMONIALS[activeT].name}, {TESTIMONIALS[activeT].age}
                         </div>
                         <div className="text-sm text-[#cab6be] md:text-base">{TESTIMONIALS[activeT].city}</div>
                         <div className="text-sm font-semibold text-[#ffadc2]">{TESTIMONIALS[activeT].match}</div>
-                      </div>
-                    </div>
+                </div>
+              </div>
 
                     <div className="flex items-center gap-2">
-                      {TESTIMONIALS.map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setActiveT(i)}
+            {TESTIMONIALS.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveT(i)}
                           aria-label={`Show story ${i + 1}`}
                           className={`h-2.5 rounded-full transition-all ${
                             i === activeT ? 'w-8 bg-[#ef6180]' : 'w-2.5 bg-white/35 hover:bg-white/50'
                           }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
+              />
+            ))}
+          </div>
+                </div>
                 </div>
               </motion.div>
             </AnimatePresence>
-          </div>
+                </div>
         </section>
 
         <footer className="bg-[radial-gradient(80%_120%_at_0%_0%,rgba(235,95,125,0.07),transparent_58%),linear-gradient(135deg,#1f0b12,#2b1018_55%,#220d14)] px-6 pb-10 pt-12 md:px-12">
           <div className="mx-auto max-w-6xl">
-            <div className="mb-8 flex flex-wrap items-start justify-between gap-10">
-              <div>
-                <a href="/" className="flex items-center gap-2 text-white">
+          <div className="mb-8 flex flex-wrap items-start justify-between gap-10">
+            <div>
+              <a href="/" className="flex items-center gap-2 text-white">
                   <img
                     src="/icon.svg"
                     alt="Mebley logo"
                     className="h-6 w-6 rounded-full object-cover"
                   />
-                  <span className="font-['Fraunces'] text-2xl font-bold">Mebley</span>
+                  <span className="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-2xl font-sans font-bold tracking-tight text-transparent md:text-[2rem]">
+                    Mebley
+                  </span>
                 </a>
-                <p className="mt-3 max-w-xs text-sm text-white/70">
+                <p className="mt-3 max-w-xs text-base leading-relaxed text-slate-400">
                   Dating built for people who want something real. Stitch your story.
                 </p>
-              </div>
-              <div className="grid grid-cols-2 gap-8 text-sm text-white/75 md:grid-cols-3">
-                <div>
-                  <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/90">Product</h4>
+                </div>
+            <div className="grid grid-cols-2 gap-8 text-base text-white/75 md:grid-cols-3">
+              <div>
+                <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/90">Product</h4>
                   <div className="space-y-2">
                     <a href="#features">Features</a>
                     <a href="#stories" className="block">Stories</a>
                     <a href="/auth" className="block">Sign up</a>
                   </div>
                 </div>
-                <div>
-                  <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/90">Company</h4>
+              <div>
+                <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/90">Company</h4>
                   <div className="space-y-2">
                     <a href="/about">About</a>
                     <a href="/blog" className="block">Blog</a>
                     <a href="/contact" className="block">Contact</a>
                   </div>
-                </div>
-                <div>
-                  <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/90">Legal</h4>
+              </div>
+              <div>
+                <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/90">Legal</h4>
                   <div className="space-y-2">
                     <a href="/privacy">Privacy</a>
                     <a href="/terms" className="block">Terms</a>
                   </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-xs text-white/60">
-              <p>© 2025 Mebley Inc. All rights reserved.</p>
-              <div className="flex gap-2">
-                {['𝕏', 'IG', 'TT', 'YT'].map((s) => (
-                  <a key={s} href="#" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[11px]">
-                    {s}
-                  </a>
-                ))}
               </div>
             </div>
           </div>
-        </footer>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-sm text-white/60">
+              <p>© 2025 Mebley Inc. All rights reserved.</p>
+            <div className="flex gap-2">
+              {['𝕏', 'IG', 'TT', 'YT'].map((s) => (
+                <a key={s} href="#" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[11px]">
+                  {s}
+                </a>
+              ))}
+              </div>
+              </div>
+            </div>
+          </footer>
       </div>
     </div>
   )
