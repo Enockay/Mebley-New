@@ -195,11 +195,11 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
       ref={cardRef}
       style={{
         position: 'absolute', inset: 0,
-        background: 'rgba(255,251,249,0.97)',
-        borderRadius: '28px',
+        background: 'linear-gradient(165deg, rgba(26,10,45,0.94), rgba(14,6,30,0.94))',
+        borderRadius: '30px',
         boxShadow: isTop
-          ? '0 20px 60px rgba(180,60,80,0.18), 0 4px 20px rgba(0,0,0,0.08)'
-          : '0 8px 30px rgba(180,60,80,0.10)',
+          ? '0 24px 68px rgba(7,2,20,0.52), 0 8px 26px rgba(236,72,153,0.16)'
+          : '0 10px 34px rgba(7,2,20,0.38)',
         overflow: 'hidden',
         userSelect: 'none',
         transform: cardTransform,
@@ -207,7 +207,7 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
         cursor: isTop ? (isDragging.current ? 'grabbing' : 'grab') : 'default',
         zIndex: 10 - stackOffset,
         pointerEvents: isTop ? 'auto' : 'none',
-        border: '1px solid rgba(244,63,94,0.08)',
+        border: '1px solid rgba(255,255,255,0.14)',
       }}
       onPointerDown={onCardPointerDown}
       onPointerMove={onCardPointerMove}
@@ -238,7 +238,7 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
         ) : (
           <div style={{
             width: '100%', height: '100%',
-            background: 'linear-gradient(135deg, #fce7f3, #fdf2f8)',
+            background: 'linear-gradient(135deg, #271046, #161332)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <div style={{
@@ -255,7 +255,7 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
         {/* Bottom gradient */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(to top, rgba(26,10,15,0.75) 0%, rgba(0,0,0,0) 55%)',
+          background: 'linear-gradient(to top, rgba(8,4,16,0.82) 0%, rgba(0,0,0,0) 58%)',
           pointerEvents: 'none',
         }} />
 
@@ -283,13 +283,14 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
           <div style={{
             position: 'absolute', top: 12, left: 12,
             display: 'flex', alignItems: 'center', gap: 5,
-            background: 'rgba(255,255,255,0.92)',
+            background: 'rgba(255,255,255,0.13)',
             backdropFilter: 'blur(8px)',
             borderRadius: 20, padding: '4px 10px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.16)',
+            border: '1px solid rgba(255,255,255,0.2)',
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
-            <span style={{ fontSize: 11, color: '#374151', fontWeight: 600 }}>Active</span>
+            <span style={{ fontSize: 11, color: '#e9fbe9', fontWeight: 600 }}>Active</span>
           </div>
         )}
 
@@ -299,9 +300,9 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
             onClick={e => { e.stopPropagation(); onReport(p.id, p.full_name) }}
             style={{
               width: 32, height: 32, borderRadius: '50%',
-              background: 'rgba(0,0,0,0.35)',
+              background: 'rgba(0,0,0,0.44)',
               backdropFilter: 'blur(8px)',
-              border: 'none', cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,0.18)', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
             <MoreVertical size={14} color="white" />
@@ -314,6 +315,7 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
           border: '3px solid #4ade80', borderRadius: 12,
           padding: '4px 14px', transform: 'rotate(-20deg)',
           opacity: likeOpacity, pointerEvents: 'none',
+          background: 'rgba(5,20,10,0.35)',
         }}>
           <span style={{ color: '#4ade80', fontWeight: 900, fontSize: 22, letterSpacing: 3 }}>LIKE</span>
         </div>
@@ -322,6 +324,7 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
           border: '3px solid #f87171', borderRadius: 12,
           padding: '4px 14px', transform: 'rotate(20deg)',
           opacity: passOpacity, pointerEvents: 'none',
+          background: 'rgba(30,8,8,0.35)',
         }}>
           <span style={{ color: '#f87171', fontWeight: 900, fontSize: 22, letterSpacing: 3 }}>PASS</span>
         </div>
@@ -342,7 +345,7 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
           {p.location && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
               <MapPin size={11} color="rgba(255,255,255,0.75)" />
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{p.location}</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.86)' }}>{p.location}</span>
             </div>
           )}
         </div>
@@ -371,6 +374,7 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
         transition: 'height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
+        background: 'linear-gradient(180deg, rgba(16,7,31,0.92), rgba(12,5,24,0.95))',
       }}>
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px 8px' }}>
@@ -385,14 +389,14 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                 <MessageCircle size={11} color="#f43f5e" />
                 <span style={{
-                  fontSize: 11, color: '#f43f5e', fontWeight: 600,
+                fontSize: 11, color: '#f9a8d4', fontWeight: 600,
                   fontFamily: "'DM Sans', sans-serif",
                 }}>
                   {firstPrompt.question}
                 </span>
               </div>
               <p style={{
-                margin: 0, fontSize: 14, color: '#2d1b1f',
+                margin: 0, fontSize: 14, color: '#f7efff',
                 fontFamily: "'Fraunces', Georgia, serif",
                 fontStyle: 'italic', lineHeight: 1.5,
               }}>
@@ -406,9 +410,9 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
               {sp.reasons.slice(0, 3).map((r, i) => (
                 <span key={i} style={{
                   display: 'flex', alignItems: 'center', gap: 4,
-                  fontSize: 11, background: 'rgba(244,63,94,0.06)',
-                  color: '#f43f5e', padding: '3px 10px', borderRadius: 20,
-                  border: '1px solid rgba(244,63,94,0.12)',
+                  fontSize: 11, background: 'rgba(236,72,153,0.16)',
+                  color: '#ffd3eb', padding: '3px 10px', borderRadius: 20,
+                  border: '1px solid rgba(236,72,153,0.34)',
                 }}>
                   <Sparkles size={9} /> {r}
                 </span>
@@ -420,16 +424,16 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {p.interests.slice(0, infoExpanded ? 8 : 4).map(interest => (
                 <span key={interest} style={{
-                  fontSize: 11, background: 'rgba(253,248,245,1)',
-                  color: '#6b4c52', padding: '3px 10px', borderRadius: 20,
-                  border: '1px solid rgba(244,63,94,0.1)',
+                  fontSize: 11, background: 'rgba(255,255,255,0.08)',
+                  color: '#efe6fb', padding: '3px 10px', borderRadius: 20,
+                  border: '1px solid rgba(255,255,255,0.2)',
                   fontFamily: "'DM Sans', sans-serif",
                 }}>
                   {interest}
                 </span>
               ))}
               {p.interests.length > 4 && !infoExpanded && (
-                <span style={{ fontSize: 11, color: '#a37a82' }}>+{p.interests.length - 4}</span>
+                <span style={{ fontSize: 11, color: 'rgba(245,225,251,0.72)' }}>+{p.interests.length - 4}</span>
               )}
             </div>
           )}
@@ -438,13 +442,13 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
           {infoExpanded && p.prompts.slice(1).map(prompt => (
             <div key={prompt.id} style={{
               marginTop: 12, paddingLeft: 12,
-              borderLeft: '2px solid rgba(244,63,94,0.2)',
+              borderLeft: '2px solid rgba(236,72,153,0.36)',
             }}>
-              <p style={{ fontSize: 11, color: '#f43f5e', fontWeight: 600, margin: '0 0 2px' }}>
+              <p style={{ fontSize: 11, color: '#f9a8d4', fontWeight: 600, margin: '0 0 2px' }}>
                 {prompt.question}
               </p>
               <p style={{
-                fontSize: 13, color: '#2d1b1f', margin: 0, lineHeight: 1.5,
+                fontSize: 13, color: '#f7efff', margin: 0, lineHeight: 1.5,
                 fontFamily: "'Fraunces', Georgia, serif", fontStyle: 'italic',
               }}>
                 "{prompt.answer}"
@@ -458,31 +462,31 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
           flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20,
           padding: '10px 16px 14px',
-          borderTop: '1px solid rgba(244,63,94,0.06)',
+          borderTop: '1px solid rgba(255,255,255,0.12)',
         }}>
           {/* Pass */}
           <button
             onClick={e => { e.stopPropagation(); triggerFly('left') }}
             style={{
               width: 52, height: 52, borderRadius: '50%',
-              border: '2px solid rgba(200,150,150,0.25)',
-              background: 'white',
+              border: '2px solid rgba(255,255,255,0.26)',
+              background: 'rgba(255,255,255,0.08)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', transition: 'all 0.2s ease',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'
-              e.currentTarget.style.background = '#fef2f2'
+              e.currentTarget.style.borderColor = 'rgba(239,68,68,0.6)'
+              e.currentTarget.style.background = 'rgba(239,68,68,0.15)'
               e.currentTarget.style.transform = 'scale(1.06)'
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'rgba(200,150,150,0.25)'
-              e.currentTarget.style.background = 'white'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.26)'
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
               e.currentTarget.style.transform = 'scale(1)'
             }}
           >
-            <X size={20} color="#9ca3af" />
+            <X size={20} color="#f7e7ff" />
           </button>
 
           {/* Like — centrepiece */}
@@ -513,24 +517,24 @@ function SwipeCard({ sp, onLike, onPass, onReport, isTop, stackOffset }: SwipeCa
             onClick={e => { e.stopPropagation(); triggerFly('right') }}
             style={{
               width: 52, height: 52, borderRadius: '50%',
-              border: '2px solid rgba(244,63,94,0.2)',
-              background: 'rgba(244,63,94,0.04)',
+              border: '2px solid rgba(255,255,255,0.24)',
+              background: 'rgba(255,255,255,0.08)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', transition: 'all 0.2s ease',
-              boxShadow: '0 2px 12px rgba(244,63,94,0.08)',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.borderColor = 'rgba(244,63,94,0.5)'
-              e.currentTarget.style.background = 'rgba(244,63,94,0.1)'
+              e.currentTarget.style.borderColor = 'rgba(236,72,153,0.6)'
+              e.currentTarget.style.background = 'rgba(236,72,153,0.16)'
               e.currentTarget.style.transform = 'scale(1.06)'
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'rgba(244,63,94,0.2)'
-              e.currentTarget.style.background = 'rgba(244,63,94,0.04)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.24)'
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
               e.currentTarget.style.transform = 'scale(1)'
             }}
           >
-            <Sparkles size={18} color="#f43f5e" />
+            <Sparkles size={18} color="#f8d6ff" />
           </button>
         </div>
       </div>
@@ -685,7 +689,16 @@ export default function BrowsePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', overflowY: 'auto' }}>
+    <div style={{
+      minHeight: '100vh',
+      overflowY: 'auto',
+      background: `
+        radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.24), transparent 72%),
+        radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.22), transparent 74%),
+        radial-gradient(28% 28% at 52% 42%, rgba(255,132,196,0.12), transparent 72%),
+        linear-gradient(140deg, #12022a 0%, #24033f 38%, #3f0752 72%, #5f0b5f 100%)
+      `,
+    }}>
       <div style={{ maxWidth: '520px', margin: '0 auto', padding: '16px 16px' }}>
 
         {/* Match alert */}
@@ -733,7 +746,9 @@ export default function BrowsePage() {
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '9px 16px', borderRadius: 50,
               border: `2px solid ${showFilters || activeFilterCount > 0 ? 'rgba(244,63,94,0.5)' : 'rgba(244,63,94,0.12)'}`,
-              background: showFilters || activeFilterCount > 0 ? 'rgba(244,63,94,0.06)' : 'rgba(255,255,255,0.8)',
+              background: showFilters || activeFilterCount > 0
+                ? 'linear-gradient(135deg, rgba(244,63,94,0.12), rgba(236,72,153,0.10))'
+                : 'linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,250,252,0.84))',
               color: showFilters || activeFilterCount > 0 ? '#f43f5e' : '#8b7280',
               fontSize: 13, fontWeight: 600, cursor: 'pointer',
               fontFamily: "'DM Sans', sans-serif",
@@ -766,7 +781,7 @@ export default function BrowsePage() {
                 paddingTop: 9, paddingBottom: 9,
                 border: '2px solid rgba(244,63,94,0.1)',
                 borderRadius: 50, fontSize: 13,
-                background: 'rgba(255,255,255,0.8)',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,248,252,0.86))',
                 backdropFilter: 'blur(8px)',
                 color: '#2d1b1f', outline: 'none',
                 fontFamily: "'DM Sans', sans-serif",
@@ -780,7 +795,7 @@ export default function BrowsePage() {
           {/* View toggle */}
           <div style={{
             display: 'flex', alignItems: 'center',
-            background: 'rgba(255,255,255,0.8)', borderRadius: 50,
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.93), rgba(255,248,252,0.84))', borderRadius: 50,
             padding: 4, gap: 2, border: '1.5px solid rgba(244,63,94,0.1)',
             backdropFilter: 'blur(8px)',
           }}>
@@ -806,10 +821,10 @@ export default function BrowsePage() {
         {/* Filter panel */}
         {showFilters && (
           <div style={{
-            background: 'rgba(255,251,249,0.97)',
-            border: '1px solid rgba(244,63,94,0.1)',
+            background: 'linear-gradient(150deg, rgba(255,255,255,0.92), rgba(255,244,250,0.88))',
+            border: '1px solid rgba(244,63,94,0.16)',
             borderRadius: 24, padding: 20, marginBottom: 16,
-            boxShadow: '0 8px 32px rgba(180,60,80,0.10)',
+            boxShadow: '0 16px 46px rgba(214, 61, 129, 0.18), 0 4px 20px rgba(123, 31, 73, 0.08)',
             backdropFilter: 'blur(16px)',
           }}>
             {/* Age */}
@@ -947,10 +962,22 @@ export default function BrowsePage() {
             <div style={{ opacity: 0.25, marginBottom: 8 }}>
               <Image src="/icon.svg" alt="Mebley logo" width={48} height={48} />
             </div>
-            <h3 style={{ margin: 0, fontFamily: "'Fraunces', Georgia, serif", fontSize: 22, color: '#2d1b1f' }}>
+            <h3 style={{
+              margin: 0,
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontSize: 22,
+              color: '#fff6fb',
+              textShadow: '0 6px 24px rgba(255, 116, 196, 0.28), 0 2px 12px rgba(0,0,0,0.42)',
+            }}>
               No profiles found
             </h3>
-            <p style={{ margin: 0, color: '#a37a82', fontSize: 14, maxWidth: 260, fontFamily: "'DM Sans', sans-serif" }}>
+            <p style={{
+              margin: 0,
+              color: 'rgba(255, 233, 246, 0.82)',
+              fontSize: 14,
+              maxWidth: 260,
+              fontFamily: "'DM Sans', sans-serif",
+            }}>
               {activeFilterCount > 0 ? 'Try adjusting your filters.' : 'New people join every day — check back soon.'}
             </p>
             {activeFilterCount > 0 && (
@@ -973,7 +1000,7 @@ export default function BrowsePage() {
               {scored.length} match{scored.length !== 1 ? 'es' : ''} · swipe or ← → keys
               {activeFilterCount > 0 ? ' · filtered' : ''}
             </p>
-            <div style={{ position: 'relative', width: '100%', height: 580 }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: 430, height: 'min(74vh, 620px)' }}>
               {scored.slice(0, 3).map((sp, idx) => (
                 <SwipeCard key={sp.profile.id} sp={sp}
                   onLike={handleLike} onPass={handlePass}

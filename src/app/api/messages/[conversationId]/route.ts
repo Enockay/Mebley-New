@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/messages/[conversationId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getMessages, saveMessage } from '@/lib/mongodb'
 import { rateLimit } from '@/lib/rateLimit'
 import { validateMessage } from '@/lib/validation'
 import { notifyMessage } from '@/lib/notifications'
+import { pgQuery } from '@/lib/postgres'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 export async function GET(
   request: NextRequest,
@@ -13,8 +14,7 @@ export async function GET(
 ) {
   try {
     const { conversationId } = await context.params
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -28,17 +28,28 @@ export async function GET(
       )
     }
 
-    const { data: conversation } = await supabase
-      .from('conversations')
-      .select(`id, match_id, matches ( user1_id, user2_id )`)
-      .eq('id', conversationId)
-      .maybeSingle()
+    const conversationRes = await pgQuery<{
+      id: string
+      match_id: string
+      user1_id: string
+      user2_id: string
+    }>(
+      `
+      SELECT c.id, c.match_id, m.user1_id, m.user2_id
+      FROM conversations c
+      JOIN matches m ON m.id = c.match_id
+      WHERE c.id = $1
+      LIMIT 1
+      `,
+      [conversationId]
+    )
+    const conversation = conversationRes.rows[0]
 
     if (!conversation) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 
-    const match = conversation.matches as any
+    const match = conversation
     if (match.user1_id !== user.id && match.user2_id !== user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -58,8 +69,7 @@ export async function POST(
 ) {
   try {
     const { conversationId } = await context.params
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -89,17 +99,28 @@ export async function POST(
     const callStatus  = body.callStatus  ?? undefined
     const callDuration = body.callDuration ?? undefined
 
-    const { data: conversation } = await supabase
-      .from('conversations')
-      .select(`id, match_id, matches ( user1_id, user2_id )`)
-      .eq('id', conversationId)
-      .maybeSingle()
+    const conversationRes = await pgQuery<{
+      id: string
+      match_id: string
+      user1_id: string
+      user2_id: string
+    }>(
+      `
+      SELECT c.id, c.match_id, m.user1_id, m.user2_id
+      FROM conversations c
+      JOIN matches m ON m.id = c.match_id
+      WHERE c.id = $1
+      LIMIT 1
+      `,
+      [conversationId]
+    )
+    const conversation = conversationRes.rows[0]
 
     if (!conversation) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
 
-    const match = conversation.matches as any
+    const match = conversation
     if (match.user1_id !== user.id && match.user2_id !== user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -109,11 +130,11 @@ export async function POST(
       : match.user1_id
 
     // Fetch sender name for notification
-    const { data: senderProfile } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .single()
+    const senderProfileRes = await pgQuery<{ full_name: string }>(
+      'SELECT full_name FROM profiles WHERE id = $1 LIMIT 1',
+      [user.id]
+    )
+    const senderProfile = senderProfileRes.rows[0]
 
     const message = await saveMessage({
       conversationId,
@@ -131,10 +152,10 @@ export async function POST(
       participantIds: [match.user1_id, match.user2_id],
     })
 
-    await supabase
-      .from('conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId)
+    await pgQuery(
+      'UPDATE conversations SET updated_at = now() WHERE id = $1',
+      [conversationId]
+    )
 
     // Fire message notification — non-blocking, never fails the request
     if (senderProfile?.full_name) {

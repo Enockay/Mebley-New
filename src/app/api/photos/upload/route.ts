@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { S3Client } from '@aws-sdk/client-s3'
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { rateLimit } from '@/lib/rateLimit'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION!,
@@ -25,8 +25,7 @@ const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

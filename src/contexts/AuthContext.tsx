@@ -2,108 +2,85 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User, Session, AuthError } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase-client'
 import type { Database } from '@/types/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
+type AppUser = { id: string; email: string }
+type AuthResult = { error: { message: string } | null }
 
 interface AuthContextType {
-  user:           User | null
+  user:           AppUser | null
   profile:        Profile | null
-  session:        Session | null
+  session:        { authenticated: boolean } | null
   loading:        boolean
   creditBalance:  number
-  signUp:         (email: string, password: string) => Promise<{ error: AuthError | null }>
-  signIn:         (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signUp:         (email: string, password: string) => Promise<AuthResult>
+  signIn:         (email: string, password: string) => Promise<AuthResult>
   signOut:        () => Promise<void>
   refreshProfile: () => Promise<void>
   linkEmail:      (email: string, password: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-const supabase = createClient()
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]                 = useState<User | null>(null)
+  const [user, setUser]                 = useState<AppUser | null>(null)
   const [profile, setProfile]           = useState<Profile | null>(null)
-  const [session, setSession]           = useState<Session | null>(null)
+  const [session, setSession]           = useState<{ authenticated: boolean } | null>(null)
   const [loading, setLoading]           = useState(true)
   const [creditBalance, setCreditBalance] = useState(0)
 
   const refreshProfile = async () => {
-    const currentUser = (await supabase.auth.getUser()).data.user
-    if (currentUser) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', currentUser.id)
-        .maybeSingle()
-      setProfile(data)
-
-      // Fetch credit wallet balance
-      const { data: wallet } = await (supabase as any)
-        .from('credit_wallets')
-        .select('balance')
-        .eq('user_id', currentUser.id)
-        .maybeSingle()
-      setCreditBalance(wallet?.balance ?? 0)
-    }
+    const res = await fetch('/api/auth/me', { cache: 'no-store' })
+    if (!res.ok) return
+    const data = await res.json()
+    setUser(data.user ?? null)
+    setProfile(data.profile ?? null)
+    setCreditBalance(data.creditBalance ?? 0)
+    setSession(data.user ? { authenticated: true } : null)
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      ;(async () => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        if (session?.user) await refreshProfile()
-        setLoading(false)
-      })()
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      ;(async () => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        if (session?.user) await refreshProfile()
-        else setProfile(null)
-      })()
-    })
-
-    return () => subscription.unsubscribe()
+    refreshProfile().finally(() => setLoading(false))
   }, [])
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password })
-    return { error }
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) return { error: { message: json.error ?? 'Sign up failed' } }
+    await refreshProfile()
+    return { error: null }
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
+    const res = await fetch('/api/auth/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) return { error: { message: json.error ?? 'Sign in failed' } }
+    await refreshProfile()
+    return { error: null }
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    await fetch('/api/auth/signout', { method: 'POST' })
+    setUser(null)
+    setSession(null)
     setProfile(null)
     setCreditBalance(0)
   }
 
   // Link email+password to current account (e.g. Google user adding email/password)
   const linkEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
-    try {
-      const { error: updateError } = await supabase.auth.updateUser({ email, password })
-      if (updateError) return { error: updateError.message }
-      if (user) {
-        await supabase.from('profiles').update({
-          verified_email: true,
-          updated_at: new Date().toISOString(),
-        }).eq('id', user.id)
-      }
-      return { error: null }
-    } catch (err: any) {
-      return { error: err.message ?? 'Failed to link email' }
-    }
+    // Deprecated in Postgres-native auth flow.
+    console.warn('linkEmail is not supported in PostgreSQL auth mode', email, password)
+    return { error: 'Link email is not supported in this auth mode' }
   }
 
   return (

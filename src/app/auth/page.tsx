@@ -10,7 +10,6 @@ import {
   ArrowLeft, Check, ShieldCheck, AlertTriangle,
   Shield, Star, Zap,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase-client'
 
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -25,7 +24,6 @@ function PrivacyNote({ text }: { text: string }) {
 }
 
 function ConfirmationScreen({ email, onResend }: { email: string; onResend: () => Promise<void> }) {
-  const supabase = createClient()
   const [resent, setResent]     = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const [resending, setResending] = useState(false)
@@ -167,10 +165,9 @@ const Divider = () => (
 )
 
 function AuthPageInner() {
-  const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signIn } = useAuth()
+  const { signIn, signUp } = useAuth()
   const appBaseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     (typeof window !== 'undefined' ? window.location.origin : '')
@@ -215,14 +212,8 @@ function AuthPageInner() {
   )
 
   const handleGoogle = async () => {
-    setGoogleLoading(true)
-    setError('')
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${appBaseUrl}/auth/callback` },
-    })
-    if (error) setError(error.message)
     setGoogleLoading(false)
+    setError('Google sign in is temporarily unavailable during auth migration.')
   }
 
   const handleSignUp = async () => {
@@ -230,14 +221,21 @@ function AuthPageInner() {
     if (password !== confirmPass) { setError('Passwords do not match'); return }
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${appBaseUrl}/auth/callback` },
-    })
-    if (error) { setError(error.message); setLoading(false); return }
+    const { error } = await signUp(email, password)
+    if (error) {
+      const msg = error.message || 'Sign up failed'
+      setError(msg)
+      // If account already exists, guide user directly to login.
+      if (msg.toLowerCase().includes('already exists')) {
+        setMode('signin')
+        setLE(email)
+      }
+      setLoading(false)
+      return
+    }
     setLoading(false)
-    setAwaiting(true)
+    setAwaiting(false)
+    router.push('/setup')
 
     // Optional branded reminder email via Brevo (non-blocking)
     fetch('/api/auth/send-confirmation-email', {
@@ -248,13 +246,6 @@ function AuthPageInner() {
   }
 
   const handleResend = async () => {
-    await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: { emailRedirectTo: `${appBaseUrl}/auth/callback` },
-    })
-
-    // Branded resend reminder email via Brevo
     await fetch('/api/auth/send-confirmation-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -274,12 +265,8 @@ function AuthPageInner() {
 
   const handleForgotPassword = async () => {
     if (!loginEmail) { setError('Enter your email address first'); return }
-    setLoading(true)
-    await supabase.auth.resetPasswordForEmail(loginEmail, {
-      redirectTo: `${appBaseUrl}/auth?reset=true`,
-    })
-    setResetSent(true)
-    setLoading(false)
+    setResetSent(false)
+    setError('Password reset is temporarily unavailable during auth migration.')
   }
 
   const s = {

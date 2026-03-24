@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
     gender_preference:    [] as string[],
     verified_email:       provider === 'google', // Google verifies email for us
     is_active:            true,
-    visible:              false,              // hidden until setup complete
+    visible:              true,               // discoverable by default
     distance_max:         500,
     profile_completeness: 10,
   }

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
 import { S3Client, DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3'
 import { MongoClient } from 'mongodb'
+import { pgQuery } from '@/lib/postgres'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION!,
@@ -23,8 +24,7 @@ const supabaseAdmin = createClient(
 export async function DELETE(request: NextRequest) {
   try {
     // ── 1. Verify the requesting user is authenticated ────────────
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -34,11 +34,11 @@ export async function DELETE(request: NextRequest) {
     const errors: string[] = []
 
     // ── 2. Fetch profile to get photo s3Keys ──────────────────────
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('photos')
-      .eq('id', userId)
-      .single()
+    const profileRes = await pgQuery<{ photos: unknown[] | null }>(
+      'SELECT photos FROM profiles WHERE id = $1 LIMIT 1',
+      [userId]
+    )
+    const profile = profileRes.rows[0]
 
     // ── 3. Delete all S3 photos ───────────────────────────────────
     const photos = (profile?.photos as any[] ?? []).filter(Boolean)
@@ -69,10 +69,11 @@ export async function DELETE(request: NextRequest) {
 
     // ── 4. Delete profile videos from S3 ─────────────────────────
     try {
-      const { data: videos } = await (supabase as any)
-        .from('profile_videos')
-        .select('s3_key')
-        .eq('user_id', userId)
+      const videosRes = await pgQuery<{ s3_key: string | null }>(
+        'SELECT s3_key FROM profile_videos WHERE user_id = $1',
+        [userId]
+      )
+      const videos = videosRes.rows
 
       if (videos && videos.length > 0) {
         const videoKeys = videos.map((v: any) => v.s3_key).filter(Boolean)
@@ -114,7 +115,7 @@ export async function DELETE(request: NextRequest) {
     // profiles row deletion cascades to: matches, likes, blocked_users,
     // profile_videos (via FK). pending_profiles cascades via auth.users.
     try {
-      await supabase.from('profiles').delete().eq('id', userId)
+      await pgQuery('DELETE FROM profiles WHERE id = $1', [userId])
     } catch (err: any) {
       console.error('[Delete] Profile row error:', err.message)
     }

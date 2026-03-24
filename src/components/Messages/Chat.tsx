@@ -395,16 +395,23 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
         .menu-btn:hover { background: rgba(244,63,94,0.06) !important; }
       `}</style>
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#fdf8f5', fontFamily: "'DM Sans', sans-serif", position: 'relative' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        background: 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.26), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.24), transparent 74%), linear-gradient(140deg,#090019 0%,#17032f 36%,#2a0645 70%,#3d0853 100%)',
+        fontFamily: "'DM Sans', sans-serif",
+        position: 'relative',
+      }}>
 
         {/* ── Header ── */}
-        <div style={{ background: 'rgba(253,248,245,0.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(244,63,94,0.08)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <button onClick={onBack} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: 'rgba(244,63,94,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ArrowLeft size={18} color="#f43f5e" />
+        <div style={{ background: 'rgba(13,4,27,0.58)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.14)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <button onClick={onBack} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ArrowLeft size={18} color="#f8ecff" />
           </button>
 
           <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#f43f5e,#ec4899)', padding: 2, flexShrink: 0 }}>
-            <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#fdf8f5' }}>
+            <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#120326' }}>
               {avatarUrl
                 ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(244,63,94,0.1)' }}>
@@ -415,33 +422,33 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#2d1b1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#fff6fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {otherProfile.full_name}{ageLabel ? `, ${ageLabel}` : ''}
             </p>
             {otherProfile.location && (
-              <p style={{ margin: 0, fontSize: 11, color: '#a37a82' }}>{otherProfile.location}</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'rgba(246,223,252,0.72)' }}>{otherProfile.location}</p>
             )}
           </div>
 
           {/* Video call button */}
           <button
             onClick={e => { e.stopPropagation(); !inCall && setShowCallConfirm(true) }}
-            style={{ width: 38, height: 38, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(244,63,94,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Video size={17} color="#f43f5e" />
+            style={{ width: 38, height: 38, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Video size={17} color="#f6e8ff" />
           </button>
 
           {/* Three dot menu */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={e => { e.stopPropagation(); setShowChatMenu(!showChatMenu) }}
-              style={{ width: 38, height: 38, borderRadius: '50%', border: 'none', cursor: 'pointer', background: showChatMenu ? 'rgba(244,63,94,0.1)' : 'rgba(244,63,94,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <MoreVertical size={17} color="#a37a82" />
+              style={{ width: 38, height: 38, borderRadius: '50%', border: 'none', cursor: 'pointer', background: showChatMenu ? 'rgba(236,72,153,0.24)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <MoreVertical size={17} color="#f0d9ff" />
             </button>
 
             {showChatMenu && (
               <div
                 onClick={e => e.stopPropagation()}
-                style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 200, background: 'white', borderRadius: 16, boxShadow: '0 8px 32px rgba(180,60,80,0.15)', border: '1px solid rgba(244,63,94,0.08)', minWidth: 190, overflow: 'hidden', animation: 'slideDown 0.15s ease' }}>
+                style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 200, background: 'rgba(18,6,37,0.96)', borderRadius: 16, boxShadow: '0 18px 36px rgba(0,0,0,0.42)', border: '1px solid rgba(255,255,255,0.16)', minWidth: 190, overflow: 'hidden', animation: 'slideDown 0.15s ease' }}>
                 {[
                   { icon: BellOff, label: 'Mute notifications', action: 'mute',  color: '#8b5cf6' },
                   { icon: Shield,  label: 'Block user',         action: 'block', color: '#ef4444' },
@@ -454,7 +461,7 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
                     <div style={{ width: 32, height: 32, borderRadius: 10, background: `${item.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <item.icon size={15} color={item.color} />
                     </div>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: item.action === 'block' ? '#ef4444' : '#2d1b1f' }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: item.action === 'block' ? '#ef4444' : '#f8ecff' }}>
                       {menuAction === item.action ? '…' : item.label}
                     </span>
                   </button>
@@ -466,10 +473,10 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
 
         {/* ── Error bar ── */}
         {error && (
-          <div style={{ background: 'rgba(244,63,94,0.08)', borderBottom: '1px solid rgba(244,63,94,0.15)', padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-            <span style={{ fontSize: 12, color: '#f43f5e' }}>{error}</span>
+          <div style={{ background: 'rgba(244,63,94,0.16)', borderBottom: '1px solid rgba(244,63,94,0.28)', padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+            <span style={{ fontSize: 12, color: '#ffe1eb' }}>{error}</span>
             <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-              <X size={14} color="#f43f5e" />
+              <X size={14} color="#ffe1eb" />
             </button>
           </div>
         )}
@@ -484,9 +491,9 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
               <div>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>🧵</div>
-                <p style={{ fontSize: 14, color: '#a37a82', lineHeight: 1.6, margin: 0 }}>
+                <p style={{ fontSize: 14, color: 'rgba(246,223,252,0.82)', lineHeight: 1.6, margin: 0 }}>
                   Start the conversation with<br />
-                  <strong style={{ color: '#2d1b1f' }}>{otherProfile.full_name?.split(' ')[0]}</strong>
+                  <strong style={{ color: '#fff6fb' }}>{otherProfile.full_name?.split(' ')[0]}</strong>
                 </p>
               </div>
             </div>
@@ -501,14 +508,14 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
                 if (msg.messageType === 'video_call') {
                   return (
                     <div key={msg.id ?? i} className="msg-in" style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 100, background: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.12)' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 100, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}>
                         <Video size={13} color="#f43f5e" />
-                        <span style={{ fontSize: 12, color: '#a37a82', fontWeight: 500 }}>
+                        <span style={{ fontSize: 12, color: 'rgba(246,223,252,0.82)', fontWeight: 500 }}>
                           {msg.callStatus === 'ended'
                             ? msg.callDuration ? `Video call · ${formatDuration(msg.callDuration)}` : 'Video call ended'
                             : 'Video call started'}
                         </span>
-                        <span style={{ fontSize: 11, color: '#c4a0a8' }}>{formatTime(msg.createdAt)}</span>
+                        <span style={{ fontSize: 11, color: 'rgba(246,223,252,0.62)' }}>{formatTime(msg.createdAt)}</span>
                       </div>
                     </div>
                   )
@@ -527,7 +534,7 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
                         <button
                           onClick={e => { e.stopPropagation(); deleteMessage(msg.id) }}
                           disabled={deleting === msg.id}
-                          style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 14px', borderRadius: 12, background: 'white', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', fontSize: 13, color: '#ef4444', fontWeight: 600, fontFamily: "'DM Sans',sans-serif", boxShadow: '0 4px 16px rgba(0,0,0,0.12)', whiteSpace: 'nowrap' }}>
+                          style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 14px', borderRadius: 12, background: 'rgba(20,8,40,0.98)', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer', fontSize: 13, color: '#ff8ca0', fontWeight: 600, fontFamily: "'DM Sans',sans-serif", boxShadow: '0 10px 24px rgba(0,0,0,0.35)', whiteSpace: 'nowrap' }}>
                           {deleting === msg.id
                             ? <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} />
                             : <Trash2 size={13} />
@@ -542,11 +549,11 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
                       padding: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? '4px' : '10px 14px',
                       borderRadius: own ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                       background: isDeleted
-                        ? 'rgba(180,60,80,0.06)'
-                        : own ? 'linear-gradient(135deg, #f43f5e, #ec4899)' : 'rgba(255,255,255,0.95)',
-                      border: isDeleted ? '1px dashed rgba(244,63,94,0.2)' : own ? 'none' : '1px solid rgba(244,63,94,0.1)',
-                      boxShadow: isDeleted ? 'none' : own ? '0 4px 16px rgba(244,63,94,0.25)' : '0 2px 8px rgba(180,60,80,0.06)',
-                      color: isDeleted ? '#c4a0a8' : own ? 'white' : '#2d1b1f',
+                        ? 'rgba(255,255,255,0.08)'
+                        : own ? 'linear-gradient(135deg, #f43f5e, #ec4899)' : 'rgba(255,255,255,0.12)',
+                      border: isDeleted ? '1px dashed rgba(255,255,255,0.24)' : own ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                      boxShadow: isDeleted ? 'none' : own ? '0 8px 20px rgba(244,63,94,0.28)' : '0 4px 14px rgba(0,0,0,0.2)',
+                      color: isDeleted ? 'rgba(246,223,252,0.66)' : own ? 'white' : '#fff2fb',
                       cursor: own && !isTemp && !isDeleted ? 'pointer' : 'default',
                       opacity: isTemp ? 0.8 : 1,
                     }}>
@@ -570,7 +577,7 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
 
                       {/* Timestamp + delivery ticks */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3, marginTop: 4, paddingRight: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? 6 : 0, paddingBottom: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? 4 : 0 }}>
-                        <span style={{ fontSize: 10, color: isDeleted ? '#c4a0a8' : own ? 'rgba(255,255,255,0.65)' : '#a37a82' }}>
+                        <span style={{ fontSize: 10, color: isDeleted ? 'rgba(246,223,252,0.6)' : own ? 'rgba(255,255,255,0.65)' : 'rgba(246,223,252,0.68)' }}>
                           {formatTime(msg.createdAt)}
                         </span>
                         {own && !isDeleted && (
@@ -597,25 +604,25 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
 
         {/* ── GIF Panel ── */}
         {showGifs && (
-          <div style={{ background: 'rgba(255,255,255,0.97)', borderTop: '1px solid rgba(244,63,94,0.1)', padding: '12px', flexShrink: 0 }}>
+          <div style={{ background: 'rgba(14,4,28,0.72)', borderTop: '1px solid rgba(255,255,255,0.16)', padding: '12px', flexShrink: 0, backdropFilter: 'blur(14px)' }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
               <input
                 value={gifQuery}
                 onChange={e => setGifQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && searchGifs(gifQuery)}
                 placeholder="Search GIFs…"
-                style={{ flex: 1, padding: '9px 14px', borderRadius: 12, border: '1.5px solid rgba(244,63,94,0.15)', fontSize: 13, outline: 'none', fontFamily: "'DM Sans',sans-serif" }}
+                style={{ flex: 1, padding: '9px 14px', borderRadius: 12, border: '1.5px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', fontSize: 13, color: '#fff2fb', outline: 'none', fontFamily: "'DM Sans',sans-serif" }}
               />
               <button onClick={() => searchGifs(gifQuery)} style={{ padding: '9px 16px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#f43f5e,#ec4899)', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}>
                 {gifLoading ? '…' : 'Go'}
               </button>
               <button onClick={() => { setShowGifs(false); setGifs([]) }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                <X size={18} color="#a37a82" />
+                <X size={18} color="rgba(246,223,252,0.76)" />
               </button>
             </div>
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
               {gifs.length === 0 && !gifLoading && (
-                <p style={{ fontSize: 12, color: '#a37a82', padding: '4px 0', margin: 0 }}>
+                <p style={{ fontSize: 12, color: 'rgba(246,223,252,0.76)', padding: '4px 0', margin: 0 }}>
                   {gifQuery ? 'No results' : 'Search for a GIF above'}
                 </p>
               )}
@@ -629,20 +636,20 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
         )}
 
         {/* ── Input bar ── */}
-        <div style={{ background: 'rgba(253,248,245,0.97)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(244,63,94,0.08)', padding: '10px 12px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', flexShrink: 0 }}>
+        <div style={{ background: 'rgba(13,4,27,0.66)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.16)', padding: '10px 12px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', flexShrink: 0 }}>
           <form onSubmit={sendText} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button type="button" onClick={() => setShowGifs(!showGifs)} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', background: showGifs ? 'rgba(244,63,94,0.1)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Gift size={18} color={showGifs ? '#f43f5e' : '#a37a82'} />
+            <button type="button" onClick={() => setShowGifs(!showGifs)} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', background: showGifs ? 'rgba(236,72,153,0.24)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Gift size={18} color={showGifs ? '#ffd7ec' : 'rgba(246,223,252,0.76)'} />
             </button>
-            <button type="button" onClick={() => imageInputRef.current?.click()} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Image size={18} color="#a37a82" />
+            <button type="button" onClick={() => imageInputRef.current?.click()} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Image size={18} color="rgba(246,223,252,0.76)" />
             </button>
             <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
             <input
               value={text}
               onChange={e => setText(e.target.value)}
               placeholder={`Message ${otherProfile.full_name?.split(' ')[0] ?? ''}…`}
-              style={{ flex: 1, padding: '11px 16px', borderRadius: 24, border: '1.5px solid rgba(244,63,94,0.12)', background: 'rgba(255,255,255,0.9)', fontSize: 14, color: '#2d1b1f', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
+              style={{ flex: 1, padding: '11px 16px', borderRadius: 24, border: '1.5px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.12)', fontSize: 14, color: '#fff2fb', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
               disabled={sending}
             />
             <button

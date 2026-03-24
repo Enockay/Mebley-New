@@ -106,11 +106,16 @@ export default function Discover() {
   // ── Empty — API returned 0 profiles ───────────────────────────────────────
   if (!loading && profiles.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-screen w-full bg-[radial-gradient(44%_50%_at_8%_90%,rgba(236,72,153,0.24),transparent_72%),radial-gradient(38%_44%_at_92%_10%,rgba(139,92,246,0.22),transparent_74%),linear-gradient(140deg,#12022a_0%,#24033f_38%,#3f0752_72%,#5f0b5f_100%)]">
         <div className="text-center p-8 max-w-xs">
           <div className="text-6xl mb-4">🔍</div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">No profiles yet</h2>
-          <p className="text-gray-400 text-sm mb-6">
+          <h2
+            className="text-xl font-semibold mb-2"
+            style={{ color: '#fff6fb', textShadow: '0 6px 18px rgba(255,120,196,0.25), 0 2px 10px rgba(0,0,0,0.36)' }}
+          >
+            No profiles yet
+          </h2>
+          <p className="text-sm mb-6" style={{ color: 'rgba(255,233,246,0.88)' }}>
             We're still growing — check back soon or adjust your preferences.
           </p>
           <button onClick={() => loadProfiles(1)}
@@ -142,87 +147,119 @@ export default function Discover() {
   // ── Profile card ───────────────────────────────────────────────────────────
   const { profile, score, reasons } = current
 
-  return (
-    <div className="flex flex-col items-center justify-start overflow-y-auto bg-[linear-gradient(120deg,#f7f1eb_0%,#f9f3ee_44%,#f5eeea_100%)] p-4">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(52%_45%_at_82%_10%,rgba(242,122,153,0.16),transparent_72%)]" />
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(42%_36%_at_12%_88%,rgba(220,146,126,0.12),transparent_76%)]" />
+  const safeScore = Math.max(0, Math.min(100, Math.round(score)))
+  const scoreRing = { background: `conic-gradient(#f357d8 ${safeScore * 3.6}deg, rgba(255,255,255,0.15) 0deg)` }
 
+  return (
+    <div className="relative min-h-screen overflow-y-auto bg-[radial-gradient(44%_50%_at_8%_90%,rgba(236,72,153,0.24),transparent_72%),radial-gradient(38%_44%_at_92%_10%,rgba(139,92,246,0.22),transparent_74%),linear-gradient(140deg,#0a031a_0%,#16042b_36%,#2b0644_70%,#3f0854_100%)] px-4 pt-5 pb-10 sm:pt-8">
       {matchAlert && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-pink-500 text-white px-6 py-3 rounded-full shadow-lg z-50 animate-bounce">
+        <div className="fixed top-20 left-1/2 z-50 -translate-x-1/2 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/80 px-6 py-3 text-sm font-semibold text-white shadow-2xl backdrop-blur">
           {matchAlert}
         </div>
       )}
 
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-xl overflow-hidden mb-4">
-        <div className="relative bg-gradient-to-br from-pink-100 to-purple-100 h-72 flex items-center justify-center">
-          {profile.photos && profile.photos.length > 0 ? (
-            <img src={(profile.photos[0] as any).url} alt={profile.full_name}
-              className="w-full h-full object-cover" />
-          ) : (
-            <div className="text-8xl">
-              {profile.gender === 'female' ? '👩' : profile.gender === 'male' ? '👨' : '🧑'}
+      <div className="mx-auto w-full max-w-[31rem] sm:max-w-[33rem]">
+        <div className="overflow-hidden rounded-[2rem] border border-white/15 bg-[linear-gradient(165deg,rgba(26,10,45,0.95),rgba(14,6,30,0.95))] shadow-[0_24px_68px_rgba(7,2,20,0.55),0_8px_26px_rgba(236,72,153,0.16)]">
+          <div className="relative h-64 sm:h-[22rem]">
+            {profile.photos && profile.photos.length > 0 ? (
+              <img
+                src={(profile.photos[0] as any).url}
+                alt={profile.full_name}
+                className="h-full w-full object-cover brightness-[1.06] contrast-[1.05]"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#271046] to-[#161332] text-8xl">
+                {profile.gender === 'female' ? '👩' : profile.gender === 'male' ? '👨' : '🧑'}
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#080410b3] via-[#08041040] to-transparent" />
+            <div className="absolute left-3 top-3 rounded-2xl border border-white/20 bg-black/35 px-3 py-1 text-[0.95rem] font-semibold text-fuchsia-50 backdrop-blur">
+              {currentIndex + 1}/{profiles.length}
             </div>
-          )}
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur rounded-full px-3 py-1 flex items-center gap-1">
-            <Star size={14} className="text-yellow-500 fill-yellow-500" />
-            <span className="text-sm font-semibold text-gray-700">{score}% match</span>
+            <div className="absolute right-3 top-3 flex items-center gap-1 rounded-2xl border border-yellow-300/55 bg-[#080410aa] px-3 py-1 text-[0.95rem] font-bold text-yellow-300 backdrop-blur">
+              <Star size={13} className="fill-yellow-300 text-yellow-300" />
+              {safeScore}% match
+            </div>
           </div>
-          <div className="absolute top-3 left-3 bg-white/90 backdrop-blur rounded-full px-3 py-1">
-            <span className="text-xs text-gray-500">{currentIndex + 1} / {profiles.length}</span>
-          </div>
-        </div>
 
-        <div className="p-5">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">
-            {profile.full_name}{(profile as any).age ? `, ${(profile as any).age}` : ''}
-          </h2>
-          {profile.location && (
-            <div className="flex items-center gap-1 text-gray-500 text-sm mb-2">
-              <MapPin size={14} /><span>{profile.location}</span>
+          <div className="px-5 pb-5 pt-4 sm:px-6">
+            <div className="mb-3 flex justify-center">
+              <div className="grid h-[5.2rem] w-[5.2rem] place-items-center rounded-full p-[6px] sm:h-[5.6rem] sm:w-[5.6rem]" style={scoreRing}>
+                <div className="grid h-full w-full place-items-center rounded-full bg-[#12071f]/95 text-[1.65rem] font-extrabold text-fuchsia-50 sm:text-[1.75rem]">
+                  {safeScore}%
+                </div>
+              </div>
             </div>
-          )}
-          {profile.bio && (
-            <p className="text-gray-600 text-sm mb-3 line-clamp-2">{profile.bio}</p>
-          )}
-          {profile.looking_for?.length > 0 && (
-            <div className="flex items-center gap-1 mb-3">
-              <Briefcase size={14} className="text-pink-500" />
-              <span className="text-sm text-gray-600">{profile.looking_for.join(', ')}</span>
+
+            <div className="mb-1 flex items-end justify-between gap-3">
+              <h2 className="truncate bg-gradient-to-r from-[#fff6b0] via-[#ffd94d] to-[#f7b500] bg-clip-text font-serif text-[2.15rem] font-bold leading-[1.05] text-transparent sm:text-[2.45rem]">
+                {profile.full_name}
+              </h2>
+              {(profile as any).age && <span className="font-serif text-[2.05rem] leading-none text-fuchsia-100/80 sm:text-[2.3rem]">{(profile as any).age}</span>}
             </div>
-          )}
-          {profile.interests?.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {profile.interests.slice(0, 5).map((interest, i) => (
-                <span key={i} className="bg-pink-50 text-pink-600 text-xs px-3 py-1 rounded-full">
+
+            {profile.location && (
+              <div className="mb-3 flex items-center gap-1.5 text-[1.05rem] text-fuchsia-100/85 sm:text-[1.08rem]">
+                <MapPin size={13} className="text-rose-300/90" />
+                <span>{profile.location}</span>
+                {reasons[0] && <span className="text-fuchsia-200/70">• {reasons[0]}</span>}
+              </div>
+            )}
+
+            {profile.bio && (
+              <p className="mb-3 text-[0.95rem] leading-relaxed text-fuchsia-100/90 sm:text-[1rem]">{profile.bio}</p>
+            )}
+
+            <div className="mb-4 flex flex-wrap gap-2">
+              {profile.looking_for?.slice(0, 1).map((intent, i) => (
+                <span key={`${intent}-${i}`} className="rounded-full border border-fuchsia-400/50 bg-fuchsia-500/20 px-3.5 py-1.5 text-[0.86rem] font-semibold text-fuchsia-50 sm:text-[0.9rem]">
+                  {intent}
+                </span>
+              ))}
+              {profile.interests?.slice(0, 4).map((interest, i) => (
+                <span key={`${interest}-${i}`} className="rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-[0.86rem] text-fuchsia-100/95 sm:text-[0.9rem]">
                   {interest}
                 </span>
               ))}
             </div>
-          )}
-          {reasons.length > 0 && (
-            <div className="bg-green-50 rounded-xl p-3">
-              <p className="text-xs font-semibold text-green-700 mb-1">Why you match:</p>
-              {reasons.slice(0, 2).map((reason, i) => (
-                <p key={i} className="text-xs text-green-600">✓ {reason}</p>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div className="flex items-center gap-6 pb-6">
-        <button onClick={handlePass} disabled={actionLoading}
-          className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all disabled:opacity-50">
-          <X size={28} className="text-gray-400" />
-        </button>
-        <button onClick={handleLike} disabled={actionLoading}
-          className="w-20 h-20 bg-gradient-to-br from-pink-500 to-rose-500 rounded-full shadow-xl flex items-center justify-center hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50">
-          <Heart size={32} className="text-white fill-white" />
-        </button>
-        <button onClick={() => { setPage(1); loadProfiles(1) }} disabled={actionLoading}
-          className="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all disabled:opacity-50">
-          <RefreshCw size={22} className="text-gray-400" />
-        </button>
+            {reasons.length > 0 && (
+              <div className="rounded-2xl border border-white/20 bg-white/5 p-4">
+                <p className="mb-2 text-xs font-bold tracking-[0.16em] text-fuchsia-200/60">WHY YOU MATCH</p>
+                {reasons.slice(0, 3).map((reason, i) => (
+                  <p key={i} className="mb-1 flex items-center gap-2 text-[0.95rem] text-fuchsia-50 sm:text-[1.02rem] last:mb-0">
+                    <span className="h-2.5 w-2.5 rounded-full bg-fuchsia-500" />
+                    {reason}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center justify-center gap-3 sm:gap-4">
+          <button
+            onClick={handlePass}
+            disabled={actionLoading}
+            className="grid h-[4rem] w-[4rem] place-items-center rounded-2xl border-2 border-white/30 bg-black/35 text-fuchsia-50 shadow-xl transition hover:bg-red-500/15 disabled:opacity-50 sm:h-[4.5rem] sm:w-[4.5rem]"
+          >
+            <X size={20} />
+          </button>
+          <button
+            onClick={handleLike}
+            disabled={actionLoading}
+            className="grid h-[5.2rem] w-[5.2rem] place-items-center rounded-2xl border-2 border-white/20 bg-[linear-gradient(145deg,rgba(12,5,24,0.95),rgba(26,8,42,0.95))] text-fuchsia-50 shadow-[0_0_0_6px_rgba(243,87,216,0.16),0_16px_34px_rgba(7,2,20,0.45)] transition hover:scale-[1.03] disabled:opacity-50 sm:h-[5.8rem] sm:w-[5.8rem]"
+          >
+            <Heart size={26} className="fill-current sm:h-8 sm:w-8" />
+          </button>
+          <button
+            onClick={() => { setPage(1); loadProfiles(1) }}
+            disabled={actionLoading}
+            className="grid h-[4rem] w-[4rem] place-items-center rounded-2xl border-2 border-white/30 bg-black/35 text-fuchsia-50 shadow-xl transition hover:bg-fuchsia-500/15 disabled:opacity-50 sm:h-[4.5rem] sm:w-[4.5rem]"
+          >
+            <RefreshCw size={19} />
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -1,7 +1,31 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { rateLimit } from '@/lib/rateLimit'
+import { pgQuery } from '@/lib/postgres'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
+
+type DiscoverProfileRow = {
+  id: string
+  username: string
+  full_name: string
+  age_range: string | null
+  gender: string
+  bio: string | null
+  location: string | null
+  nationality: string | null
+  latitude: number | null
+  longitude: number | null
+  interests: string[] | null
+  photos: unknown[] | null
+  looking_for: string[] | null
+  prompts: unknown[] | null
+  profile_completeness: number | null
+  last_active: string | null
+  age_min: number | null
+  age_max: number | null
+  distance_max: number | null
+  gender_preference: string[] | null
+}
 
 // ── Age range overlap helper ─────────────────────────────────────────────────
 const AGE_RANGE_MAP: Record<string, [number, number]> = {
@@ -37,8 +61,7 @@ function distanceScore(km: number): { points: number; label: string } {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -64,12 +87,11 @@ export async function GET(request: NextRequest) {
     const interestList = filterInterests ? filterInterests.split(',').filter(Boolean) : []
     const ageRangeList = filterAgeRanges ? filterAgeRanges.split(',').filter(Boolean) : []
 
-    const { data: myProfileRaw } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-
+    const myProfileRes = await pgQuery<DiscoverProfileRow>(
+      'SELECT * FROM profiles WHERE id = $1 LIMIT 1',
+      [user.id]
+    )
+    const myProfileRaw = myProfileRes.rows[0]
     if (!myProfileRaw) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
@@ -81,31 +103,31 @@ export async function GET(request: NextRequest) {
     const myDistanceMax = myProfile.distance_max ?? 500
 
     // ── Liked IDs — exclude from results ─────────────────────────────────────
-    const { data: likedUsers } = await supabase
-      .from('likes')
-      .select('likee_id')
-      .eq('liker_id', user.id)
+    const likedUsersRes = await pgQuery<{ likee_id: string }>(
+      'SELECT likee_id FROM likes WHERE liker_id = $1',
+      [user.id]
+    )
 
     // ── Passed IDs — exclude from results (server-side, permanent) ───────────
     // This is the key change: passes are now fetched from the DB so they
     // survive page refreshes and new sessions. Previously passes were
     // client-only and reset on every visit.
-    const { data: passedUsers } = await (supabase as any)
-      .from('passes')
-      .select('passed_id')
-      .eq('passer_id', user.id)
+    const passedUsersRes = await pgQuery<{ passed_id: string }>(
+      'SELECT passed_id FROM passes WHERE passer_id = $1',
+      [user.id]
+    )
 
     // ── Blocked IDs — exclude from results ────────────────────────────────────
-    const { data: blockedUsers } = await (supabase as any)
-      .from('blocked_users')
-      .select('blocked_id')
-      .eq('blocker_id', user.id)
+    const blockedUsersRes = await pgQuery<{ blocked_id: string }>(
+      'SELECT blocked_id FROM blocked_users WHERE blocker_id = $1',
+      [user.id]
+    )
 
     const excludeIds = new Set<string>([
       user.id,
-      ...(likedUsers   ?.map((l: any) => l.likee_id)  ?? []),
-      ...(passedUsers  ?.map((p: any) => p.passed_id) ?? []),
-      ...(blockedUsers ?.map((b: any) => b.blocked_id) ?? []),
+      ...likedUsersRes.rows.map((l) => l.likee_id),
+      ...passedUsersRes.rows.map((p) => p.passed_id),
+      ...blockedUsersRes.rows.map((b) => b.blocked_id),
     ])
 
     // ── Gender preference filter ──────────────────────────────────────────────
@@ -117,39 +139,49 @@ export async function GET(request: NextRequest) {
     const prefMax = myProfile.age_max ?? 99
 
     // ── Base query ────────────────────────────────────────────────────────────
-    let query = (supabase as any)
-      .from('profiles')
-      .select('*')
-      .eq('is_active', true)
-      .eq('visible', true)
-      .in('gender', genderFilter)
-      .contains('gender_preference', myProfile.gender ? [myProfile.gender] : [])
-      .not('id', 'in', `(${Array.from(excludeIds).join(',')})`)
-      .neq('age_range', 'under_18')
-      .not('age_range', 'is', null)
-      .order('last_active', { ascending: false })
-      .range(offset, offset + pageLimit * 3)
+    const sqlParams: unknown[] = []
+    const bind = (value: unknown): string => {
+      sqlParams.push(value)
+      return `$${sqlParams.length}`
+    }
 
-    // ── Optional filters ──────────────────────────────────────────────────────
+    const where: string[] = [
+      'is_active = true',
+      'visible = true',
+      `gender = ANY(${bind(genderFilter)}::text[])`,
+      'age_range IS NOT NULL',
+      "age_range <> 'under_18'",
+      `NOT (id = ANY(${bind(Array.from(excludeIds))}::uuid[]))`,
+    ]
+
+    if (myProfile.gender) {
+      where.push(`gender_preference @> ${bind([myProfile.gender])}::text[]`)
+    }
     if (filterLocation) {
-      query = query.ilike('location', `%${filterLocation}%`)
+      where.push(`location ILIKE ${bind(`%${filterLocation}%`)}`)
     }
     if (intentList.length > 0) {
-      query = query.overlaps('looking_for', intentList)
+      where.push(`looking_for && ${bind(intentList)}::text[]`)
     }
     if (interestList.length > 0) {
-      query = query.overlaps('interests', interestList)
+      where.push(`interests && ${bind(interestList)}::text[]`)
     }
     if (ageRangeList.length > 0) {
-      query = query.in('age_range', ageRangeList)
+      where.push(`age_range = ANY(${bind(ageRangeList)}::text[])`)
     }
 
-    const { data: candidates, error } = await query
-
-    if (error) {
-      console.error('Discover query error:', error)
-      return NextResponse.json({ error: 'Failed to fetch profiles' }, { status: 500 })
-    }
+    const candidatesRes = await pgQuery<DiscoverProfileRow>(
+      `
+      SELECT *
+      FROM profiles
+      WHERE ${where.join(' AND ')}
+      ORDER BY last_active DESC NULLS LAST
+      OFFSET ${bind(offset)}
+      LIMIT ${bind(pageLimit * 3)}
+      `,
+      sqlParams
+    )
+    const candidates = candidatesRes.rows
 
     if (!candidates || candidates.length === 0) {
       return NextResponse.json({ profiles: [], page, total: 0 })

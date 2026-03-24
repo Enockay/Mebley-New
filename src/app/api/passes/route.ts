@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { pgQuery } from '@/lib/postgres'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 // ── POST /api/passes ──────────────────────────────────────────────────────────
 // Body: { passedId: string }
@@ -8,8 +9,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -24,17 +24,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot pass yourself' }, { status: 400 })
     }
 
-    const { error } = await (supabase as any)
-      .from('passes')
-      .upsert(
-        { passer_id: user.id, passed_id: passedId },
-        { onConflict: 'passer_id,passed_id' }
-      )
-
-    if (error) {
-      console.error('[Passes] insert error:', error)
-      return NextResponse.json({ error: 'Failed to record pass' }, { status: 500 })
-    }
+    await pgQuery(
+      `
+      INSERT INTO passes (passer_id, passed_id)
+      VALUES ($1, $2)
+      ON CONFLICT (passer_id, passed_id) DO NOTHING
+      `,
+      [user.id, passedId]
+    )
 
     return NextResponse.json({ success: true })
 
@@ -48,26 +45,19 @@ export async function POST(request: NextRequest) {
 // Returns all passed profile IDs for the current user.
 // Called on browse page mount to seed the passedIds exclusion set.
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data, error } = await (supabase as any)
-      .from('passes')
-      .select('passed_id')
-      .eq('passer_id', user.id)
-
-    if (error) {
-      console.error('[Passes] GET error:', error)
-      return NextResponse.json({ error: 'Failed to fetch passes' }, { status: 500 })
-    }
-
-    const passedIds = (data ?? []).map((r: any) => r.passed_id)
+    const passRes = await pgQuery<{ passed_id: string }>(
+      'SELECT passed_id FROM passes WHERE passer_id = $1',
+      [user.id]
+    )
+    const passedIds = passRes.rows.map((r) => r.passed_id)
     return NextResponse.json({ passedIds })
 
   } catch (error) {

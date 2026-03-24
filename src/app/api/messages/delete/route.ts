@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/messages/delete/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getDb } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
+import { pgQuery } from '@/lib/postgres'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUserFromRequest(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { messageId, conversationId } = await req.json()
@@ -42,10 +42,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Update conversation updated_at to trigger realtime
-    await supabase
-      .from('conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId)
+    await pgQuery(
+      'UPDATE conversations SET updated_at = now() WHERE id = $1',
+      [conversationId]
+    )
 
     return NextResponse.json({ ok: true })
   } catch (err: any) {

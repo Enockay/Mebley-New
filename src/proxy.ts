@@ -5,17 +5,16 @@
  * Export must be named `proxy`, not `middleware`.
  *
  * Responsibilities:
- *  1. Refresh Supabase session cookie on every request
- *  2. Protect private routes — redirect unauthenticated users to /auth
+ *  1. Protect private routes — redirect unauthenticated users to /auth
  *  3. Redirect authenticated users away from /auth → /discover
  *  4. Profile-setup gate — incomplete profiles go to /setup
  *  5. Protect all API routes (except public ones) — return 401 JSON
  *  6. Apply security headers on every response
  */
 
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import type { Database } from '@/types/database.types'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
+import { pgQuery } from '@/lib/postgres'
 
 // ── Route classification ──────────────────────────────────────────────────────
 
@@ -63,8 +62,8 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.onesignal.com https://onesignal.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.twilio.com https://onesignal.com",
+      "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://*.amazonaws.com https://*.cloudfront.net",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.twilio.com https://onesignal.com https://*.amazonaws.com https://*.cloudfront.net",
       "frame-ancestors 'none'",
     ].join('; ')
   )
@@ -76,40 +75,13 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // ── 1. Create a mutable response to carry refreshed cookies ─────────────
-  let supabaseResponse = NextResponse.next({ request })
-
-  // ── 2. Initialise Supabase — reads + writes session cookies ─────────────
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  // ── 3. Validate session server-side — MUST happen before any redirect ────
-  //    getUser() makes a network call to Supabase to verify the JWT.
-  //    Never use getSession() here — it only reads from the cookie, no verification.
-  const { data: { user } } = await supabase.auth.getUser()
+  const authResponse = NextResponse.next({ request })
+  const user = await getAuthUserFromRequest(request)
 
   // ── 4. Public API routes — skip auth, apply headers only ────────────────
   if (isApiRoute(pathname)) {
     if (isPublicApi(pathname)) {
-      return applySecurityHeaders(supabaseResponse)
+      return applySecurityHeaders(authResponse)
     }
 
     // All other API routes require authentication
@@ -120,7 +92,7 @@ export async function proxy(request: NextRequest) {
       )
     }
 
-    return applySecurityHeaders(supabaseResponse)
+    return applySecurityHeaders(authResponse)
   }
 
   // ── 5. Root path handling ────────────────────────────────────────────────
@@ -128,7 +100,7 @@ export async function proxy(request: NextRequest) {
     if (user) {
       return NextResponse.redirect(new URL('/discover', request.url))
     }
-    return applySecurityHeaders(supabaseResponse)
+    return applySecurityHeaders(authResponse)
   }
 
   // ── 6. Public pages — redirect authed users away from /auth ─────────────
@@ -136,7 +108,7 @@ export async function proxy(request: NextRequest) {
     if (user && pathname === '/auth') {
       return NextResponse.redirect(new URL('/discover', request.url))
     }
-    return applySecurityHeaders(supabaseResponse)
+    return applySecurityHeaders(authResponse)
   }
 
   // ── 7. No session — redirect to login, preserving intended destination ───
@@ -150,11 +122,11 @@ export async function proxy(request: NextRequest) {
   //    Only fetch the minimum fields needed to check completeness.
   //    Skip this check for /setup itself to avoid an infinite redirect loop.
   if (!SETUP_ALLOWED_PAGES.includes(pathname)) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, username, interests')
-      .eq('id', user.id)
-      .maybeSingle()
+    const profileRes = await pgQuery<{ full_name: string | null; username: string | null; interests: string[] | null }>(
+      'SELECT full_name, username, interests FROM profiles WHERE id = $1 LIMIT 1',
+      [user.id]
+    )
+    const profile = profileRes.rows[0]
 
     const hasCompletedSetup = !!(
       profile?.full_name &&
@@ -170,11 +142,11 @@ export async function proxy(request: NextRequest) {
 
   // ── 9. User is on /setup but already completed it — send to discover ─────
   if (pathname === '/setup') {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, username, interests')
-      .eq('id', user.id)
-      .maybeSingle()
+    const profileRes = await pgQuery<{ full_name: string | null; username: string | null; interests: string[] | null }>(
+      'SELECT full_name, username, interests FROM profiles WHERE id = $1 LIMIT 1',
+      [user.id]
+    )
+    const profile = profileRes.rows[0]
 
     const hasCompletedSetup = !!(
       profile?.full_name &&
@@ -189,7 +161,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── 10. All checks passed ─────────────────────────────────────────────────
-  return applySecurityHeaders(supabaseResponse)
+  return applySecurityHeaders(authResponse)
 }
 
 // ── Matcher — which paths this proxy runs on ──────────────────────────────────

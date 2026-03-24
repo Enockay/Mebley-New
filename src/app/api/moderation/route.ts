@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { rateLimit } from '@/lib/rateLimit'
+import { pgQuery } from '@/lib/postgres'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 // ── POST /api/moderation ──────────────────────────────────────────────────────
 // Body: { action: 'block' | 'report' | 'block_and_report', targetId, reason, details? }
@@ -12,8 +13,7 @@ import { rateLimit } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -42,41 +42,28 @@ export async function POST(request: NextRequest) {
 
     // ── Block ─────────────────────────────────────────────────────────────────
     if (action === 'block' || action === 'block_and_report') {
-      const { error: blockError } = await (supabase as any)
-        .from('blocked_users')
-        .upsert(
-          {
-            blocker_id: user.id,
-            blocked_id: targetId,
-            reason:     reason ?? 'blocked',
-          },
-          { onConflict: 'blocker_id,blocked_id' }
-        )
-
-      if (blockError) {
-        console.error('[Moderation] block error:', blockError)
-        return NextResponse.json({ error: 'Failed to block user' }, { status: 500 })
-      }
+      await pgQuery(
+        `
+        INSERT INTO blocked_users (blocker_id, blocked_id, reason)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (blocker_id, blocked_id)
+        DO UPDATE SET reason = EXCLUDED.reason
+        `,
+        [user.id, targetId, reason ?? 'blocked']
+      )
     }
 
     // ── Report ────────────────────────────────────────────────────────────────
     if (action === 'report' || action === 'block_and_report') {
-      const { error: reportError } = await (supabase as any)
-        .from('reports')
-        .upsert(
-          {
-            reporter_id: user.id,
-            reported_id: targetId,
-            reason,
-            details: details ?? null,
-          },
-          { onConflict: 'reporter_id,reported_id,reason' }
-        )
-
-      if (reportError) {
-        console.error('[Moderation] report error:', reportError)
-        return NextResponse.json({ error: 'Failed to submit report' }, { status: 500 })
-      }
+      await pgQuery(
+        `
+        INSERT INTO reports (reporter_id, reported_id, reason, details)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (reporter_id, reported_id, reason)
+        DO UPDATE SET details = EXCLUDED.details
+        `,
+        [user.id, targetId, reason, details ?? null]
+      )
     }
 
     return NextResponse.json({ success: true, action })
@@ -93,23 +80,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data, error } = await (supabase as any)
-      .from('blocked_users')
-      .select('blocked_id')
-      .eq('blocker_id', user.id)
-
-    if (error) {
-      return NextResponse.json({ error: 'Failed to fetch blocked users' }, { status: 500 })
-    }
-
-    const blockedIds = (data ?? []).map((r: any) => r.blocked_id)
+    const blockedRes = await pgQuery<{ blocked_id: string }>(
+      'SELECT blocked_id FROM blocked_users WHERE blocker_id = $1',
+      [user.id]
+    )
+    const blockedIds = blockedRes.rows.map((r) => r.blocked_id)
     return NextResponse.json({ blockedIds })
 
   } catch (error) {

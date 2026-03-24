@@ -27,39 +27,39 @@ export default function TopHeader() {
     : '?'
 
   return (
-    <header style={{
+    <header className="px-2.5 sm:px-6" style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
       height: '64px',
-      background: 'rgba(253, 248, 245, 0.92)',
+      background: 'linear-gradient(135deg, rgba(22,8,36,0.9), rgba(44,12,58,0.86))',
       backdropFilter: 'blur(24px)',
       WebkitBackdropFilter: 'blur(24px)',
-      borderBottom: '1px solid rgba(244, 63, 94, 0.07)',
-      boxShadow: '0 1px 20px rgba(180, 60, 80, 0.05)',
-      display: 'flex', alignItems: 'center', padding: '0 24px',
+      borderBottom: '1px solid rgba(255,255,255,0.12)',
+      boxShadow: '0 1px 24px rgba(8, 2, 16, 0.38)',
+      display: 'flex', alignItems: 'center',
     }}>
-      <div style={{
+      <div className="w-full" style={{
         maxWidth: '960px', margin: '0 auto', width: '100%',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
 
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="flex items-center gap-1.5 sm:gap-2.5" style={{ display: 'flex', alignItems: 'center' }}>
           <Image
             src="/icon.svg"
             alt="Mebley logo"
-            width={34}
-            height={34}
+            width={30}
+            height={30}
             style={{ borderRadius: '999px' }}
             priority
           />
           <span
+            className="hidden sm:block"
             style={{
               fontFamily: "'Fraunces', Georgia, serif",
               fontSize: '30px',
               fontWeight: 700,
-              background: 'linear-gradient(90deg,#e95075 0%,#de5f8c 42%,#cb4faf 100%)',
-              WebkitBackgroundClip: 'text',
-              color: 'transparent',
+              color: '#f5e8f4',
+              textShadow: '0 1px 12px rgba(245,124,180,0.22)',
               lineHeight: 1,
             }}
           >
@@ -68,20 +68,21 @@ export default function TopHeader() {
         </div>
 
         {/* Right side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="flex items-center gap-1 sm:gap-2.5" style={{ display: 'flex', alignItems: 'center' }}>
 
           {/* Upgrade — free users only */}
           {currentPlan === 'free' && (
             <button
+              className="hidden sm:inline-flex"
               onClick={() => openPaywall('general', 'plans')}
               style={{
-                display: 'flex', alignItems: 'center', gap: '5px',
+                alignItems: 'center', gap: '5px',
                 padding: '6px 12px', borderRadius: '100px', border: 'none',
-                background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+                background: 'linear-gradient(135deg, #d64de8, #ee5ca6)',
                 color: 'white', fontSize: '12px', fontWeight: 700,
                 fontFamily: "'DM Sans', sans-serif",
                 cursor: 'pointer', whiteSpace: 'nowrap',
-                boxShadow: '0 2px 12px rgba(244,63,94,0.3)',
+                boxShadow: '0 2px 12px rgba(214,77,232,0.34)',
               }}>
               ✨ Upgrade
             </button>
@@ -89,18 +90,21 @@ export default function TopHeader() {
 
           {/* Credits */}
           <button
+            className="inline-flex"
             onClick={() => openPaywall('general', 'credits')}
             style={{
               display: 'flex', alignItems: 'center', gap: '5px',
-              padding: '6px 12px', borderRadius: '100px',
-              border: '1.5px solid rgba(232,160,32,0.3)',
-              background: 'rgba(232,160,32,0.08)',
-              color: '#c4870a', fontSize: '12px', fontWeight: 700,
+              padding: '6px 10px', borderRadius: '100px',
+              border: '1.5px solid rgba(246,205,126,0.32)',
+              background: 'rgba(246,205,126,0.08)',
+              color: '#f3cd86', fontSize: '12px', fontWeight: 700,
               fontFamily: "'DM Sans', sans-serif",
               cursor: 'pointer', whiteSpace: 'nowrap',
             }}>
             <Coins size={13} />
-            {creditBalance > 0 ? creditBalance.toLocaleString() : 'Credits'}
+            <span className="hidden sm:inline">
+              {creditBalance > 0 ? creditBalance.toLocaleString() : 'Credits'}
+            </span>
           </button>
 
           {/* Avatar — clicks to /profile */}
@@ -110,10 +114,10 @@ export default function TopHeader() {
             style={{
               width: '36px', height: '36px', borderRadius: '50%',
               overflow: 'hidden', flexShrink: 0, padding: 0, border: 'none',
-              background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+              background: 'linear-gradient(135deg, #d64de8, #ee5ca6)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 12px rgba(244,63,94,0.25)',
-              outline: '2px solid rgba(255,255,255,0.8)',
+              boxShadow: '0 2px 12px rgba(214,77,232,0.28)',
+              outline: '2px solid rgba(255,255,255,0.35)',
               cursor: 'pointer',
             }}>
             {avatarUrl ? (
@@ -140,7 +144,7 @@ export default function TopHeader() {
             className="hidden sm:block"
             style={{
               fontSize: '13px', fontFamily: "'DM Sans', sans-serif",
-              fontWeight: '500', color: '#6b4c52',
+              fontWeight: '500', color: 'rgba(255,255,255,0.72)',
               maxWidth: '100px', overflow: 'hidden',
               textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
@@ -153,21 +157,21 @@ export default function TopHeader() {
             title="Sign out"
             style={{
               width: '36px', height: '36px', borderRadius: '50%',
-              border: '1.5px solid rgba(244,63,94,0.12)',
-              background: 'rgba(244,63,94,0.04)',
+              border: '1.5px solid rgba(255,255,255,0.18)',
+              background: 'rgba(255,255,255,0.04)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 0.2s ease', color: '#a37a82',
+              cursor: 'pointer', transition: 'all 0.2s ease', color: 'rgba(255,255,255,0.65)',
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.background  = 'rgba(244,63,94,0.10)'
-              e.currentTarget.style.borderColor = 'rgba(244,63,94,0.25)'
-              e.currentTarget.style.color       = '#f43f5e'
+              e.currentTarget.style.background  = 'rgba(214,77,232,0.18)'
+              e.currentTarget.style.borderColor = 'rgba(214,77,232,0.35)'
+              e.currentTarget.style.color       = '#f6d0ff'
               e.currentTarget.style.transform   = 'scale(1.05)'
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.background  = 'rgba(244,63,94,0.04)'
-              e.currentTarget.style.borderColor = 'rgba(244,63,94,0.12)'
-              e.currentTarget.style.color       = '#a37a82'
+              e.currentTarget.style.background  = 'rgba(255,255,255,0.04)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'
+              e.currentTarget.style.color       = 'rgba(255,255,255,0.65)'
               e.currentTarget.style.transform   = 'scale(1)'
             }}>
             <LogOut size={16} />

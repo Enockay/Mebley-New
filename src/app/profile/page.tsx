@@ -102,9 +102,18 @@ export default function ProfilePage() {
     if (!user || !profile) return
     setVisibilityLoading(true)
     const newValue = !((profile as any).visible)
-    await (supabase as any).from('profiles').update({ visible: newValue }).eq('id', user.id)
-    await refreshProfile()
-    setVisibilityLoading(false)
+    try {
+      const res = await fetch('/api/profile/visibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visible: newValue }),
+      })
+      if (res.ok) {
+        await refreshProfile()
+      }
+    } finally {
+      setVisibilityLoading(false)
+    }
   }
 
   if (loading || !profile) {

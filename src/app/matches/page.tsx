@@ -179,7 +179,13 @@ export default function MatchesPage() {
   }
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#fdf8f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.26), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.24), transparent 74%), linear-gradient(140deg,#090019 0%,#17032f 36%,#2a0645 70%,#3d0853 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
       <div style={{ width: 44, height: 44, borderRadius: '50%', border: '2.5px solid rgba(244,63,94,0.15)', borderTopColor: '#f43f5e', animation: 'spin 0.8s linear infinite' }} />
     </div>
   )
@@ -272,22 +278,28 @@ export default function MatchesPage() {
         )
       })()}
 
-      <div style={{ minHeight: '100vh', background: '#fdf8f5', fontFamily: "'DM Sans', sans-serif", paddingTop: 80, paddingBottom: 90 }}>
+      <div style={{
+        minHeight: '100vh',
+        background: 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.26), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.24), transparent 74%), radial-gradient(30% 34% at 52% 48%, rgba(228,112,208,0.14), transparent 72%), linear-gradient(140deg,#090019 0%,#17032f 36%,#2a0645 70%,#3d0853 100%)',
+        fontFamily: "'DM Sans', sans-serif",
+        paddingTop: 80,
+        paddingBottom: 90,
+      }}>
         <div style={{ maxWidth: 520, margin: '0 auto', padding: '0 16px' }}>
 
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: '#2d1b1f', margin: '0 0 2px' }}>
+              <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: '#fff7fb', margin: '0 0 2px', textShadow: '0 3px 20px rgba(0,0,0,0.35)' }}>
                 {showArchived ? 'Archived' : 'Messages'}
               </h1>
-              <p style={{ fontSize: 13, color: '#a37a82', margin: 0 }}>
+              <p style={{ fontSize: 13, color: 'rgba(245,220,250,0.66)', margin: 0 }}>
                 {visible.length} {visible.length === 1 ? 'conversation' : 'conversations'}
               </p>
             </div>
             <button
               onClick={() => setShowArchived(!showArchived)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 100, border: '1.5px solid rgba(244,63,94,0.15)', background: showArchived ? 'rgba(244,63,94,0.08)' : 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: showArchived ? '#f43f5e' : '#a37a82', fontFamily: "'DM Sans',sans-serif" }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.24)', background: showArchived ? 'rgba(236,72,153,0.18)' : 'rgba(13,4,27,0.32)', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#f8ecff', fontFamily: "'DM Sans',sans-serif", backdropFilter: 'blur(8px)' }}>
               <Archive size={13} />
               {showArchived ? 'Back' : 'Archived'}
             </button>
@@ -302,20 +314,68 @@ export default function MatchesPage() {
                 placeholder="Search conversations…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{ width: '100%', padding: '11px 14px 11px 38px', borderRadius: 14, border: '1.5px solid rgba(244,63,94,0.1)', background: 'rgba(255,255,255,0.85)', fontSize: 14, color: '#2d1b1f', fontFamily: "'DM Sans',sans-serif", outline: 'none', boxSizing: 'border-box' as const }}
+                style={{ width: '100%', padding: '11px 14px 11px 38px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.14)', fontSize: 14, color: '#fff2fb', fontFamily: "'DM Sans',sans-serif", outline: 'none', boxSizing: 'border-box' as const, backdropFilter: 'blur(6px)' }}
               />
             </div>
+          )}
+
+          {/* Story-like avatar strip */}
+          {!showArchived && visible.length > 0 && (
+            <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 8, marginBottom: 14 }}>
+              {visible.slice(0, 8).map(conv => {
+                const avatarUrl = getPhotoUrl(conv.profile.photos)
+                const initials = conv.profile.full_name?.[0]?.toUpperCase() ?? '?'
+                return (
+                  <div key={`strip-${conv.conversationId}`} style={{ minWidth: 74, textAlign: 'center' }}>
+                    <div style={{ width: 66, height: 66, margin: '0 auto 6px', borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg,#6d28d9,#ec4899)' }}>
+                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: 'rgba(8,2,19,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {avatarUrl
+                          ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <span style={{ color: 'white', fontSize: 30, fontWeight: 700 }}>{initials}</span>}
+                      </div>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(243,220,252,0.88)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {conv.profile.full_name?.split(' ')[0]}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Top segmented toggles */}
+          {!showArchived && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+              <button
+                onClick={() => setShowArchived(false)}
+                style={{ padding: '10px 14px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.24)', background: 'rgba(13,4,27,0.22)', color: '#f7ecff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              >
+                💬 With chats
+              </button>
+              <button
+                onClick={() => setShowArchived(true)}
+                style={{ padding: '10px 14px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.24)', background: 'rgba(13,4,27,0.22)', color: '#f7ecff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              >
+                👻 Empty state
+              </button>
+            </div>
+          )}
+
+          {!showArchived && (
+            <p style={{ fontSize: 12, letterSpacing: '0.16em', color: 'rgba(240,212,249,0.46)', fontWeight: 700, margin: '0 0 10px' }}>
+              RECENT
+            </p>
           )}
 
           {/* Conversation list */}
           {fetching ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[1,2,3].map(i => (
-                <div key={i} style={{ background: 'rgba(255,255,255,0.85)', borderRadius: 18, border: '1px solid rgba(244,63,94,0.08)', padding: '16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div key={i} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 18, border: '1px solid rgba(255,255,255,0.14)', padding: '16px', display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{ width: 54, height: 54, borderRadius: '50%', background: 'rgba(244,63,94,0.06)', flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ height: 14, background: 'rgba(244,63,94,0.05)', borderRadius: 7, width: '55%', marginBottom: 8 }} />
-                    <div style={{ height: 11, background: 'rgba(244,63,94,0.03)', borderRadius: 6, width: '75%' }} />
+                    <div style={{ height: 14, background: 'rgba(255,255,255,0.14)', borderRadius: 7, width: '55%', marginBottom: 8 }} />
+                    <div style={{ height: 11, background: 'rgba(255,255,255,0.08)', borderRadius: 6, width: '75%' }} />
                   </div>
                 </div>
               ))}
@@ -325,12 +385,31 @@ export default function MatchesPage() {
               <div style={{ fontSize: 56, marginBottom: 16 }}>
                 {showArchived ? '📦' : '💝'}
               </div>
-              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: '#2d1b1f', margin: '0 0 8px' }}>
+              <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: '#fff6fb', margin: '0 0 8px' }}>
                 {showArchived ? 'No archived chats' : search ? 'No results' : 'No matches yet'}
               </h3>
-              <p style={{ fontSize: 14, color: '#a37a82', margin: 0, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 14, color: 'rgba(246,222,250,0.78)', margin: 0, lineHeight: 1.6 }}>
                 {showArchived ? 'Archived conversations will appear here' : search ? 'Try a different name' : 'Start swiping to find your perfect match'}
               </p>
+              {!showArchived && !search && (
+                <button
+                  onClick={() => router.push('/discover')}
+                  style={{
+                    marginTop: 16,
+                    padding: '11px 18px',
+                    borderRadius: 12,
+                    border: 'none',
+                    background: 'linear-gradient(135deg,#d64de8,#ee5ca6)',
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 22px rgba(214,77,232,0.3)',
+                  }}
+                >
+                  Go to Discover
+                </button>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -351,10 +430,11 @@ export default function MatchesPage() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 14,
                         padding: '13px 14px', borderRadius: 18, width: '100%',
-                        background: conv.isPinned ? 'rgba(244,63,94,0.04)' : 'rgba(255,255,255,0.85)',
-                        border: `1.5px solid ${conv.isPinned ? 'rgba(244,63,94,0.18)' : conv.unreadCount > 0 ? 'rgba(244,63,94,0.15)' : 'rgba(244,63,94,0.07)'}`,
-                        boxShadow: conv.isPinned ? '0 2px 16px rgba(244,63,94,0.08)' : '0 2px 8px rgba(180,60,80,0.04)',
+                        background: conv.isPinned ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)',
+                        border: `1.5px solid ${conv.isPinned ? 'rgba(255,255,255,0.32)' : conv.unreadCount > 0 ? 'rgba(236,72,153,0.4)' : 'rgba(255,255,255,0.12)'}`,
+                        boxShadow: conv.isPinned ? '0 8px 26px rgba(8,1,25,0.32)' : '0 4px 14px rgba(8,1,25,0.22)',
                         cursor: 'pointer', textAlign: 'left',
+                        backdropFilter: 'blur(8px)',
                       }}
                     >
                       {/* Pin indicator */}
@@ -396,14 +476,14 @@ export default function MatchesPage() {
                       {/* Content */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-                          <span style={{ fontSize: 15, fontWeight: conv.unreadCount > 0 ? 700 : 600, color: '#2d1b1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
+                            <span style={{ fontSize: 15, fontWeight: conv.unreadCount > 0 ? 700 : 600, color: '#fff5fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
                             {conv.profile.full_name}
                           </span>
-                          <span style={{ fontSize: 11, color: '#a37a82', flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, color: 'rgba(245,219,251,0.64)', flexShrink: 0 }}>
                             {conv.lastTime ? timeAgo(conv.lastTime) : ''}
                           </span>
                         </div>
-                        <p style={{ fontSize: 13, color: conv.unreadCount > 0 ? '#6b2d3e' : '#a37a82', fontWeight: conv.unreadCount > 0 ? 600 : 400, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p style={{ fontSize: 13, color: conv.unreadCount > 0 ? '#ffe2f7' : 'rgba(245,220,251,0.72)', fontWeight: conv.unreadCount > 0 ? 600 : 400, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {conv.isMuted ? <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><BellOff size={11} />{conv.lastMessage}</span> : conv.lastMessage}
                         </p>
                       </div>
@@ -412,7 +492,7 @@ export default function MatchesPage() {
                       <button
                         onClick={e => { e.stopPropagation(); setMenuOpen(isMenuOpen ? null : conv.conversationId) }}
                         style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: isMenuOpen ? 'rgba(244,63,94,0.08)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-                        <MoreVertical size={15} color="#a37a82" />
+                        <MoreVertical size={15} color="rgba(244,221,251,0.7)" />
                       </button>
                     </button>
 

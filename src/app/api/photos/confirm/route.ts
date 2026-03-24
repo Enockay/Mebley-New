@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import {
   RekognitionClient,
   DetectFacesCommand,
   Attribute,
 } from '@aws-sdk/client-rekognition'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
+import { pgQuery } from '@/lib/postgres'
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION!,
@@ -69,8 +70,7 @@ async function checkFacePresent(s3Key: string): Promise<{ valid: boolean; reason
 // ── POST — confirm upload + face check ───────────────────────────
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -100,11 +100,11 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Save to profiles.photos array ────────────────────────────
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('photos')
-      .eq('id', user.id)
-      .single()
+    const profileRes = await pgQuery<{ photos: { slot: number; url: string; s3Key: string }[] | null }>(
+      'SELECT photos FROM profiles WHERE id = $1 LIMIT 1',
+      [user.id]
+    )
+    const profile = profileRes.rows[0]
 
     const photos: { slot: number; url: string; s3Key: string }[] =
       (profile?.photos as any[] ?? []).filter(Boolean)
@@ -127,14 +127,10 @@ export async function POST(request: NextRequest) {
       { slot, url: cloudfrontUrl, s3Key },
     ].sort((a, b) => a.slot - b.slot)
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ photos: updatedPhotos })
-      .eq('id', user.id)
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    await pgQuery(
+      'UPDATE profiles SET photos = $1, updated_at = now() WHERE id = $2',
+      [updatedPhotos, user.id]
+    )
 
     return NextResponse.json({ success: true, photos: updatedPhotos })
 
@@ -147,8 +143,7 @@ export async function POST(request: NextRequest) {
 // ── DELETE — remove a photo slot ─────────────────────────────────
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -156,11 +151,11 @@ export async function DELETE(request: NextRequest) {
 
     const { slot } = await request.json()
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('photos')
-      .eq('id', user.id)
-      .single()
+    const profileRes = await pgQuery<{ photos: { slot: number; url: string; s3Key: string }[] | null }>(
+      'SELECT photos FROM profiles WHERE id = $1 LIMIT 1',
+      [user.id]
+    )
+    const profile = profileRes.rows[0]
 
     const photos: { slot: number; url: string; s3Key: string }[] =
       (profile?.photos as any[] ?? []).filter(Boolean)
@@ -177,10 +172,10 @@ export async function DELETE(request: NextRequest) {
 
     const updatedPhotos = photos.filter(p => p.slot !== slot)
 
-    await supabase
-      .from('profiles')
-      .update({ photos: updatedPhotos })
-      .eq('id', user.id)
+    await pgQuery(
+      'UPDATE profiles SET photos = $1, updated_at = now() WHERE id = $2',
+      [updatedPhotos, user.id]
+    )
 
     return NextResponse.json({ success: true })
 

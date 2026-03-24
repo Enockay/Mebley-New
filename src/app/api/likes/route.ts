@@ -1,14 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/likes/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { rateLimit } from '@/lib/rateLimit'
 import { notifyMatch, notifyLike } from '@/lib/notifications'
+import { withPgClient } from '@/lib/postgres'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
+
+type BasicProfileRow = {
+  full_name: string
+  photos: unknown[] | null
+  tier: string | null
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -36,78 +42,94 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch both profiles in parallel — need names, photos, tier
-    const [likerResult, likeeResult] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('full_name, photos, tier')
-        .eq('id', user.id)
-        .single(),
-      supabase
-        .from('profiles')
-        .select('full_name, photos, tier')
-        .eq('id', likeeId)
-        .single(),
+    const [likerRes, likeeRes] = await Promise.all([
+      withPgClient((client) =>
+        client.query<BasicProfileRow>(
+          'SELECT full_name, photos, tier FROM profiles WHERE id = $1 LIMIT 1',
+          [user.id]
+        )
+      ),
+      withPgClient((client) =>
+        client.query<BasicProfileRow>(
+          'SELECT full_name, photos, tier FROM profiles WHERE id = $1 LIMIT 1',
+          [likeeId]
+        )
+      ),
     ])
 
-    const likerProfile = likerResult.data
-    const likeeProfile = likeeResult.data
+    const likerProfile = likerRes.rows[0]
+    const likeeProfile = likeeRes.rows[0]
 
     if (!likerProfile || !likeeProfile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
-    // Insert like — ignore duplicate (23505 = unique violation)
-    const { error: likeError } = await supabase
-      .from('likes')
-      .insert({ liker_id: user.id, likee_id: likeeId })
-
-    if (likeError && likeError.code !== '23505') {
-      throw likeError
-    }
-
-    // Check for mutual like
-    const { data: mutual } = await supabase
-      .from('likes')
-      .select('id')
-      .eq('liker_id', likeeId)
-      .eq('likee_id', user.id)
-      .maybeSingle()
-
     let isMatch = false
     let conversationId: string | null = null
 
-    if (mutual) {
-      // Create match
-      const { data: match } = await supabase
-        .from('matches')
-        .upsert(
-          { user1_id: user.id, user2_id: likeeId },
-          { onConflict: 'user1_id,user2_id' }
+    const likeResult = await withPgClient(async (client) => {
+      await client.query('BEGIN')
+      try {
+        // Insert like — ignore duplicate unique conflict
+        await client.query(
+          `
+          INSERT INTO likes (liker_id, likee_id)
+          VALUES ($1, $2)
+          ON CONFLICT (liker_id, likee_id) DO NOTHING
+          `,
+          [user.id, likeeId]
         )
-        .select('id')
-        .single()
 
-      isMatch = true
+        // Check for mutual like
+        const mutualRes = await client.query<{ id: string }>(
+          `
+          SELECT id
+          FROM likes
+          WHERE liker_id = $1 AND likee_id = $2
+          LIMIT 1
+          `,
+          [likeeId, user.id]
+        )
 
-      // Create conversation for the match if one doesn't exist
-      if (match?.id) {
-        const { data: existingConvo } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('match_id', match.id)
-          .maybeSingle()
+        if (mutualRes.rowCount && mutualRes.rowCount > 0) {
+          isMatch = true
+          const [u1, u2] = user.id < likeeId ? [user.id, likeeId] : [likeeId, user.id]
 
-        if (!existingConvo) {
-          const { data: newConvo } = await supabase
-            .from('conversations')
-            .insert({ match_id: match.id })
-            .select('id')
-            .single()
-          conversationId = newConvo?.id ?? null
-        } else {
-          conversationId = existingConvo.id
+          const matchRes = await client.query<{ id: string }>(
+            `
+            INSERT INTO matches (user1_id, user2_id)
+            VALUES ($1, $2)
+            ON CONFLICT (user1_id, user2_id)
+            DO UPDATE SET user1_id = EXCLUDED.user1_id
+            RETURNING id
+            `,
+            [u1, u2]
+          )
+          const matchId = matchRes.rows[0]?.id
+
+          if (matchId) {
+            const convoRes = await client.query<{ id: string }>(
+              `
+              INSERT INTO conversations (match_id)
+              VALUES ($1)
+              ON CONFLICT (match_id) DO UPDATE SET match_id = EXCLUDED.match_id
+              RETURNING id
+              `,
+              [matchId]
+            )
+            conversationId = convoRes.rows[0]?.id ?? null
+          }
         }
+
+        await client.query('COMMIT')
+        return { isMatch }
+      } catch (err) {
+        await client.query('ROLLBACK')
+        throw err
       }
+    })
+
+    if (likeResult.isMatch) {
 
       // Fire match notifications for both users (non-blocking)
       notifyMatch(

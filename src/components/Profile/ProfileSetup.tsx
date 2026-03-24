@@ -5,7 +5,7 @@
 
 import { useState, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClient } from '@/lib/supabase-client'
+import { useRouter } from 'next/navigation'
 import { RELATIONSHIP_INTENTS, INTERESTS_BY_CATEGORY } from '@/types/app-constants'
 import {
   Check, ChevronRight, ChevronLeft, Heart,
@@ -58,12 +58,12 @@ function generateUsername(fullName: string): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ProfileSetup() {
-  const supabase = createClient()
   const { user, refreshProfile } = useAuth()
+  const router = useRouter()
 
-  // Detect Google user and pre-fill name from Google metadata
-  const isGoogleUser = user?.app_metadata?.provider === 'google'
-  const googleName   = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? ''
+  // In PostgreSQL auth mode, user metadata isn't present on client auth user.
+  const isGoogleUser = false
+  const googleName   = ''
 
   const [step, setStep]                     = useState(1)
   const [loading, setLoading]               = useState(false)
@@ -203,46 +203,56 @@ export default function ProfileSetup() {
     if (!user) return
     setError('')
     setLoading(true)
+    try {
+      const lookingFor = Array.isArray(formData.looking_for)
+        ? formData.looking_for
+        : formData.looking_for ? [formData.looking_for as string] : []
 
-    const lookingFor = Array.isArray(formData.looking_for)
-      ? formData.looking_for
-      : formData.looking_for ? [formData.looking_for as string] : []
+      const photos     = photoUrl ? [{ url: photoUrl, slot: 0, s3Key: '' }] : []
+      const username   = generateUsername(formData.full_name)
 
-    const photos     = photoUrl ? [{ url: photoUrl, slot: 0, s3Key: '' }] : []
-    const username   = generateUsername(formData.full_name)
+      const completeness = Math.min(100,
+        20 +
+        (formData.bio.trim()                ? 20 : 0) +
+        Math.min(formData.interests.length * 5, 30) +
+        (lookingFor.length > 0              ? 15 : 0) +
+        (photoUrl                           ? 15 : 0)
+      )
 
-    const completeness = Math.min(100,
-      20 +
-      (formData.bio.trim()                ? 20 : 0) +
-      Math.min(formData.interests.length * 5, 30) +
-      (lookingFor.length > 0              ? 15 : 0) +
-      (photoUrl                           ? 15 : 0)
-    )
+      const response = await fetch('/api/setup/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          full_name: formData.full_name.trim(),
+          age_range: formData.age_range,
+          gender: formData.gender,
+          gender_preference: formData.gender_preference,
+          looking_for: lookingFor,
+          bio: formData.bio.trim(),
+          location: combinedLocation,
+          nationality: formData.nationality.trim(),
+          interests: formData.interests,
+          photos,
+          profile_completeness: completeness,
+        }),
+      })
 
-    // Always UPDATE — profile was already created in auth/callback
-    const { error } = await (supabase as any).from('profiles').update({
-      username,
-      full_name:            formData.full_name.trim(),
-      age_range:            formData.age_range,
-      gender:               formData.gender,
-      gender_preference:    formData.gender_preference,
-      looking_for:          lookingFor,
-      bio:                  formData.bio.trim(),
-      location:             combinedLocation,
-      nationality:          formData.nationality.trim(),
-      interests:            formData.interests,
-      photos,
-      is_active:            true,
-      visible:              false,
-      profile_completeness: completeness,
-    }).eq('id', user.id)
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        setError(data?.error ?? 'Failed to save profile setup')
+        return
+      }
 
-    if (error) {
-      setError(error.message)
+      try {
+        await refreshProfile()
+      } catch {
+        // Non-fatal for navigation; proxy/discover will fetch fresh profile server-side.
+      }
+      router.replace('/discover')
+      router.refresh()
+    } finally {
       setLoading(false)
-    } else {
-      await refreshProfile()
-      // SetupPage detects interests.length > 0 → redirects to /discover
     }
   }
 
@@ -251,32 +261,32 @@ export default function ProfileSetup() {
   const currentStep = STEPS[step - 1]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-pink-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[radial-gradient(44%_50%_at_8%_90%,rgba(236,72,153,0.26),transparent_72%),radial-gradient(38%_44%_at_92%_10%,rgba(139,92,246,0.26),transparent_74%),linear-gradient(140deg,#12022a_0%,#24033f_38%,#3f0752_72%,#5f0b5f_100%)] flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
 
-        {/* Logo */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <Heart className="text-rose-500 fill-rose-500" size={26} />
-            <span className="text-2xl font-bold text-gray-900">Crotchet</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">{currentStep.title}</h1>
-          <p className="text-gray-500 text-sm">{currentStep.subtitle}</p>
+        <div className="text-center mb-7">
+          <h1
+            className="mb-1 text-4xl md:text-[2.8rem] font-serif font-bold leading-tight tracking-tight text-white"
+            style={{ color: '#ffffff', textShadow: '0 4px 24px rgba(255,120,196,0.28), 0 2px 14px rgba(0,0,0,0.48)' }}
+          >
+            {currentStep.title}
+          </h1>
+          <p className="text-[15px] text-white/55">{currentStep.subtitle}</p>
         </div>
 
         {/* Progress */}
-        <div className="flex items-center gap-2 mb-6">
+        <div className="mb-6 flex items-center gap-2">
           {STEPS.map((s) => (
             <div key={s.number} className="flex-1">
               <div className={`h-1.5 w-full rounded-full transition-all duration-500 ${
-                s.number <= step ? 'bg-rose-500' : 'bg-gray-200'
+                s.number <= step ? 'bg-gradient-to-r from-[#f14fd0] to-[#ff5f9c]' : 'bg-white/15'
               }`} />
             </div>
           ))}
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8">
+        <div className="rounded-[16px] border border-white/16 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] p-6 shadow-[0_30px_80px_rgba(8,3,18,0.55)] backdrop-blur-2xl sm:p-8">
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 text-sm flex items-center gap-2">
@@ -290,12 +300,12 @@ export default function ProfileSetup() {
 
               {/* Full name */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Your name</label>
+                <label className="mb-2 block text-sm font-semibold uppercase tracking-[0.08em] text-white/55">Your name</label>
                 <input
                   type="text"
                   value={formData.full_name}
                   onChange={e => handleChange('full_name', e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors"
+                  className="w-full rounded-xl border border-white/22 bg-black/28 px-4 py-3 text-white placeholder:text-white/45 focus:border-[#da47f3] focus:outline-none transition-colors"
                   placeholder="First name or full name"
                   autoFocus={!isGoogleUser}
                 />
@@ -304,12 +314,12 @@ export default function ProfileSetup() {
                     <Check size={11} /> Pre-filled from your Google account
                   </p>
                 )}
-                <p className="text-xs text-gray-400 mt-1">This is how you'll appear to other people</p>
+                <p className="mt-1 text-xs text-white/35">This is how you'll appear to other people</p>
               </div>
 
               {/* Age range */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Age range</label>
+                <label className="mb-2 block text-sm font-semibold uppercase tracking-[0.08em] text-white/55">Age range</label>
                 <div className="grid grid-cols-3 gap-2">
                   {AGE_RANGES.filter(a => !a.blocked).map(a => (
                     <button
@@ -318,8 +328,8 @@ export default function ProfileSetup() {
                       onClick={() => { handleChange('age_range', a.value); setUnderage(false) }}
                       className={`py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
                         formData.age_range === a.value
-                          ? 'border-rose-500 bg-rose-50 text-rose-700'
-                          : 'border-gray-200 text-gray-600 hover:border-rose-200'
+                          ? 'border-[#c34cff] bg-[linear-gradient(140deg,rgba(186,63,255,0.22),rgba(255,96,178,0.18))] text-[#f3d9ff] shadow-[0_10px_26px_rgba(195,76,255,0.22)]'
+                          : 'border-white/18 bg-white/[0.02] text-white/62 hover:border-[#a94de3] hover:text-white/86'
                       }`}>
                       {a.label}
                     </button>
@@ -328,14 +338,14 @@ export default function ProfileSetup() {
                 {underageBlocked && (
                   <div className="mt-2 flex items-center gap-2 bg-red-50 border border-red-200 px-3 py-2 rounded-xl">
                     <AlertTriangle size={13} className="text-red-500 flex-shrink-0" />
-                    <p className="text-xs text-red-600 font-semibold">You must be 18 or older to use Crotchet.</p>
+                    <p className="text-xs text-red-600 font-semibold">You must be 18 or older to use Mebley.</p>
                   </div>
                 )}
               </div>
 
               {/* Gender */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">I identify as</label>
+                <label className="mb-2 block text-sm font-semibold uppercase tracking-[0.08em] text-white/55">I identify as</label>
                 <div className="grid grid-cols-2 gap-2">
                   {GENDER_OPTIONS.map(opt => (
                     <button
@@ -344,8 +354,8 @@ export default function ProfileSetup() {
                       onClick={() => handleChange('gender', opt.value)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
                         formData.gender === opt.value
-                          ? 'border-rose-500 bg-rose-50 text-rose-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-[#c34cff] bg-[linear-gradient(140deg,rgba(186,63,255,0.22),rgba(255,96,178,0.18))] text-[#f3d9ff] shadow-[0_10px_26px_rgba(195,76,255,0.22)]'
+                          : 'border-white/18 bg-white/[0.02] text-white/72 hover:border-[#a94de3]'
                       }`}>
                       <span className="text-xl">{opt.emoji}</span>
                       <span className="font-medium text-sm">{opt.label}</span>
@@ -357,7 +367,7 @@ export default function ProfileSetup() {
 
               {/* Gender preference */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">I'm interested in</label>
+                <label className="mb-2 block text-sm font-semibold uppercase tracking-[0.08em] text-white/55">I'm interested in</label>
                 <div className="grid grid-cols-2 gap-2">
                   {GENDER_PREF_OPTIONS.map(opt => (
                     <button
@@ -366,8 +376,8 @@ export default function ProfileSetup() {
                       onClick={() => selectSingle('gender_preference', opt.value)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
                         formData.gender_preference[0] === opt.value
-                          ? 'border-rose-500 bg-rose-50 text-rose-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-[#c34cff] bg-[linear-gradient(140deg,rgba(186,63,255,0.22),rgba(255,96,178,0.18))] text-[#f3d9ff] shadow-[0_10px_26px_rgba(195,76,255,0.22)]'
+                          : 'border-white/18 bg-white/[0.02] text-white/72 hover:border-[#a94de3]'
                       }`}>
                       <span className="text-xl">{opt.emoji}</span>
                       <span className="font-medium text-sm">{opt.label}</span>
@@ -385,8 +395,8 @@ export default function ProfileSetup() {
             <div className="space-y-6">
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">I'm here for</label>
-                <p className="text-xs text-gray-400 mb-3">Pick one — you can change this anytime</p>
+                <label className="mb-1 block text-sm font-semibold uppercase tracking-[0.08em] text-white/55">I'm here for</label>
+                <p className="mb-3 text-xs text-white/35">Pick one — you can change this anytime</p>
                 <div className="space-y-2">
                   {RELATIONSHIP_INTENTS.map(intent => {
                     const isSelected = formData.looking_for[0] === intent.value
@@ -397,18 +407,18 @@ export default function ProfileSetup() {
                         onClick={() => selectSingle('looking_for', intent.value)}
                         className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-all text-left ${
                           isSelected
-                            ? 'border-rose-500 bg-rose-50'
-                            : 'border-gray-200 hover:border-rose-200 hover:bg-rose-50/30'
+                            ? 'border-[#c34cff] bg-[linear-gradient(140deg,rgba(186,63,255,0.22),rgba(255,96,178,0.18))] shadow-[0_10px_26px_rgba(195,76,255,0.22)]'
+                            : 'border-white/18 bg-white/[0.02] hover:border-[#a94de3] hover:bg-white/[0.03]'
                         }`}>
                         <span className="text-2xl">{intent.emoji}</span>
                         <div className="flex-1 min-w-0">
-                          <p className={`font-semibold text-sm ${isSelected ? 'text-rose-700' : 'text-gray-900'}`}>
+                          <p className={`font-semibold text-sm ${isSelected ? 'text-[#f3d9ff]' : 'text-white/82'}`}>
                             {intent.label}
                           </p>
-                          <p className="text-xs text-gray-500 truncate">{intent.description}</p>
+                          <p className="text-xs text-white/42 truncate">{intent.description}</p>
                         </div>
                         <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${
-                          isSelected ? 'border-rose-500 bg-rose-500' : 'border-gray-300'
+                          isSelected ? 'border-[#d54dff] bg-[#d54dff]' : 'border-white/35'
                         }`}>
                           {isSelected && (
                             <div className="w-full h-full rounded-full flex items-center justify-center">
@@ -425,11 +435,11 @@ export default function ProfileSetup() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700">Your interests</label>
-                    <p className="text-xs text-gray-400">Pick at least 3</p>
+                    <label className="block text-sm font-semibold uppercase tracking-[0.08em] text-white/55">Your interests</label>
+                    <p className="text-xs text-white/35">Pick at least 3</p>
                   </div>
                   <span className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors ${
-                    formData.interests.length >= 3 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    formData.interests.length >= 3 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white/50'
                   }`}>
                     {formData.interests.length} selected
                   </span>
@@ -439,7 +449,7 @@ export default function ProfileSetup() {
                     <div key={cat.label}>
                       <div className="flex items-center gap-1.5 mb-2">
                         <span className="text-base">{cat.emoji}</span>
-                        <span className="text-xs font-semibold text-gray-600">{cat.label}</span>
+                        <span className="text-xs font-semibold text-white/55">{cat.label}</span>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {cat.tags.map(tag => (
@@ -449,8 +459,8 @@ export default function ProfileSetup() {
                             onClick={() => toggleArray('interests', tag)}
                             className={`px-3 py-1 rounded-full text-xs border-2 transition-all ${
                               formData.interests.includes(tag)
-                                ? 'border-rose-500 bg-rose-500 text-white'
-                                : 'border-gray-200 text-gray-600 hover:border-rose-300'
+                                ? 'border-[#d54dff] bg-gradient-to-r from-[#c34cff] to-[#ff5ea9] text-white shadow-[0_8px_20px_rgba(214,77,255,0.28)]'
+                                : 'border-white/16 text-white/68 hover:border-[#a94de3] hover:bg-white/[0.03]'
                             }`}>
                             {tag}
                           </button>
@@ -472,15 +482,21 @@ export default function ProfileSetup() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-sm font-semibold text-gray-700">Profile photo</label>
-                  <span className="text-xs text-rose-500 font-medium">Required</span>
+                  <span
+                    className={`text-xs font-medium ${
+                      photoUrl ? 'text-emerald-300' : photoPreview ? 'text-amber-300' : 'text-rose-500'
+                    }`}
+                  >
+                    {photoUrl ? 'Verified' : photoPreview ? 'Ready to verify' : 'Required'}
+                  </span>
                 </div>
-                <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl p-3 mb-3">
-                  <p className="text-xs text-gray-600 leading-relaxed">
+                <div className="mb-3 rounded-lg border border-white/16 bg-gradient-to-br from-white/[0.08] to-white/[0.03] p-3">
+                  <p className="text-xs leading-relaxed text-white/62">
                     📸 Profiles with a real photo get <strong>3× more matches.</strong> Face detection keeps everyone safe.
                   </p>
                 </div>
                 {photoPreview ? (
-                  <div className="relative rounded-2xl overflow-hidden mb-3">
+                  <div className="relative mb-3 overflow-hidden rounded-xl border border-white/70 shadow-[0_16px_36px_rgba(62,21,41,0.18)]">
                     <img src={photoPreview} alt="Preview" className="w-full h-52 object-cover" />
                     {photoUrl && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
@@ -498,9 +514,9 @@ export default function ProfileSetup() {
                     )}
                   </div>
                 ) : (
-                  <div className="border-2 border-dashed border-gray-200 rounded-2xl h-36 flex flex-col items-center justify-center gap-2 bg-gray-50 mb-3">
-                    <Camera size={24} className="text-gray-300" />
-                    <p className="text-sm text-gray-400">No photo selected yet</p>
+                  <div className="mb-3 flex h-36 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/22 bg-white/[0.03]">
+                    <Camera size={24} className="text-white/35" />
+                    <p className="text-sm text-white/45">No photo selected yet</p>
                   </div>
                 )}
                 {photoError && (
@@ -512,11 +528,11 @@ export default function ProfileSetup() {
                 {!photoUrl && (
                   <div className="grid grid-cols-2 gap-2 mb-2">
                     <button type="button" onClick={() => uploadInputRef.current?.click()} disabled={photoUploading}
-                      className="flex items-center justify-center gap-2 py-2.5 border-2 border-gray-200 rounded-xl hover:border-rose-400 hover:bg-rose-50/30 transition-all disabled:opacity-50 text-sm font-medium text-gray-700">
+                      className="flex items-center justify-center gap-2 rounded-lg border-2 border-white/18 bg-white/[0.03] py-2.5 text-sm font-medium text-white/75 transition-all hover:border-[#a94de3] hover:bg-white/[0.06] disabled:opacity-50">
                       <Upload size={15} /> Gallery
                     </button>
                     <button type="button" onClick={() => cameraInputRef.current?.click()} disabled={photoUploading}
-                      className="flex items-center justify-center gap-2 py-2.5 border-2 border-rose-200 bg-rose-50/40 rounded-xl hover:border-rose-400 hover:bg-rose-50 transition-all disabled:opacity-50 text-sm font-medium text-rose-700">
+                      className="flex items-center justify-center gap-2 rounded-lg border-2 border-[#a94de3]/70 bg-[#a94de3]/15 py-2.5 text-sm font-medium text-[#f3d9ff] transition-all hover:border-[#d54dff] hover:bg-[#a94de3]/20 disabled:opacity-50">
                       <Camera size={15} /> Camera
                     </button>
                     <input ref={uploadInputRef} type="file" accept={ACCEPTED_FORMATS} className="hidden" onChange={handlePhotoSelect} />
@@ -525,13 +541,13 @@ export default function ProfileSetup() {
                 )}
                 {photoPreview && !photoUrl && !photoUploading && (
                   <button onClick={handlePhotoUpload}
-                    className="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2 hover:from-rose-600 hover:to-pink-600 transition-all shadow-md shadow-rose-500/20 mb-2">
+                    className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#c34cff] to-[#ff5ea9] py-3 font-semibold text-white shadow-[0_14px_28px_rgba(214,77,255,0.24)] transition-all hover:from-[#b13bf3] hover:to-[#ef4f9f]">
                     <Camera size={15} /> Use This Photo
                   </button>
                 )}
                 {photoUrl && (
                   <button onClick={resetPhoto}
-                    className="w-full py-2 border-2 border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-white/18 py-2 text-sm font-medium text-white/72 transition-colors hover:bg-white/[0.04]">
                     <RefreshCw size={13} /> Choose different photo
                   </button>
                 )}
@@ -540,40 +556,40 @@ export default function ProfileSetup() {
               {/* Bio */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-gray-700">About you</label>
-                  <span className="text-xs text-gray-400">Optional — but recommended</span>
+                  <label className="text-sm font-semibold uppercase tracking-[0.08em] text-white/55">About you</label>
+                  <span className="text-xs text-white/35">Optional — but recommended</span>
                 </div>
                 <textarea
                   value={formData.bio}
                   onChange={e => handleChange('bio', e.target.value)}
                   rows={3}
                   maxLength={500}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors resize-none text-sm"
+                  className="w-full resize-none rounded-xl border border-white/22 bg-black/28 px-4 py-3 text-sm text-white placeholder:text-white/45 focus:border-[#da47f3] focus:outline-none transition-colors"
                   placeholder="What makes you, you? A line or two is plenty…"
                 />
-                <p className="text-xs text-gray-400 text-right mt-1">{formData.bio.length}/500</p>
+                <p className="text-xs text-white/35 text-right mt-1">{formData.bio.length}/500</p>
               </div>
 
               {/* Location */}
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
-                  <MapPin size={13} className="text-rose-400" />
-                  <label className="text-sm font-semibold text-gray-700">Location</label>
-                  <span className="text-xs text-gray-400 ml-auto">Helps find people near you</span>
+                  <MapPin size={13} className="text-[#f06bd4]" />
+                  <label className="text-sm font-semibold uppercase tracking-[0.08em] text-white/55">Location</label>
+                  <span className="ml-auto text-xs text-white/35">Helps find people near you</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="text"
                     value={formData.city}
                     onChange={e => handleChange('city', e.target.value)}
-                    className="px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors text-sm"
+                    className="rounded-xl border border-white/22 bg-black/28 px-3 py-2.5 text-sm text-white placeholder:text-white/45 focus:border-[#da47f3] focus:outline-none transition-colors"
                     placeholder="City"
                   />
                   <input
                     type="text"
                     value={formData.country}
                     onChange={e => handleChange('country', e.target.value)}
-                    className="px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors text-sm"
+                    className="rounded-xl border border-white/22 bg-black/28 px-3 py-2.5 text-sm text-white placeholder:text-white/45 focus:border-[#da47f3] focus:outline-none transition-colors"
                     placeholder="Country"
                   />
                 </div>
@@ -581,24 +597,24 @@ export default function ProfileSetup() {
 
               {/* Nationality */}
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">Nationality</label>
+                <label className="mb-2 block text-sm font-semibold uppercase tracking-[0.08em] text-white/55">Nationality</label>
                 <input
                   type="text"
                   value={formData.nationality}
                   onChange={e => handleChange('nationality', e.target.value)}
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors text-sm"
+                  className="w-full rounded-xl border border-white/22 bg-black/28 px-4 py-2.5 text-sm text-white placeholder:text-white/45 focus:border-[#da47f3] focus:outline-none transition-colors"
                   placeholder="e.g. British, Nigerian, Brazilian…"
                 />
               </div>
 
               {/* Profile preview */}
               {(formData.full_name || formData.interests.length > 0) && (
-                <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-4">
+                <div className="rounded-2xl border border-white/16 bg-gradient-to-br from-white/[0.08] to-white/[0.03] p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Sparkles size={13} className="text-rose-500" />
-                    <span className="text-xs font-semibold text-gray-700">Your profile preview</span>
+                    <span className="text-xs font-semibold text-white/72">Your profile preview</span>
                   </div>
-                  <div className="space-y-1 text-xs text-gray-600">
+                  <div className="space-y-1 text-xs text-white/62">
                     {formData.full_name    && <p>👤 {formData.full_name}</p>}
                     {combinedLocation      && <p>📍 {combinedLocation}</p>}
                     {formData.nationality  && <p>🌍 {formData.nationality}</p>}
@@ -620,14 +636,14 @@ export default function ProfileSetup() {
             {step > 1 && (
               <button
                 onClick={() => setStep(s => s - 1)}
-                className="flex items-center gap-2 px-5 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all">
+                className="flex items-center gap-2 rounded-xl border-2 border-white/18 px-5 py-3 font-medium text-white/74 transition-all hover:bg-white/[0.04]">
                 <ChevronLeft size={17} /> Back
               </button>
             )}
             <button
               onClick={() => step < 3 ? setStep(s => s + 1) : handleSubmit()}
               disabled={!canProceed() || loading}
-              className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white py-3 rounded-xl font-semibold hover:from-rose-600 hover:to-pink-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-rose-500/20">
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#c34cff] to-[#ff5ea9] py-3 font-semibold text-white shadow-[0_14px_28px_rgba(214,77,255,0.24)] transition-all hover:from-[#b13bf3] hover:to-[#ef4f9f] disabled:cursor-not-allowed disabled:opacity-40">
               {loading ? (
                 <><Loader2 size={17} className="animate-spin" /> Setting up your profile…</>
               ) : step < 3 ? (
@@ -638,7 +654,7 @@ export default function ProfileSetup() {
             </button>
           </div>
 
-          <p className="text-center text-xs text-gray-400 mt-4">Step {step} of 3</p>
+          <p className="mt-4 text-center text-xs text-white/42">Step {step} of 3</p>
 
         </div>
       </div>
