@@ -4,7 +4,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClient } from '@/lib/supabase-client'
 import type { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
 import type { Database } from '@/types/database.types'
 import {
@@ -21,7 +20,7 @@ interface MongoMessage {
   senderId:       string
   receiverId:     string
   content:        string
-  messageType:    'text' | 'image' | 'gif' | 'video_call'
+  messageType:    'text' | 'image' | 'gif' | 'audio' | 'video_call'
   mediaUrl?:      string
   mediaKey?:      string
   callStatus?:    'initiated' | 'accepted' | 'declined' | 'missed' | 'ended'
@@ -35,6 +34,7 @@ interface ChatProps {
   conversationId: string
   otherProfile:   Profile
   onBack:         () => void
+  embedded?:      boolean
 }
 
 const AGE_RANGE_LABELS: Record<string, string> = {
@@ -64,10 +64,30 @@ function formatDuration(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export default function Chat({ conversationId, otherProfile, onBack }: ChatProps) {
-  const { profile: currentProfile } = useAuth()
+function isUserOnline(lastActive?: string | null): boolean {
+  if (!lastActive) return false
+  const ts = new Date(lastActive).getTime()
+  if (Number.isNaN(ts)) return false
+  return Date.now() - ts <= 5 * 60 * 1000
+}
 
-  const supabase = createClient()
+function formatLastSeen(lastActive?: string | null): string {
+  if (!lastActive) return 'Offline'
+  const ts = new Date(lastActive).getTime()
+  if (Number.isNaN(ts)) return 'Offline'
+  const diffMins = Math.floor((Date.now() - ts) / 60000)
+  if (diffMins < 1) return 'Last seen now'
+  if (diffMins < 60) return `Last seen ${diffMins}m ago`
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) return `Last seen ${diffHours}h ago`
+  const diffDays = Math.floor(diffHours / 24)
+  return `Last seen ${diffDays}d ago`
+}
+
+export default function Chat({ conversationId, otherProfile, onBack, embedded = false }: ChatProps) {
+  const { profile: currentProfile } = useAuth()
+  const isPendingConversation = conversationId.startsWith('pending-')
+  const bottomInsetPadding = 'max(10px, env(safe-area-inset-bottom))'
 
   // Messages
   const [messages, setMessages]         = useState<MongoMessage[]>([])
@@ -75,8 +95,18 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
   const [sending, setSending]           = useState(false)
   const [error, setError]               = useState<string | null>(null)
   const [text, setText]                 = useState('')
+  const [otherLastActive, setOtherLastActive] = useState<string | null>((otherProfile as any).last_active ?? null)
+  const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null)
+  const [mediaCaption, setMediaCaption] = useState('')
+  const [uploadingMedia, setUploadingMedia] = useState(false)
+  const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null)
+  const expandedImageScrollerRef = useRef<HTMLDivElement>(null)
+  const [presenceViaSocket, setPresenceViaSocket] = useState(false)
   const messagesEndRef                  = useRef<HTMLDivElement>(null)
   const imageInputRef                   = useRef<HTMLInputElement>(null)
+  const mediaRecorderRef                = useRef<MediaRecorder | null>(null)
+  const audioChunksRef                  = useRef<Blob[]>([])
+  const [recordingAudio, setRecordingAudio] = useState(false)
 
   // Message actions
   const [selectedMsg, setSelectedMsg]   = useState<string | null>(null)
@@ -109,6 +139,11 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
 
   // ── Load messages ──────────────────────────────────────────
   const loadMessages = useCallback(async () => {
+    if (isPendingConversation) {
+      setMessages([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const res  = await fetch(`/api/messages/${conversationId}`)
@@ -116,37 +151,86 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
       setMessages(data.messages ?? [])
     } catch { setError('Could not load messages') }
     finally { setLoading(false) }
-  }, [conversationId])
+  }, [conversationId, isPendingConversation])
 
   useEffect(() => { loadMessages() }, [loadMessages])
 
-  // ── Realtime ───────────────────────────────────────────────
   useEffect(() => {
-    const channel = supabase
-      .channel(`conversation:${conversationId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public',
-        table: 'conversations', filter: `id=eq.${conversationId}`,
-      }, async () => {
-        try {
-          const res  = await fetch(`/api/messages/${conversationId}?limit=1`)
-          const data = await res.json()
-          if (data.messages?.length > 0) {
-            const latest = data.messages[data.messages.length - 1]
-            setMessages(prev => {
-              const alreadyExists = prev.some(m =>
-                m.id === latest.id ||
-                (m.id?.startsWith('tmp-') && m.content === latest.content && m.senderId === latest.senderId)
-              )
-              if (alreadyExists) return prev
-              return [...prev, latest]
-            })
-          }
-        } catch { /* ignore */ }
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [conversationId])
+    if (expandedImageUrl && expandedImageScrollerRef.current) {
+      expandedImageScrollerRef.current.scrollTo({ top: 0, behavior: 'auto' })
+    }
+  }, [expandedImageUrl])
+
+  // Revoke object URLs for selected images to avoid memory leaks.
+  useEffect(() => {
+    return () => {
+      if (pendingImage?.previewUrl) URL.revokeObjectURL(pendingImage.previewUrl)
+    }
+  }, [pendingImage?.previewUrl])
+
+  // ── Live stream updates (SSE) ──────────────────────────────
+  useEffect(() => {
+    if (isPendingConversation) return
+    const stream = new EventSource(`/api/chat/stream/${conversationId}`)
+    const onMessage = (ev: MessageEvent) => {
+      try {
+        const latest = JSON.parse(ev.data)
+        setMessages(prev => {
+          const alreadyExists = prev.some(m =>
+            m.id === latest.id ||
+            (m.id?.startsWith('tmp-') && m.content === latest.content && m.senderId === latest.senderId)
+          )
+          if (alreadyExists) return prev
+          return [...prev, latest]
+        })
+      } catch {
+        // ignore malformed events
+      }
+    }
+    const onReady = () => setPresenceViaSocket(true)
+    const onOpen  = () => setPresenceViaSocket(true)
+    const onError = () => setPresenceViaSocket(false)
+    stream.addEventListener('message', onMessage as EventListener)
+    stream.addEventListener('ready', onReady as EventListener)
+    stream.addEventListener('open', onOpen as EventListener)
+    stream.addEventListener('error', onError as EventListener)
+    return () => {
+      stream.removeEventListener('message', onMessage as EventListener)
+      stream.removeEventListener('ready', onReady as EventListener)
+      stream.removeEventListener('open', onOpen as EventListener)
+      stream.removeEventListener('error', onError as EventListener)
+      stream.close()
+      setPresenceViaSocket(false)
+    }
+  }, [conversationId, isPendingConversation])
+
+  // ── Presence heartbeat (this user) ─────────────────────────
+  useEffect(() => {
+    if (!presenceViaSocket) return
+    let timer: NodeJS.Timeout | null = null
+    const beat = async () => {
+      try { await fetch('/api/presence/heartbeat', { method: 'POST' }) } catch { /* ignore */ }
+    }
+    beat()
+    timer = setInterval(beat, 60_000)
+    return () => { if (timer) clearInterval(timer) }
+  }, [presenceViaSocket])
+
+  // ── Poll other user's last_active for live online status ───
+  useEffect(() => {
+    if (!otherProfile?.id || isPendingConversation) return
+    let timer: NodeJS.Timeout | null = null
+    const fetchLastActive = async () => {
+      try {
+        const res = await fetch(`/api/presence/last-active?userId=${otherProfile.id}`)
+        const data = await res.json()
+        if ('lastActive' in data) setOtherLastActive(data.lastActive)
+      } catch { /* ignore */ }
+    }
+    fetchLastActive()
+    timer = setInterval(fetchLastActive, 20_000)
+    return () => { if (timer) clearInterval(timer) }
+  }, [otherProfile?.id, isPendingConversation])
 
   // ── Auto scroll ────────────────────────────────────────────
   useEffect(() => {
@@ -176,6 +260,11 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
   // ── Send text ──────────────────────────────────────────────
   const sendText = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isPendingConversation) {
+      setError('Chat unlocks once you both like each other')
+      return
+    }
+    if (pendingImage) return
     if (!text.trim() || !currentProfile || sending) return
     const content = text.trim()
     setText('')
@@ -206,48 +295,186 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
     messageType: MongoMessage['messageType'],
     content: string,
     extras?: Partial<MongoMessage>
-  ) => {
-    if (!currentProfile) return
+  ): Promise<MongoMessage | null> => {
+    if (isPendingConversation) {
+      setError('Chat unlocks once you both like each other')
+      return null
+    }
+    if (!currentProfile) return null
     try {
       const res = await fetch(`/api/messages/${conversationId}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, messageType, ...extras }),
       })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error ?? 'Failed to send')
+      }
       const { message } = await res.json()
       setMessages(p => [...p, { ...message }])
-    } catch { setError('Failed to send') }
+      return message as MongoMessage
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to send')
+      return null
+    }
   }
 
   // ── Image upload ───────────────────────────────────────────
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    if (uploadingMedia) {
+      if (imageInputRef.current) imageInputRef.current.value = ''
+      return
+    }
     if (!file || !currentProfile) return
-    const msgId = `msg-${Date.now()}`
-    try {
-      const presignRes = await fetch('/api/chat/media', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId, messageId: msgId, fileType: file.type, mediaType: 'image' }),
-      })
-      const { url, fields, cloudfrontUrl } = await presignRes.json()
-      const fd = new FormData()
-      Object.entries(fields).forEach(([k, v]) => fd.append(k, v as string))
-      fd.append('file', file)
-      await fetch(url, { method: 'POST', body: fd })
-      await sendMediaMessage('image', '📷 Photo', { mediaUrl: cloudfrontUrl })
-    } catch { setError('Failed to upload image') }
+    setError(null)
+
+    // WhatsApp-like flow: store locally for preview + caption, upload happens only on "Send".
+    const previewUrl = URL.createObjectURL(file)
+    setPendingImage(prev => {
+      return { file, previewUrl }
+    })
+    setMediaCaption('')
     if (imageInputRef.current) imageInputRef.current.value = ''
   }
 
-  // ── GIF search ─────────────────────────────────────────────
+  const cancelPendingImage = () => {
+    setPendingImage(null)
+    setMediaCaption('')
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
+
+  const sendPendingImage = async () => {
+    if (!pendingImage || !currentProfile) return
+    if (isPendingConversation) {
+      setError('Chat unlocks once you both like each other')
+      return
+    }
+    if (uploadingMedia) return
+
+    const caption = mediaCaption.trim() || '📷 Photo'
+    setUploadingMedia(true)
+    try {
+      const msgId = `msg-${Date.now()}`
+      const presignRes = await fetch('/api/chat/media', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId,
+          messageId: msgId,
+          fileType: pendingImage.file.type,
+          mediaType: 'image',
+        }),
+      })
+
+      if (!presignRes.ok) throw new Error('Failed to get upload URL')
+      const { url, fields, cloudfrontUrl } = await presignRes.json()
+      if (!cloudfrontUrl) throw new Error('Missing mediaUrl from upload response')
+
+      const fd = new FormData()
+      Object.entries(fields).forEach(([k, v]) => fd.append(k, v as string))
+      fd.append('file', pendingImage.file)
+
+      const uploadRes = await fetch(url, { method: 'POST', body: fd })
+      if (!uploadRes.ok) throw new Error('Upload to storage failed')
+      const sent = await sendMediaMessage('image', caption, { mediaUrl: cloudfrontUrl })
+      if (sent) {
+        setPendingImage(null)
+        setMediaCaption('')
+      }
+    } catch {
+      setError('Failed to upload image')
+    } finally {
+      setUploadingMedia(false)
+      if (imageInputRef.current) imageInputRef.current.value = ''
+    }
+  }
+
+  // ── GIF helpers ────────────────────────────────────────────
+  const mapGiphy = (data: any[]) =>
+    (data ?? []).map((item: any) => ({
+      id: item.id,
+      url: item.images?.fixed_height_small?.url || item.images?.downsized_small?.url || item.images?.original?.url,
+      title: item.title ?? '',
+      provider: 'giphy',
+    }))
+
+  const mapTenor = (data: any[]) =>
+    (data ?? []).map((item: any) => {
+      const mf = item.media_formats ?? {}
+      const url =
+        mf.tinygif?.url ||
+        mf.gif?.url ||
+        mf.mediumgif?.url ||
+        mf.nanogif?.url ||
+        mf.mp4?.url ||
+        ''
+      return { id: item.id, url, title: item.content_description ?? '', provider: 'tenor' }
+    })
+
+  const tryGiphySearch = async (q: string, limit = 16) => {
+    const key  = process.env.NEXT_PUBLIC_GIPHY_API_KEY
+    if (!key) return { ok: false, gifs: [] as any[] }
+    const res  = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${key}&q=${encodeURIComponent(q)}&limit=${limit}&rating=g`)
+    if (!res.ok) return { ok: false, gifs: [] as any[] }
+    const data = await res.json()
+    return { ok: true, gifs: mapGiphy(data.data) }
+  }
+
+  const tryGiphyTrending = async (limit = 16) => {
+    const key  = process.env.NEXT_PUBLIC_GIPHY_API_KEY
+    if (!key) return { ok: false, gifs: [] as any[] }
+    const res  = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${key}&limit=${limit}&rating=g`)
+    if (!res.ok) return { ok: false, gifs: [] as any[] }
+    const data = await res.json()
+    return { ok: true, gifs: mapGiphy(data.data) }
+  }
+
+  // Tenor fallback — uses public demo key for light usage
+  const TENOR_KEY_FALLBACK = 'LIVDSRZULELA'
+  const tryTenorSearch = async (q: string, limit = 16) => {
+    const key = process.env.NEXT_PUBLIC_TENOR_API_KEY || TENOR_KEY_FALLBACK
+    const res = await fetch(`https://tenor.googleapis.com/v2/search?key=${key}&q=${encodeURIComponent(q)}&limit=${limit}&media_filter=basic&client_key=crotchet`)
+    if (!res.ok) return { ok: false, gifs: [] as any[] }
+    const data = await res.json()
+    return { ok: true, gifs: mapTenor(data.results) }
+  }
+  const tryTenorTrending = async (limit = 16) => {
+    const key = process.env.NEXT_PUBLIC_TENOR_API_KEY || TENOR_KEY_FALLBACK
+    const res = await fetch(`https://tenor.googleapis.com/v2/featured?key=${key}&limit=${limit}&media_filter=basic&client_key=crotchet`)
+    if (!res.ok) return { ok: false, gifs: [] as any[] }
+    const data = await res.json()
+    return { ok: true, gifs: mapTenor(data.results) }
+  }
+
   const searchGifs = async (q: string) => {
-    if (!q) return
+    const query = q.trim()
+    if (!query) return
     setGifLoading(true)
     try {
-      const key  = process.env.NEXT_PUBLIC_GIPHY_API_KEY
-      const res  = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${key}&q=${encodeURIComponent(q)}&limit=16&rating=g`)
-      const data = await res.json()
-      setGifs(data.data ?? [])
-    } catch { /* ignore */ }
+      let out: any[] = []
+      const g = await tryGiphySearch(query)
+      if (g.ok && g.gifs.length > 0) out = g.gifs
+      else {
+        const t = await tryTenorSearch(query)
+        if (t.ok) out = t.gifs
+      }
+      setGifs(out)
+    } catch { setGifs([]) }
+    setGifLoading(false)
+  }
+
+  const loadTrendingGifs = async () => {
+    setGifLoading(true)
+    try {
+      let out: any[] = []
+      const g = await tryGiphyTrending()
+      if (g.ok && g.gifs.length > 0) out = g.gifs
+      else {
+        const t = await tryTenorTrending()
+        if (t.ok) out = t.gifs
+      }
+      setGifs(out)
+    } catch { setGifs([]) }
     setGifLoading(false)
   }
 
@@ -258,8 +485,58 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
     await sendMediaMessage('gif', gifUrl, { mediaUrl: gifUrl })
   }
 
+  const toggleVoiceRecording = async () => {
+    if (isPendingConversation) {
+      setError('Chat unlocks once you both like each other')
+      return
+    }
+    if (recordingAudio && mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop()
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      mediaRecorderRef.current = recorder
+      audioChunksRef.current = []
+      recorder.ondataavailable = (ev) => {
+        if (ev.data && ev.data.size > 0) audioChunksRef.current.push(ev.data)
+      }
+      recorder.onstop = async () => {
+        setRecordingAudio(false)
+        stream.getTracks().forEach(t => t.stop())
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        if (blob.size === 0) return
+        const msgId = `msg-${Date.now()}`
+        try {
+          const presignRes = await fetch('/api/chat/media', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversationId, messageId: msgId, fileType: 'audio/webm', mediaType: 'audio' }),
+          })
+          const { url, fields, cloudfrontUrl } = await presignRes.json()
+          if (!presignRes.ok) throw new Error('Failed to get upload URL')
+          if (!cloudfrontUrl) throw new Error('Missing mediaUrl from upload response')
+          const fd = new FormData()
+          Object.entries(fields).forEach(([k, v]) => fd.append(k, v as string))
+          fd.append('file', blob, `${msgId}.webm`)
+          const uploadRes = await fetch(url, { method: 'POST', body: fd })
+          if (!uploadRes.ok) throw new Error('Upload to storage failed')
+          await sendMediaMessage('audio', '🎤 Voice note', { mediaUrl: cloudfrontUrl })
+        } catch {
+          setError('Failed to send voice note')
+        }
+      }
+      recorder.start()
+      setRecordingAudio(true)
+    } catch {
+      setError('Microphone permission is required for voice notes')
+    }
+  }
+
   // ── Delete message ─────────────────────────────────────────
   const deleteMessage = async (messageId: string) => {
+    if (isPendingConversation) return
     setSelectedMsg(null)
     setDeleting(messageId)
     try {
@@ -282,6 +559,10 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
 
   // ── Chat management (mute/block) ───────────────────────────
   const handleChatAction = async (action: string) => {
+    if (isPendingConversation && action !== 'block') {
+      setError('This chat is pending until they like you back')
+      return
+    }
     setShowChatMenu(false)
     setMenuAction(action)
     if (action === 'block') {
@@ -302,6 +583,10 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
 
   // ── Video call ─────────────────────────────────────────────
   const startCall = async () => {
+    if (isPendingConversation) {
+      setError('Video call is available after you match')
+      return
+    }
     setShowCallConfirm(false)
     setCallLoading(true)
     setInCall(true)
@@ -382,6 +667,10 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
   const avatarUrl = getPhotoUrl(otherProfile.photos)
   const initials  = otherProfile.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() ?? '?'
   const ageLabel  = AGE_RANGE_LABELS[(otherProfile as any).age_range ?? '']
+  const online    = isUserOnline(otherLastActive)
+  const statusText = isPendingConversation
+    ? 'Pending match'
+    : (online ? 'Online now' : formatLastSeen(otherLastActive))
 
   return (
     <>
@@ -398,7 +687,7 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
+        height: embedded ? '100%' : 'calc(100dvh - 72px)',
         background: 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.26), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.24), transparent 74%), linear-gradient(140deg,#090019 0%,#17032f 36%,#2a0645 70%,#3d0853 100%)',
         fontFamily: "'DM Sans', sans-serif",
         position: 'relative',
@@ -425,15 +714,18 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
             <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#fff6fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {otherProfile.full_name}{ageLabel ? `, ${ageLabel}` : ''}
             </p>
-            {otherProfile.location && (
-              <p style={{ margin: 0, fontSize: 11, color: 'rgba(246,223,252,0.72)' }}>{otherProfile.location}</p>
-            )}
+            <p style={{ margin: 0, fontSize: 11, color: online ? '#a7f3d0' : 'rgba(246,223,252,0.72)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: isPendingConversation ? '#f9a8d4' : (online ? '#34d399' : 'rgba(246,223,252,0.42)'), boxShadow: isPendingConversation ? '0 0 0 2px rgba(249,168,212,0.18)' : (online ? '0 0 0 2px rgba(52,211,153,0.22)' : 'none') }} />
+              {statusText}
+              {otherProfile.location ? ` • ${otherProfile.location}` : ''}
+            </p>
           </div>
 
           {/* Video call button */}
           <button
             onClick={e => { e.stopPropagation(); !inCall && setShowCallConfirm(true) }}
-            style={{ width: 38, height: 38, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            disabled={isPendingConversation}
+            style={{ width: 38, height: 38, borderRadius: '50%', border: 'none', cursor: isPendingConversation ? 'not-allowed' : 'pointer', opacity: isPendingConversation ? 0.5 : 1, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Video size={17} color="#f6e8ff" />
           </button>
 
@@ -482,7 +774,7 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
         )}
 
         {/* ── Messages ── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
           {loading ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2.5px solid rgba(244,63,94,0.15)', borderTopColor: '#f43f5e', animation: 'spin 0.8s linear infinite' }} />
@@ -490,10 +782,19 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
           ) : messages.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
               <div>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🧵</div>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>{isPendingConversation ? '💌' : '🧵'}</div>
                 <p style={{ fontSize: 14, color: 'rgba(246,223,252,0.82)', lineHeight: 1.6, margin: 0 }}>
-                  Start the conversation with<br />
-                  <strong style={{ color: '#fff6fb' }}>{otherProfile.full_name?.split(' ')[0]}</strong>
+                  {isPendingConversation ? (
+                    <>
+                      You liked <strong style={{ color: '#fff6fb' }}>{otherProfile.full_name?.split(' ')[0]}</strong>.<br />
+                      Chat opens when they like you back.
+                    </>
+                  ) : (
+                    <>
+                      Start the conversation with<br />
+                      <strong style={{ color: '#fff6fb' }}>{otherProfile.full_name?.split(' ')[0]}</strong>
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -503,6 +804,11 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
                 const own    = msg.senderId === currentProfile?.id
                 const isTemp = msg.id?.startsWith('tmp-')
                 const isDeleted = msg.isDeleted
+                const isGif = msg.messageType === 'gif'
+                const imageCaption = (msg.messageType === 'image' && !isDeleted && typeof msg.content === 'string')
+                  ? msg.content.trim()
+                  : ''
+                const hasImageCaption = Boolean(imageCaption && imageCaption !== '📷 Photo')
 
                 // Video call pill
                 if (msg.messageType === 'video_call') {
@@ -546,13 +852,14 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
 
                     <div style={{
                       maxWidth: '72%',
-                      padding: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? '4px' : '10px 14px',
+                      padding: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? '0' : '10px 14px',
                       borderRadius: own ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                       background: isDeleted
                         ? 'rgba(255,255,255,0.08)'
+                        : isGif ? 'transparent'
                         : own ? 'linear-gradient(135deg, #f43f5e, #ec4899)' : 'rgba(255,255,255,0.12)',
-                      border: isDeleted ? '1px dashed rgba(255,255,255,0.24)' : own ? 'none' : '1px solid rgba(255,255,255,0.2)',
-                      boxShadow: isDeleted ? 'none' : own ? '0 8px 20px rgba(244,63,94,0.28)' : '0 4px 14px rgba(0,0,0,0.2)',
+                      border: isDeleted ? '1px dashed rgba(255,255,255,0.24)' : isGif ? 'none' : own ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                      boxShadow: isDeleted ? 'none' : isGif ? 'none' : own ? '0 8px 20px rgba(244,63,94,0.28)' : '0 4px 14px rgba(0,0,0,0.2)',
                       color: isDeleted ? 'rgba(246,223,252,0.66)' : own ? 'white' : '#fff2fb',
                       cursor: own && !isTemp && !isDeleted ? 'pointer' : 'default',
                       opacity: isTemp ? 0.8 : 1,
@@ -567,7 +874,20 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
 
                       {/* Image */}
                       {!isDeleted && (msg.messageType === 'image' || msg.messageType === 'gif') && msg.mediaUrl && (
-                        <img src={msg.mediaUrl} alt="" style={{ maxWidth: 220, maxHeight: 200, borderRadius: 14, display: 'block' }} />
+                        <img
+                          src={msg.mediaUrl}
+                          alt=""
+                          onClick={e => { e.stopPropagation(); setExpandedImageUrl(msg.mediaUrl ?? null) }}
+                          style={{ maxWidth: 220, maxHeight: 200, borderRadius: 14, display: 'block', cursor: 'zoom-in' }}
+                        />
+                      )}
+
+                      {/* Image caption/message */}
+                      {!isDeleted && msg.messageType === 'image' && hasImageCaption && (
+                        <p style={{ margin: 0, padding: '8px 10px 0', fontSize: 13, lineHeight: 1.4, wordBreak: 'break-word' }}>{imageCaption}</p>
+                      )}
+                      {!isDeleted && msg.messageType === 'audio' && msg.mediaUrl && (
+                        <audio controls preload="none" src={msg.mediaUrl} style={{ width: 220, display: 'block' }} />
                       )}
 
                       {/* Text */}
@@ -576,7 +896,7 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
                       )}
 
                       {/* Timestamp + delivery ticks */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3, marginTop: 4, paddingRight: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? 6 : 0, paddingBottom: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? 4 : 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3, marginTop: 4, paddingRight: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? 8 : 0, paddingBottom: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? 6 : 0 }}>
                         <span style={{ fontSize: 10, color: isDeleted ? 'rgba(246,223,252,0.6)' : own ? 'rgba(255,255,255,0.65)' : 'rgba(246,223,252,0.68)' }}>
                           {formatTime(msg.createdAt)}
                         </span>
@@ -598,6 +918,33 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
                 )
               })}
               <div ref={messagesEndRef} />
+            </div>
+          )}
+
+          {expandedImageUrl && (
+            <div
+              style={{ position: 'absolute', inset: 0, zIndex: 40, background: 'rgba(8,2,18,0.9)', backdropFilter: 'blur(2px)' }}
+              onClick={() => setExpandedImageUrl(null)}
+            >
+              <div
+                ref={expandedImageScrollerRef}
+                style={{ position: 'absolute', inset: 0, overflowY: 'auto' }}
+                onClick={e => e.stopPropagation()}
+              >
+                <img
+                  src={expandedImageUrl}
+                  alt=""
+                  style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setExpandedImageUrl(null)}
+                style={{ position: 'absolute', top: 16, right: 16, width: 38, height: 38, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.14)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                aria-label="Close image preview"
+              >
+                <X size={18} />
+              </button>
             </div>
           )}
         </div>
@@ -623,12 +970,12 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
               {gifs.length === 0 && !gifLoading && (
                 <p style={{ fontSize: 12, color: 'rgba(246,223,252,0.76)', padding: '4px 0', margin: 0 }}>
-                  {gifQuery ? 'No results' : 'Search for a GIF above'}
+                  {gifQuery ? 'No results' : 'Type a topic or tap Go for trending'}
                 </p>
               )}
               {gifs.map((gif: any) => (
-                <button key={gif.id} onClick={() => sendGif(gif.images.fixed_height_small.url)} style={{ flexShrink: 0, padding: 0, border: 'none', cursor: 'pointer', borderRadius: 10, overflow: 'hidden' }}>
-                  <img src={gif.images.fixed_height_small.url} alt={gif.title} style={{ height: 90, width: 'auto', display: 'block' }} />
+                <button key={gif.id} onClick={() => sendGif(gif.url)} style={{ flexShrink: 0, padding: 0, border: 'none', cursor: 'pointer', borderRadius: 10, overflow: 'hidden' }}>
+                  <img src={gif.url} alt={gif.title} style={{ height: 90, width: 'auto', display: 'block' }} />
                 </button>
               ))}
             </div>
@@ -636,29 +983,95 @@ export default function Chat({ conversationId, otherProfile, onBack }: ChatProps
         )}
 
         {/* ── Input bar ── */}
-        <div style={{ background: 'rgba(13,4,27,0.66)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.16)', padding: '10px 12px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', flexShrink: 0 }}>
+        <div style={{ background: 'rgba(13,4,27,0.66)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.16)', padding: '10px 12px', paddingBottom: bottomInsetPadding, flexShrink: 0 }}>
+          {pendingImage && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 58, height: 58, borderRadius: 16, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.06)', flexShrink: 0 }}>
+                <img
+                  src={pendingImage.previewUrl}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              </div>
+
+              <input
+                value={mediaCaption}
+                onChange={e => setMediaCaption(e.target.value)}
+                placeholder="Add a caption…"
+                style={{ flex: 1, padding: '11px 16px', borderRadius: 24, border: '1.5px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.12)', fontSize: 14, color: '#fff2fb', outline: 'none', fontFamily: "'DM Sans',sans-serif" }}
+                disabled={uploadingMedia || isPendingConversation}
+              />
+
+              <button
+                type="button"
+                onClick={cancelPendingImage}
+                disabled={uploadingMedia}
+                style={{ padding: '10px 14px', borderRadius: 16, border: '1.5px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.06)', color: 'rgba(246,223,252,0.82)', fontSize: 13, fontWeight: 700, cursor: uploadingMedia ? 'default' : 'pointer', flexShrink: 0 }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={sendPendingImage}
+                disabled={uploadingMedia || isPendingConversation}
+                style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', flexShrink: 0, background: !isPendingConversation ? 'linear-gradient(135deg,#f43f5e,#ec4899)' : 'rgba(244,63,94,0.12)', cursor: !isPendingConversation ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: !isPendingConversation ? '0 4px 12px rgba(244,63,94,0.3)' : 'none' }}
+                aria-label="Send image"
+              >
+                {uploadingMedia ? (
+                  <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', animation: 'spin 0.8s linear infinite' }} />
+                ) : (
+                  <Send size={17} color="white" />
+                )}
+              </button>
+            </div>
+          )}
           <form onSubmit={sendText} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button type="button" onClick={() => setShowGifs(!showGifs)} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', background: showGifs ? 'rgba(236,72,153,0.24)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={async () => {
+                const next = !showGifs
+                setShowGifs(next)
+                if (next && gifs.length === 0) {
+                  // load trending on open if empty
+                  await loadTrendingGifs()
+                }
+              }}
+              style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', background: showGifs ? 'rgba(236,72,153,0.24)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            >
               <Gift size={18} color={showGifs ? '#ffd7ec' : 'rgba(246,223,252,0.76)'} />
             </button>
             <button type="button" onClick={() => imageInputRef.current?.click()} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Image size={18} color="rgba(246,223,252,0.76)" />
             </button>
+            <button
+              type="button"
+              onClick={toggleVoiceRecording}
+              style={{
+                width: 36, height: 36, borderRadius: '50%', border: 'none',
+                cursor: 'pointer',
+                background: recordingAudio ? 'rgba(244,63,94,0.34)' : 'rgba(255,255,255,0.06)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}
+              title={recordingAudio ? 'Stop recording' : 'Record voice note'}
+            >
+              <Mic size={17} color={recordingAudio ? '#fff' : 'rgba(246,223,252,0.82)'} />
+            </button>
             <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
             <input
               value={text}
               onChange={e => setText(e.target.value)}
-              placeholder={`Message ${otherProfile.full_name?.split(' ')[0] ?? ''}…`}
+              placeholder={isPendingConversation ? 'Waiting for match to unlock chat…' : `Message ${otherProfile.full_name?.split(' ')[0] ?? ''}…`}
               style={{ flex: 1, padding: '11px 16px', borderRadius: 24, border: '1.5px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.12)', fontSize: 14, color: '#fff2fb', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
-              disabled={sending}
+              disabled={sending || isPendingConversation || !!pendingImage}
             />
             <button
               type="submit"
-              disabled={!text.trim() || sending}
-              style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', flexShrink: 0, background: text.trim() ? 'linear-gradient(135deg,#f43f5e,#ec4899)' : 'rgba(244,63,94,0.12)', cursor: text.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: text.trim() ? '0 4px 12px rgba(244,63,94,0.3)' : 'none', transition: 'all 0.2s ease' }}>
+              disabled={!text.trim() || sending || isPendingConversation || !!pendingImage}
+              style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', flexShrink: 0, background: !isPendingConversation && text.trim() ? 'linear-gradient(135deg,#f43f5e,#ec4899)' : 'rgba(244,63,94,0.12)', cursor: !isPendingConversation && text.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: !isPendingConversation && text.trim() ? '0 4px 12px rgba(244,63,94,0.3)' : 'none', transition: 'all 0.2s ease' }}>
               {sending
                 ? <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', animation: 'spin 0.8s linear infinite' }} />
-                : <Send size={17} color={text.trim() ? 'white' : '#f43f5e'} />
+                : <Send size={17} color={!isPendingConversation && text.trim() ? 'white' : '#f43f5e'} />
               }
             </button>
           </form>

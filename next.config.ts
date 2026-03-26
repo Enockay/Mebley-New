@@ -9,8 +9,8 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: [
-          // Prevent clickjacking
-          { key: 'X-Frame-Options', value: 'DENY' },
+          // Allow same-origin framing (needed for embedding panels within the app)
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           // Prevent MIME sniffing
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           // XSS protection
@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
               // Service worker needs to load OneSignal's SW script
               "worker-src 'self' https://cdn.onesignal.com blob:",
               "frame-src 'self' https://onesignal.com",
-              "frame-ancestors 'none'",
+              "frame-ancestors 'self'",
             ].join('; ')
           },
           // HSTS (production only)

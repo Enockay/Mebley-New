@@ -238,36 +238,36 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
   const draftQuestion = PROFILE_PROMPTS.find(p => p.id === draftQuestionId)
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-lg flex flex-col"
+        className="rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-lg flex flex-col border border-white/15 bg-[linear-gradient(165deg,rgba(26,10,45,0.98),rgba(14,6,30,0.98))]"
         style={{ maxHeight: '92dvh' }}>
 
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-gray-100">
+        <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-white/10">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-xl font-bold text-white" style={{ color: '#ffffff' }}>Edit Profile</h2>
+            <p className="text-sm text-[rgba(233,213,255,0.75)]">
               {formData.interests.length} interests · {prompts.length}/{MAX_PROMPTS} prompts
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-            <X size={20} className="text-gray-500" />
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">
+            <X size={20} className="text-[rgba(233,213,255,0.8)]" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex-shrink-0 flex border-b border-gray-100 overflow-x-auto px-2">
+        <div className="flex-shrink-0 flex border-b border-white/10 overflow-x-auto px-2">
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-3 text-sm font-semibold border-b-2 transition-all ${
                 activeTab === tab.id
-                  ? 'border-rose-500 text-rose-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-rose-500 text-rose-300'
+                  : 'border-transparent text-[rgba(233,213,255,0.65)] hover:text-[rgba(233,213,255,0.88)]'
               }`}>
               <span>{tab.emoji}</span>
               <span className="hidden sm:inline">{tab.label}</span>
@@ -287,69 +287,69 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
           {activeTab === 'basics' && (
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                <label className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2">Full Name</label>
                 <input
                   type="text"
                   value={formData.full_name}
                   onChange={e => setFormData(p => ({ ...p, full_name: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors"
+                  className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
+                <label className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2">City</label>
                 <input
                   type="text"
                   value={formData.city}
                   onChange={e => setFormData(p => ({ ...p, city: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors"
+                  className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+                <label className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2">Country</label>
                 <input
                   type="text"
                   value={formData.country}
                   onChange={e => setFormData(p => ({ ...p, country: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors"
+                  className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Nationality</label>
+                <label className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2">Nationality</label>
                 <input
                   type="text"
                   value={formData.nationality}
                   onChange={e => setFormData(p => ({ ...p, nationality: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors"
+                  className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2">
                   About Me
-                  <span className="text-gray-400 font-normal ml-1">({formData.bio.length}/500)</span>
+                  <span className="text-[rgba(233,213,255,0.55)] font-normal ml-1">({formData.bio.length}/500)</span>
                 </label>
                 <textarea
                   value={formData.bio}
                   onChange={e => setFormData(p => ({ ...p, bio: e.target.value }))}
                   rows={5}
                   maxLength={500}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-rose-400 focus:outline-none transition-colors resize-none"
+                  className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors resize-none bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
                 />
               </div>
 
-              <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-4">
+              <div className="bg-white/6 border border-white/10 rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles size={14} className="text-rose-500" />
-                  <span className="text-sm font-semibold text-gray-700">Profile Strength</span>
+                  <span className="text-sm font-semibold text-[rgba(233,213,255,0.9)]">Profile Strength</span>
                 </div>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-[rgba(233,213,255,0.7)]">
                     {completenessScore < 40 ? 'Just getting started' : completenessScore < 70 ? 'Looking good!' : 'Strong profile! 🔥'}
                   </span>
                   <span className="text-sm font-bold text-rose-600">{completenessScore}%</span>
                 </div>
-                <div className="w-full bg-white rounded-full h-2">
+                <div className="w-full bg-white/10 rounded-full h-2">
                   <div
                     className="bg-gradient-to-r from-rose-400 to-pink-500 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${completenessScore}%` }}
@@ -364,10 +364,10 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
             <div className="space-y-4">
 
               <div>
-                <p className="text-sm text-gray-600 leading-relaxed mb-1">
+                <p className="text-sm text-[rgba(233,213,255,0.82)] leading-relaxed mb-1">
                   Answer up to 3 prompts to give people something real to connect with.
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-[rgba(233,213,255,0.58)]">
                   Profiles with prompts get significantly more first messages.
                 </p>
               </div>
@@ -376,17 +376,17 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
               {prompts.map((p, i) => (
                 <div
                   key={p.id}
-                  className={`border-2 rounded-2xl overflow-hidden transition-all ${
-                    editingSlot === i ? 'border-rose-400' : 'border-gray-200'
+                  className={`border rounded-2xl overflow-hidden transition-all ${
+                    editingSlot === i ? 'border-rose-400' : 'border-white/14'
                   }`}>
 
                   {/* Prompt header — question */}
-                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+                  <div className="flex items-center justify-between px-4 py-3 bg-white/6 border-b border-white/10">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-base flex-shrink-0">
                         {PROFILE_PROMPTS.find(q => q.id === p.id)?.emoji ?? '💬'}
                       </span>
-                      <p className="text-xs font-semibold text-gray-600 truncate">{p.question}</p>
+                      <p className="text-xs font-semibold text-[rgba(233,213,255,0.82)] truncate">{p.question}</p>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                       <button
@@ -411,15 +411,15 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
                         rows={3}
                         maxLength={150}
                         autoFocus
-                        className="w-full px-3 py-2.5 border-2 border-rose-300 rounded-xl text-sm focus:outline-none focus:border-rose-500 resize-none transition-colors"
+                        className="w-full px-3 py-2.5 border-2 border-rose-400 rounded-xl text-sm focus:outline-none focus:border-rose-500 resize-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.55)]"
                         placeholder="Your answer…"
                       />
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-400">{draftAnswer.length}/150</span>
+                        <span className="text-xs text-[rgba(233,213,255,0.6)]">{draftAnswer.length}/150</span>
                         <div className="flex gap-2">
                           <button
                             onClick={cancelPromptEdit}
-                            className="px-3 py-1.5 text-sm border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
+                            className="px-3 py-1.5 text-sm border border-white/20 text-[rgba(233,213,255,0.9)] rounded-xl hover:bg-white/8 transition-colors">
                             Cancel
                           </button>
                           <button
@@ -433,7 +433,7 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
                     </div>
                   ) : (
                     <div className="px-4 py-3">
-                      <p className="text-sm text-gray-800 leading-relaxed">{p.answer}</p>
+                      <p className="text-sm text-[rgba(245,228,255,0.95)] leading-relaxed">{p.answer}</p>
                     </div>
                   )}
                 </div>
@@ -451,16 +451,16 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
                       <button
                         key={q.id}
                         onClick={() => confirmPromptQuestion(q.id)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-rose-50 transition-colors text-left">
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-rose-500/16 focus:bg-rose-500/18 active:bg-rose-500/20 transition-colors text-left">
                         <span className="text-lg flex-shrink-0">{q.emoji}</span>
-                        <span className="text-sm text-gray-700">{q.question}</span>
+                        <span className="text-sm text-[rgba(245,228,255,0.95)]">{q.question}</span>
                       </button>
                     ))}
                   </div>
-                  <div className="px-4 py-3 border-t border-gray-100">
+                  <div className="px-4 py-3 border-t border-white/10">
                     <button
                       onClick={cancelPromptEdit}
-                      className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                      className="text-sm text-[rgba(233,213,255,0.7)] hover:text-[rgba(245,228,255,0.95)] transition-colors">
                       Cancel
                     </button>
                   </div>
@@ -481,15 +481,15 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
                       rows={3}
                       maxLength={150}
                       autoFocus
-                      className="w-full px-3 py-2.5 border-2 border-rose-300 rounded-xl text-sm focus:outline-none focus:border-rose-500 resize-none transition-colors"
+                      className="w-full px-3 py-2.5 border-2 border-rose-400 rounded-xl text-sm focus:outline-none focus:border-rose-500 resize-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.55)]"
                       placeholder="Your answer…"
                     />
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400">{draftAnswer.length}/150</span>
+                      <span className="text-xs text-[rgba(233,213,255,0.6)]">{draftAnswer.length}/150</span>
                       <div className="flex gap-2">
                         <button
                           onClick={cancelPromptEdit}
-                          className="px-3 py-1.5 text-sm border-2 border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors">
+                          className="px-3 py-1.5 text-sm border border-white/20 text-[rgba(233,213,255,0.9)] rounded-xl hover:bg-white/8 transition-colors">
                           Cancel
                         </button>
                         <button
@@ -515,7 +515,7 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
               )}
 
               {prompts.length === MAX_PROMPTS && pickerSlot === null && editingSlot === null && (
-                <p className="text-center text-xs text-gray-400 py-2">
+                <p className="text-center text-xs text-[rgba(233,213,255,0.6)] py-2">
                   You've added all 3 prompts. Edit or remove one to change it.
                 </p>
               )}
@@ -525,7 +525,7 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
           {/* ── Intents ── */}
           {activeTab === 'intents' && (
             <div className="space-y-3">
-              <p className="text-sm text-gray-500 mb-4">Be honest — it leads to better matches!</p>
+              <p className="text-sm text-[rgba(233,213,255,0.75)] mb-4">Be honest — it leads to better matches!</p>
               {RELATIONSHIP_INTENTS.map(intent => (
                 <button
                   key={intent.value}
@@ -533,15 +533,15 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
                   onClick={() => toggleArrayValue('looking_for', intent.value)}
                   className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 transition-all text-left ${
                     formData.looking_for.includes(intent.value)
-                      ? 'border-rose-500 bg-rose-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-rose-500 bg-rose-500/15'
+                      : 'border-white/14 hover:border-white/28'
                   }`}>
                   <span className="text-3xl">{intent.emoji}</span>
                   <div className="flex-1">
-                    <p className={`font-semibold ${formData.looking_for.includes(intent.value) ? 'text-rose-700' : 'text-gray-900'}`}>
+                    <p className={`font-semibold ${formData.looking_for.includes(intent.value) ? 'text-rose-300' : 'text-[rgba(245,228,255,0.95)]'}`}>
                       {intent.label}
                     </p>
-                    <p className="text-sm text-gray-500">{intent.description}</p>
+                    <p className="text-sm text-[rgba(233,213,255,0.7)]">{intent.description}</p>
                   </div>
                   {formData.looking_for.includes(intent.value) && (
                     <div className="w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -557,11 +557,11 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
           {activeTab === 'interests' && (
             <div>
               <div className="flex items-center justify-between mb-5">
-                <p className="text-sm text-gray-500">Pick what you love</p>
+                <p className="text-sm text-[rgba(233,213,255,0.75)]">Pick what you love</p>
                 <span className={`text-sm font-semibold px-3 py-1 rounded-full transition-colors ${
                   formData.interests.length >= 3
                     ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
+                    : 'bg-white/10 text-[rgba(233,213,255,0.7)]'
                 }`}>
                   {formData.interests.length} selected
                 </span>
@@ -571,7 +571,7 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
                   <div key={data.label}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-base">{data.emoji}</span>
-                      <span className="text-sm font-semibold text-gray-700">{data.label}</span>
+                      <span className="text-sm font-semibold text-[rgba(245,228,255,0.95)]">{data.label}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {data.tags.map(tag => (
@@ -582,7 +582,7 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
                           className={`px-3 py-1.5 rounded-full text-sm border-2 transition-all ${
                             formData.interests.includes(tag)
                               ? 'border-rose-500 bg-rose-500 text-white'
-                              : 'border-gray-200 text-gray-700 hover:border-rose-300'
+                              : 'border-white/18 text-[rgba(233,213,255,0.9)] hover:border-rose-300'
                           }`}>
                           {tag}
                         </button>
@@ -605,7 +605,7 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
           {/* ── Videos ── */}
           {activeTab === 'videos' && (
             <div>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-[rgba(233,213,255,0.75)] mb-4">
                 Your intro video is required for your profile to appear in Discover.
               </p>
               <VideoUpload onVideoUploaded={() => refreshProfile()} />
@@ -614,18 +614,18 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 px-6 pt-4 pb-6 border-t border-gray-100">
+        <div className="flex-shrink-0 px-6 pt-4 pb-6 border-t border-white/10 bg-[rgba(10,4,20,0.55)]">
           {isAutoSaveTab ? (
             <button
               onClick={onClose}
-              className="w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all">
+              className="w-full py-3 border border-white/20 text-[rgba(233,213,255,0.9)] rounded-xl font-medium hover:bg-white/8 transition-all">
               Done
             </button>
           ) : (
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="px-5 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all">
+                className="px-5 py-3 border border-white/20 text-[rgba(233,213,255,0.9)] rounded-xl font-medium hover:bg-white/8 transition-all">
                 Cancel
               </button>
               <button

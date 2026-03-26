@@ -5,14 +5,15 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Play, MapPin, Eye, EyeOff, Sparkles,
-  Camera, ChevronRight, Heart, BadgeCheck, Edit3,
+  Camera, ChevronRight, Heart, BadgeCheck, Edit3, Coins,
 } from 'lucide-react'
 import EditProfile from '@/components/Profile/EditProfile'
 import DeleteAccount from '@/components/Profile/DeleteAccount'
 import { createClient } from '@/lib/supabase-client'
+import { usePaywall } from '@/hooks/usePaywall'
 
 import { RELATIONSHIP_INTENTS, PROFILE_PROMPTS } from '@/types/app-constants'
 
@@ -58,17 +59,50 @@ function getCompletenessNudge(profile: any, videoCount: number, promptCount: num
 }
 
 const s = {
-  page:    { minHeight: '100vh', background: '#fdf8f5', fontFamily: "'DM Sans', sans-serif" },
-  card:    { background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderRadius: 20, border: '1px solid rgba(244,63,94,0.08)', boxShadow: '0 2px 16px rgba(180,60,80,0.06)', padding: '20px' } as React.CSSProperties,
-  label:   { fontSize: 10, fontWeight: 700, color: '#a37a82', letterSpacing: '0.1em', textTransform: 'uppercase' as const, marginBottom: 10 },
-  chip:    (color: string) => ({ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, background: `${color}12`, border: `1px solid ${color}30`, color }),
+  page:    {
+    minHeight: '100vh',
+    background: 'radial-gradient(42% 48% at 10% 88%, rgba(236,72,153,0.16), transparent 72%), radial-gradient(36% 42% at 92% 12%, rgba(139,92,246,0.16), transparent 74%), linear-gradient(150deg,#f7f1f8 0%,#f6eef7 32%,#f5edf8 68%,#f2eaf7 100%)',
+    fontFamily: "'Inter', 'DM Sans', sans-serif",
+  },
+  card:    { background: 'rgba(255,255,255,0.74)', backdropFilter: 'blur(14px)', borderRadius: 20, border: '1px solid rgba(192,126,170,0.18)', boxShadow: '0 10px 34px rgba(75,33,104,0.08)', padding: '20px' } as React.CSSProperties,
+  label:   { fontSize: 10, fontWeight: 800, color: '#8f6f88', letterSpacing: '0.14em', textTransform: 'uppercase' as const, marginBottom: 10 },
+  chip:    (color: string) => ({ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, background: `${color}14`, border: `1px solid ${color}35`, color, fontFamily: "'Inter','DM Sans',sans-serif" }),
   section: { display: 'flex', flexDirection: 'column' as const, gap: 12 },
 }
 
 export default function ProfilePage() {
   const supabase = createClient()
-  const { user, profile, loading, refreshProfile } = useAuth()
+  const { user, profile, loading, refreshProfile, creditBalance } = useAuth()
+  const { openPaywall } = usePaywall()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isEmbedded = searchParams.get('embedded') === '1'
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(max-width: 767px)')
+    const onChange = () => setIsMobile(mq.matches)
+    onChange()
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  const useDarkProfileTheme = isEmbedded || isMobile
+  const pageStyle: React.CSSProperties = useDarkProfileTheme
+    ? {
+        ...s.page,
+        background: 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.20), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.18), transparent 74%), linear-gradient(140deg, #12022a 0%, #24033f 38%, #3f0752 72%, #5f0b5f 100%)',
+      }
+    : s.page
+  const cardSurface: React.CSSProperties = useDarkProfileTheme
+    ? {
+        ...s.card,
+        background: 'rgba(19, 10, 38, 0.78)',
+        border: '1px solid rgba(255,255,255,0.14)',
+        boxShadow: '0 8px 20px rgba(8,2,20,0.22)',
+      }
+    : s.card
 
   const [showEdit, setShowEdit]         = useState(false)
   const [editTab, setEditTab]           = useState<'basics' | 'prompts' | 'intents' | 'interests' | 'photos' | 'videos'>('basics')
@@ -117,9 +151,17 @@ export default function ProfilePage() {
   }
 
   if (loading || !profile) {
+    const loadingBg = useDarkProfileTheme
+      ? 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.20), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.18), transparent 74%), linear-gradient(140deg, #12022a 0%, #24033f 38%, #3f0752 72%, #5f0b5f 100%)'
+      : 'linear-gradient(150deg,#f7f1f8,#f2eaf7)'
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fdf8f5' }}>
-        <div style={{ width: 44, height: 44, borderRadius: '50%', border: '2.5px solid rgba(244,63,94,0.15)', borderTopColor: '#f43f5e', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: loadingBg }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: '50%',
+          border: isEmbedded ? '2.5px solid rgba(255,255,255,0.2)' : '2.5px solid rgba(244,63,94,0.15)',
+          borderTopColor: isEmbedded ? '#f5d6ff' : '#f43f5e',
+          animation: 'spin 0.8s linear infinite',
+        }} />
       </div>
     )
   }
@@ -137,6 +179,8 @@ export default function ProfilePage() {
   const sortedPhotos              = [...photos].sort((a, b) => a.slot - b.slot)
   const displayPhoto              = sortedPhotos[activePhotoIdx] ?? null
   const initials                  = profile.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() ?? '?'
+  const formattedCredits          = Math.max(0, Number(creditBalance ?? 0)).toLocaleString()
+  const handleOpenCredits = () => openPaywall('general', 'credits')
 
   return (
     <>
@@ -147,13 +191,44 @@ export default function ProfilePage() {
         .card-hover { transition: all 0.2s ease; }
         .card-hover:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(180,60,80,0.1) !important; }
         .toggle-track { transition: background 0.2s ease; }
+
+        .profile-embedded {
+          min-height: 100vh;
+          background:
+            radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.20), transparent 72%),
+            radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.18), transparent 74%),
+            linear-gradient(140deg, #12022a 0%, #24033f 38%, #3f0752 72%, #5f0b5f 100%) !important;
+        }
+        .profile-embedded .profile-fade,
+        .profile-embedded .card-hover,
+        .profile-embedded [data-profile-card='1'] {
+          background: rgba(19, 10, 38, 0.78) !important;
+          border: 1px solid rgba(255,255,255,0.14) !important;
+          box-shadow: 0 8px 20px rgba(8,2,20,0.22) !important;
+          backdrop-filter: blur(10px);
+        }
+        .profile-embedded p,
+        .profile-embedded h1,
+        .profile-embedded h2,
+        .profile-embedded h3,
+        .profile-embedded span,
+        .profile-embedded button {
+          color: #f5e8ff !important;
+        }
+        .profile-embedded [style*='color: #a37a82'],
+        .profile-embedded [style*='color: #8f6f88'],
+        .profile-embedded [style*='color: #c4a0a8'],
+        .profile-embedded [style*='color: #4a2d35'],
+        .profile-embedded [style*='color: #2d1b1f'] {
+          color: rgba(238, 219, 255, 0.9) !important;
+        }
       `}</style>
 
-      <div style={s.page}>
-        <div style={{ maxWidth: 520, margin: '0 auto', padding: '80px 16px 100px' }}>
+      <div className={useDarkProfileTheme ? 'profile-embedded' : undefined} style={pageStyle}>
+        <div style={{ maxWidth: 520, margin: '0 auto', padding: useDarkProfileTheme ? '16px 12px 16px' : '80px 16px 100px' }}>
 
           {/* ── Hero section — circular avatar + name ── */}
-          <div className="profile-fade" style={{ ...s.card, marginBottom: 12, padding: '28px 24px' }}>
+          <div className="profile-fade" data-profile-card="1" style={{ ...cardSurface, marginBottom: 12, padding: '28px 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
 
               {/* Circular avatar */}
@@ -220,9 +295,10 @@ export default function ProfilePage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                   <h1 style={{
                     fontFamily: "'Fraunces', serif",
-                    fontSize: 22, fontWeight: 700,
+                    fontSize: 24, fontWeight: 700,
                     color: '#2d1b1f', margin: 0,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    letterSpacing: '-0.01em',
                   }}>
                     {profile.full_name || 'Your Name'}
                   </h1>
@@ -238,6 +314,17 @@ export default function ProfilePage() {
                   {(profile as any).gender && (
                     <span style={s.chip('#8b5cf6')}>{(profile as any).gender}</span>
                   )}
+                  <button
+                    onClick={handleOpenCredits}
+                    style={{
+                      ...s.chip('#f59e0b'),
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 3,
+                      cursor: 'pointer',
+                    }}>
+                    <Coins size={10} /> {formattedCredits} Credits
+                  </button>
                   {profile.location && (
                     <span style={{ ...s.chip('#0ea5e9'), display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                       <MapPin size={10} /> {profile.location}
@@ -245,7 +332,7 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                <span style={{ fontSize: 12, color: '#a37a82' }}>@{profile.username}</span>
+                <span style={{ fontSize: 12, color: '#8f6f88', fontWeight: 500 }}>@{profile.username}</span>
               </div>
 
               {/* Edit + visibility buttons */}
@@ -316,7 +403,7 @@ export default function ProfilePage() {
           )}
 
           {/* ── Visibility toggle ── */}
-          <div style={{ ...s.card, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div data-profile-card="1" style={{ ...cardSurface, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
                 width: 38, height: 38, borderRadius: 12,
@@ -358,7 +445,7 @@ export default function ProfilePage() {
           </div>
 
           {/* ── About + bio ── */}
-          <div style={{ ...s.card, marginBottom: 12 }}>
+          <div data-profile-card="1" style={{ ...cardSurface, marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <p style={s.label}>About</p>
               {intentLabel && (
@@ -397,7 +484,7 @@ export default function ProfilePage() {
               prompts.map(prompt => {
                 const meta = PROFILE_PROMPTS.find(p => p.id === prompt.id)
                 return (
-                  <div key={prompt.id} style={s.card}>
+                  <div key={prompt.id} data-profile-card="1" style={cardSurface}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                       <span style={{ fontSize: 16 }}>{meta?.emoji ?? '💬'}</span>
                       <p style={{ fontSize: 11, fontWeight: 700, color: '#f43f5e', margin: 0, letterSpacing: '0.03em' }}>
@@ -415,7 +502,7 @@ export default function ProfilePage() {
               onClick={() => openEdit('prompts')}
               className="card-hover"
               style={{
-                ...s.card, width: '100%', textAlign: 'left', cursor: 'pointer',
+                ...cardSurface, width: '100%', textAlign: 'left', cursor: 'pointer',
                 border: '1.5px dashed rgba(244,63,94,0.2)',
                 background: 'rgba(244,63,94,0.02)',
                 display: 'flex', alignItems: 'center', gap: 14,
@@ -438,7 +525,7 @@ export default function ProfilePage() {
 
           {/* ── Interests ── */}
           {interests.length > 0 ? (
-            <div style={{ ...s.card, marginBottom: 12 }}>
+            <div data-profile-card="1" style={{ ...cardSurface, marginBottom: 12 }}>
               <p style={s.label}>Interests</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {interests.map(interest => (
@@ -459,7 +546,7 @@ export default function ProfilePage() {
               onClick={() => openEdit()}
               className="card-hover"
               style={{
-                ...s.card, marginBottom: 12, width: '100%', textAlign: 'left',
+                ...cardSurface, marginBottom: 12, width: '100%', textAlign: 'left',
                 cursor: 'pointer', border: '1.5px dashed rgba(244,63,94,0.2)',
                 background: 'rgba(244,63,94,0.02)',
               }}>
@@ -468,7 +555,7 @@ export default function ProfilePage() {
           )}
 
           {/* ── Intro video ── */}
-          <div style={{ ...s.card, marginBottom: 12 }}>
+          <div data-profile-card="1" style={{ ...cardSurface, marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <p style={{ ...s.label, margin: 0 }}>Intro Video</p>
               {!introVideo && <span style={{ fontSize: 11, color: '#c4a0a8', fontWeight: 500 }}>Optional</span>}
@@ -517,7 +604,7 @@ export default function ProfilePage() {
           </div>
 
           {/* ── Profile stats ── */}
-          <div style={{ ...s.card, marginBottom: 12 }}>
+          <div data-profile-card="1" style={{ ...cardSurface, marginBottom: 12 }}>
             <p style={s.label}>Profile stats</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
               {[
@@ -538,7 +625,7 @@ export default function ProfilePage() {
           </div>
 
           {/* ── Delete account ── */}
-          <DeleteAccount />
+          <DeleteAccount embedded={isEmbedded} />
 
         </div>
       </div>

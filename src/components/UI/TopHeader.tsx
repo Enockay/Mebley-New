@@ -4,7 +4,7 @@
 import { LogOut, Coins } from 'lucide-react'
 import { usePaywall } from '@/hooks/usePaywall'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 
 function getPhotoUrl(photos: unknown): string | null {
@@ -18,18 +18,39 @@ function getPhotoUrl(photos: unknown): string | null {
 
 export default function TopHeader() {
   const { profile, signOut, creditBalance } = useAuth()
-  const { openPaywall }      = usePaywall()
+  const { openPaywall, closePaywall } = usePaywall()
   const router               = useRouter()
+  const pathname             = usePathname()
+  const searchParams         = useSearchParams()
   const currentPlan          = (profile as any)?.plan ?? 'free'
   const avatarUrl            = getPhotoUrl(profile?.photos)
   const initials             = profile?.full_name
     ? profile.full_name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
     : '?'
 
+  // SSR-safe embedded check to avoid hydration mismatch.
+  const isEmbedded = searchParams.get('embedded') === '1'
+  if (isEmbedded) return null
+
+  const handleOpenProfile = () => {
+    closePaywall()
+    const isDesktopBrowse =
+      pathname === '/browse' &&
+      typeof window !== 'undefined' &&
+      window.matchMedia('(min-width: 1024px)').matches
+
+    if (isDesktopBrowse) {
+      window.sessionStorage.setItem('browse:open-profile-panel', '1')
+      router.push('/browse?panel=profile-settings')
+      return
+    }
+    router.push('/profile')
+  }
+
   return (
-    <header className="px-2.5 sm:px-6" style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-      height: '64px',
+    <header className="px-2 sm:px-4 md:px-6" style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 320,
+      height: '62px',
       background: 'linear-gradient(135deg, rgba(22,8,36,0.9), rgba(44,12,58,0.86))',
       backdropFilter: 'blur(24px)',
       WebkitBackdropFilter: 'blur(24px)',
@@ -38,25 +59,39 @@ export default function TopHeader() {
       display: 'flex', alignItems: 'center',
     }}>
       <div className="w-full" style={{
-        maxWidth: '960px', margin: '0 auto', width: '100%',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        width: '100%',
+        display: 'flex', justifyContent: 'flex-start', alignItems: 'center',
+        gap: 10,
       }}>
 
-        {/* Logo */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5" style={{ display: 'flex', alignItems: 'center' }}>
+        {/* Logo at left-most */}
+        <button
+          type="button"
+          onClick={() => router.push('/')}
+          className="flex items-center gap-1.5 sm:gap-2.5 min-w-0"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            border: 'none',
+            background: 'transparent',
+            padding: 0,
+            cursor: 'pointer',
+          }}
+          title="Go to home"
+        >
           <Image
             src="/icon.svg"
             alt="Mebley logo"
-            width={30}
-            height={30}
+            width={28}
+            height={28}
             style={{ borderRadius: '999px' }}
             priority
           />
           <span
-            className="hidden sm:block"
+            className="block"
             style={{
               fontFamily: "'Fraunces', Georgia, serif",
-              fontSize: '30px',
+              fontSize: '24px',
               fontWeight: 700,
               color: '#f5e8f4',
               textShadow: '0 1px 12px rgba(245,124,180,0.22)',
@@ -65,10 +100,10 @@ export default function TopHeader() {
           >
             Mebley
           </span>
-        </div>
+        </button>
 
         {/* Right side */}
-        <div className="flex items-center gap-1 sm:gap-2.5" style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="flex items-center gap-2 sm:gap-3" style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
 
           {/* Upgrade — free users only */}
           {currentPlan === 'free' && (
@@ -94,25 +129,26 @@ export default function TopHeader() {
             onClick={() => openPaywall('general', 'credits')}
             style={{
               display: 'flex', alignItems: 'center', gap: '5px',
-              padding: '6px 10px', borderRadius: '100px',
-              border: '1.5px solid rgba(246,205,126,0.32)',
+              padding: '5px 8px', borderRadius: '100px',
+              border: '1px solid rgba(246,205,126,0.32)',
               background: 'rgba(246,205,126,0.08)',
-              color: '#f3cd86', fontSize: '12px', fontWeight: 700,
+              color: '#f3cd86', fontSize: '11px', fontWeight: 700,
               fontFamily: "'DM Sans', sans-serif",
               cursor: 'pointer', whiteSpace: 'nowrap',
             }}>
             <Coins size={13} />
-            <span className="hidden sm:inline">
-              {creditBalance > 0 ? creditBalance.toLocaleString() : 'Credits'}
+            <span>
+              {Math.max(0, Number(creditBalance ?? 0)).toLocaleString()} Credits
             </span>
           </button>
 
           {/* Avatar — clicks to /profile */}
           <button
-            onClick={() => router.push('/profile')}
+            className="h-8 w-8 sm:h-9 sm:w-9"
+            onClick={handleOpenProfile}
             title="My profile"
             style={{
-              width: '36px', height: '36px', borderRadius: '50%',
+              borderRadius: '50%',
               overflow: 'hidden', flexShrink: 0, padding: 0, border: 'none',
               background: 'linear-gradient(135deg, #d64de8, #ee5ca6)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -153,11 +189,12 @@ export default function TopHeader() {
 
           {/* Sign out */}
           <button
+            className="h-8 w-8 sm:h-9 sm:w-9"
             onClick={() => signOut()}
             title="Sign out"
             style={{
-              width: '36px', height: '36px', borderRadius: '50%',
-              border: '1.5px solid rgba(255,255,255,0.18)',
+              borderRadius: '50%',
+              border: '1px solid rgba(255,255,255,0.18)',
               background: 'rgba(255,255,255,0.04)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', transition: 'all 0.2s ease', color: 'rgba(255,255,255,0.65)',

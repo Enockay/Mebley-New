@@ -20,11 +20,13 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { randomBytes } from 'crypto'
 import { createAdminSupabaseClient } from '@/lib/supabase-server'
+import { pgQuery } from '@/lib/postgres'
+import { createAuthSession, issueSessionToken, setAuthCookie, hashPassword } from '@/lib/auth-server'
 import type { Database } from '@/types/database.types'
 
 // ── Whitelist of allowed post-auth redirect paths ────────────────────────────
 // NEVER allow redirects to external domains
-const ALLOWED_REDIRECT_PATHS = ['/discover', '/setup', '/profile', '/matches', '/upgrade']
+const ALLOWED_REDIRECT_PATHS = ['/browse', '/discover', '/setup', '/profile', '/matches', '/upgrade']
 
 function isSafeRedirectPath(path: string): boolean {
   // Must be a relative path starting with /
@@ -54,6 +56,57 @@ async function generateUniqueUsername(baseName: string): Promise<string> {
 
   // Fallback — timestamp-based (extremely unlikely to collide)
   return `${cleaned}${Date.now().toString(36)}`
+}
+
+async function resolveOrCreateAppUserId(oauthUserId: string, email: string): Promise<string> {
+  const safeEmail = email.trim().toLowerCase()
+
+  const byId = await pgQuery<{ id: string }>(
+    `SELECT id FROM app_users WHERE id = $1 LIMIT 1`,
+    [oauthUserId]
+  )
+  if (byId.rows[0]?.id) {
+    await pgQuery(
+      `UPDATE app_users SET email = $2, email_verified = true, is_active = true WHERE id = $1`,
+      [oauthUserId, safeEmail]
+    )
+    return oauthUserId
+  }
+
+  // If email already exists (from password signup), reuse that account id.
+  const randomPassword = randomBytes(24).toString('hex')
+  const placeholderHash = await hashPassword(randomPassword)
+  const upsert = await pgQuery<{ id: string }>(
+    `
+    INSERT INTO app_users (id, email, password_hash, email_verified, is_active)
+    VALUES ($1, $2, $3, true, true)
+    ON CONFLICT (email) DO UPDATE
+      SET email_verified = true,
+          is_active = true
+    RETURNING id
+    `,
+    [oauthUserId, safeEmail, placeholderHash]
+  )
+  return upsert.rows[0].id
+}
+
+async function ensureAppAuthAndRedirect(params: {
+  origin: string
+  request: NextRequest
+  appUserId: string
+  destination: string
+}) {
+  const token = issueSessionToken()
+  const { expiresAt } = await createAuthSession({
+    userId: params.appUserId,
+    token,
+    userAgent: params.request.headers.get('user-agent'),
+    ipAddress: params.request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null,
+  })
+
+  const response = NextResponse.redirect(`${params.origin}${params.destination}`)
+  setAuthCookie(response, token, expiresAt)
+  return response
 }
 
 export async function GET(request: NextRequest) {
@@ -115,12 +168,17 @@ export async function GET(request: NextRequest) {
   const user     = data.user
   const provider = user.app_metadata?.provider ?? 'email'
   const admin    = createAdminSupabaseClient()
+  const authEmail = user.email ?? ''
+  if (!authEmail) {
+    return NextResponse.redirect(`${origin}/auth?error=oauth_missing_email`)
+  }
+  const appUserId = await resolveOrCreateAppUserId(user.id, authEmail)
 
   // ── 5. Check if profile already exists ───────────────────────────────────
   const { data: existingProfile } = await admin
     .from('profiles')
     .select('id, full_name, username, interests')
-    .eq('id', user.id)
+    .eq('id', appUserId)
     .maybeSingle()
 
   if (existingProfile) {
@@ -131,8 +189,13 @@ export async function GET(request: NextRequest) {
       existingProfile.interests.length > 0
     )
 
-    const destination = hasSetup ? '/discover' : '/setup'
-    return NextResponse.redirect(`${origin}${destination}`)
+    const destination = hasSetup ? '/browse' : '/setup'
+    return ensureAppAuthAndRedirect({
+      origin,
+      request,
+      appUserId,
+      destination,
+    })
   }
 
   // ── 6. Shared minimal profile defaults ───────────────────────────────────
@@ -159,7 +222,7 @@ export async function GET(request: NextRequest) {
 
     const { error: upsertErr } = await admin.from('profiles').upsert({
       ...minimalProfile,
-      id:        user.id,
+      id:        appUserId,
       full_name: googleName,
       username,
     })
@@ -169,7 +232,12 @@ export async function GET(request: NextRequest) {
       // Don't block login — user can still proceed, profile will be created at setup
     }
 
-    return NextResponse.redirect(`${origin}/setup`)
+    return ensureAppAuthAndRedirect({
+      origin,
+      request,
+      appUserId,
+      destination: '/setup',
+    })
   }
 
   // ── 8. New email user — check pending_profiles ───────────────────────────
@@ -182,7 +250,7 @@ export async function GET(request: NextRequest) {
   if (pending) {
     const { error: upsertErr } = await admin.from('profiles').upsert({
       ...minimalProfile,
-      id:                   user.id,
+      id:                   appUserId,
       full_name:            pending.full_name ?? '',
       username:             pending.username,
       age_range:            pending.age_range ?? null,
@@ -213,7 +281,7 @@ export async function GET(request: NextRequest) {
 
     const { error: upsertErr } = await admin.from('profiles').upsert({
       ...minimalProfile,
-      id:        user.id,
+      id:        appUserId,
       full_name: '',
       username,
     })
@@ -223,5 +291,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/setup`)
+  return ensureAppAuthAndRedirect({
+    origin,
+    request,
+    appUserId,
+    destination: '/setup',
+  })
 }

@@ -102,12 +102,6 @@ export async function GET(request: NextRequest) {
     const myLng         = myProfile.longitude ? parseFloat(myProfile.longitude) : null
     const myDistanceMax = myProfile.distance_max ?? 500
 
-    // ── Liked IDs — exclude from results ─────────────────────────────────────
-    const likedUsersRes = await pgQuery<{ likee_id: string }>(
-      'SELECT likee_id FROM likes WHERE liker_id = $1',
-      [user.id]
-    )
-
     // ── Passed IDs — exclude from results (server-side, permanent) ───────────
     // This is the key change: passes are now fetched from the DB so they
     // survive page refreshes and new sessions. Previously passes were
@@ -123,11 +117,21 @@ export async function GET(request: NextRequest) {
       [user.id]
     )
 
+    // ── Already matched/chatted IDs — exclude from discover ───────────────────
+    const matchedUsersRes = await pgQuery<{ other_id: string }>(
+      `
+      SELECT CASE WHEN user1_id = $1 THEN user2_id ELSE user1_id END AS other_id
+      FROM matches
+      WHERE user1_id = $1 OR user2_id = $1
+      `,
+      [user.id]
+    )
+
     const excludeIds = new Set<string>([
       user.id,
-      ...likedUsersRes.rows.map((l) => l.likee_id),
       ...passedUsersRes.rows.map((p) => p.passed_id),
       ...blockedUsersRes.rows.map((b) => b.blocked_id),
+      ...matchedUsersRes.rows.map((m) => m.other_id),
     ])
 
     // ── Gender preference filter ──────────────────────────────────────────────

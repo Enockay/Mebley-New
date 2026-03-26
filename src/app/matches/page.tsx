@@ -5,13 +5,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase-client'
 import Chat from '@/components/Messages/Chat'
 import type { Database } from '@/types/database.types'
 import {
   Search, Pin, BellOff, Archive, Shield,
   MoreVertical, ChevronRight, MessageCircle,
-  Bell, ArchiveRestore, PinOff,
+  Bell, ArchiveRestore, PinOff, Ghost,
 } from 'lucide-react'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -25,6 +24,7 @@ interface Conversation {
   isPinned:       boolean
   isMuted:        boolean
   isArchived:     boolean
+  isPendingLike?: boolean
 }
 
 function getPhotoUrl(photos: unknown): string | null {
@@ -51,8 +51,14 @@ function timeAgo(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-const supabase = createClient()
-export default function MatchesPage() {
+function isUserOnline(lastActive?: string | null): boolean {
+  if (!lastActive) return false
+  const ts = new Date(lastActive).getTime()
+  if (Number.isNaN(ts)) return false
+  return Date.now() - ts <= 5 * 60 * 1000
+}
+
+export default function MatchesPage({ embedded = false }: { embedded?: boolean }) {
   const { user, profile, loading } = useAuth()
   const router  = useRouter()
 
@@ -73,65 +79,9 @@ export default function MatchesPage() {
     if (!profile) return
     setFetching(true)
     try {
-      const { data: matches } = await supabase
-        .from('matches')
-        .select('id, user1_id, user2_id, created_at')
-        .or(`user1_id.eq.${profile.id},user2_id.eq.${profile.id}`)
-        .order('created_at', { ascending: false })
-
-      if (!matches) return
-
-      const convos: Conversation[] = []
-      for (const match of matches) {
-        const otherId = match.user1_id === profile.id ? match.user2_id : match.user1_id
-
-        const [{ data: otherProfile }, { data: conv }] = await Promise.all([
-          supabase.from('profiles').select('*').eq('id', otherId).single(),
-          supabase.from('conversations').select('id, is_pinned_by, is_muted_by, is_archived_by').eq('match_id', match.id).single(),
-        ])
-
-        if (!otherProfile || !conv) continue
-
-        // Check if blocked
-        const { data: block } = await supabase
-          .from('blocked_users')
-          .select('id')
-          .eq('blocker_id', profile.id)
-          .eq('blocked_id', otherId)
-          .maybeSingle()
-
-        if (block) continue // skip blocked users
-
-        let lastMessage = 'Say hello 👋'
-        let lastTime    = match.created_at ?? ''
-        let unreadCount = 0
-
-        try {
-          const res  = await fetch(`/api/messages/${conv.id}?limit=1`)
-          const data = await res.json()
-          if (data.messages?.length > 0) {
-            const msg   = data.messages[data.messages.length - 1]
-            lastMessage = msg.isDeleted        ? 'Message deleted'
-                        : msg.messageType === 'image'      ? '📷 Photo'
-                        : msg.messageType === 'gif'        ? '🎞️ GIF'
-                        : msg.messageType === 'video_call' ? '📹 Video call'
-                        : msg.content
-            lastTime    = msg.createdAt
-            unreadCount = msg.senderId !== profile.id && !msg.isRead ? 1 : 0
-          }
-        } catch { /* no messages yet */ }
-
-        convos.push({
-          conversationId: conv.id,
-          profile:        otherProfile,
-          lastMessage,
-          lastTime,
-          unreadCount,
-          isPinned:   (conv.is_pinned_by   ?? []).includes(profile.id),
-          isMuted:    (conv.is_muted_by    ?? []).includes(profile.id),
-          isArchived: (conv.is_archived_by ?? []).includes(profile.id),
-        })
-      }
+      const res = await fetch('/api/chat/conversations')
+      const data = await res.json()
+      const convos: Conversation[] = Array.isArray(data?.conversations) ? data.conversations : []
 
       // Sort: pinned first, then by time
       convos.sort((a, b) => {
@@ -175,8 +125,29 @@ export default function MatchesPage() {
   }
 
   const handlePressEnd = () => {
-    if (longPressTimer.current) clearInterval(longPressTimer.current)
+    if (longPressTimer.current) clearTimeout(longPressTimer.current)
   }
+
+  const openConversation = useCallback(async (conv: Conversation) => {
+    if (conv.isPendingLike) {
+      try {
+        const res = await fetch('/api/chat/open', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetUserId: conv.profile.id }),
+        })
+        const data = await res.json()
+        if (!res.ok || !data?.conversationId) {
+          return
+        }
+        setChatView({ conversationId: data.conversationId, profile: conv.profile })
+        return
+      } catch {
+        return
+      }
+    }
+    setChatView({ conversationId: conv.conversationId, profile: conv.profile })
+  }, [])
 
   if (loading) return (
     <div style={{
@@ -191,11 +162,12 @@ export default function MatchesPage() {
   )
 
   if (chatView) return (
-    <div style={{ height: '100vh' }}>
+    <div style={{ height: '100%' }}>
       <Chat
         conversationId={chatView.conversationId}
         otherProfile={chatView.profile}
         onBack={() => { setChatView(null); loadConversations() }}
+        embedded={embedded}
       />
     </div>
   )
@@ -213,7 +185,7 @@ export default function MatchesPage() {
         @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         .conv-item { transition: all 0.15s ease; }
         .conv-item:active { transform: scale(0.98); }
-        .menu-item:hover { background: rgba(244,63,94,0.06) !important; }
+        .menu-item:hover { background: transparent !important; }
       `}</style>
 
       {/* Long press menu overlay */}
@@ -279,11 +251,11 @@ export default function MatchesPage() {
       })()}
 
       <div style={{
-        minHeight: '100vh',
+        minHeight: '100%',
         background: 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.26), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.24), transparent 74%), radial-gradient(30% 34% at 52% 48%, rgba(228,112,208,0.14), transparent 72%), linear-gradient(140deg,#090019 0%,#17032f 36%,#2a0645 70%,#3d0853 100%)',
         fontFamily: "'DM Sans', sans-serif",
-        paddingTop: 80,
-        paddingBottom: 90,
+        paddingTop: embedded ? 18 : 'max(12px, env(safe-area-inset-top))',
+        paddingBottom: embedded ? 18 : 90,
       }}>
         <div style={{ maxWidth: 520, margin: '0 auto', padding: '0 16px' }}>
 
@@ -297,12 +269,24 @@ export default function MatchesPage() {
                 {visible.length} {visible.length === 1 ? 'conversation' : 'conversations'}
               </p>
             </div>
-            <button
-              onClick={() => setShowArchived(!showArchived)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.24)', background: showArchived ? 'rgba(236,72,153,0.18)' : 'rgba(13,4,27,0.32)', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#f8ecff', fontFamily: "'DM Sans',sans-serif", backdropFilter: 'blur(8px)' }}>
-              <Archive size={13} />
-              {showArchived ? 'Back' : 'Archived'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                type="button"
+                title="With chats"
+                onClick={() => setShowArchived(false)}
+                style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.24)', background: !showArchived ? 'rgba(236,72,153,0.2)' : 'rgba(13,4,27,0.32)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}
+              >
+                <MessageCircle size={16} color="#f8ecff" />
+              </button>
+              <button
+                type="button"
+                title="Empty state"
+                onClick={() => setShowArchived(true)}
+                style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.24)', background: showArchived ? 'rgba(236,72,153,0.2)' : 'rgba(13,4,27,0.32)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}
+              >
+                <Ghost size={16} color="#f8ecff" />
+              </button>
+            </div>
           </div>
 
           {/* Search */}
@@ -316,48 +300,6 @@ export default function MatchesPage() {
                 onChange={e => setSearch(e.target.value)}
                 style={{ width: '100%', padding: '11px 14px 11px 38px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.14)', fontSize: 14, color: '#fff2fb', fontFamily: "'DM Sans',sans-serif", outline: 'none', boxSizing: 'border-box' as const, backdropFilter: 'blur(6px)' }}
               />
-            </div>
-          )}
-
-          {/* Story-like avatar strip */}
-          {!showArchived && visible.length > 0 && (
-            <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingBottom: 8, marginBottom: 14 }}>
-              {visible.slice(0, 8).map(conv => {
-                const avatarUrl = getPhotoUrl(conv.profile.photos)
-                const initials = conv.profile.full_name?.[0]?.toUpperCase() ?? '?'
-                return (
-                  <div key={`strip-${conv.conversationId}`} style={{ minWidth: 74, textAlign: 'center' }}>
-                    <div style={{ width: 66, height: 66, margin: '0 auto 6px', borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg,#6d28d9,#ec4899)' }}>
-                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: 'rgba(8,2,19,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {avatarUrl
-                          ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <span style={{ color: 'white', fontSize: 30, fontWeight: 700 }}>{initials}</span>}
-                      </div>
-                    </div>
-                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(243,220,252,0.88)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {conv.profile.full_name?.split(' ')[0]}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Top segmented toggles */}
-          {!showArchived && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-              <button
-                onClick={() => setShowArchived(false)}
-                style={{ padding: '10px 14px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.24)', background: 'rgba(13,4,27,0.22)', color: '#f7ecff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-              >
-                💬 With chats
-              </button>
-              <button
-                onClick={() => setShowArchived(true)}
-                style={{ padding: '10px 14px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.24)', background: 'rgba(13,4,27,0.22)', color: '#f7ecff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-              >
-                👻 Empty state
-              </button>
             </div>
           )}
 
@@ -391,25 +333,6 @@ export default function MatchesPage() {
               <p style={{ fontSize: 14, color: 'rgba(246,222,250,0.78)', margin: 0, lineHeight: 1.6 }}>
                 {showArchived ? 'Archived conversations will appear here' : search ? 'Try a different name' : 'Start swiping to find your perfect match'}
               </p>
-              {!showArchived && !search && (
-                <button
-                  onClick={() => router.push('/discover')}
-                  style={{
-                    marginTop: 16,
-                    padding: '11px 18px',
-                    borderRadius: 12,
-                    border: 'none',
-                    background: 'linear-gradient(135deg,#d64de8,#ee5ca6)',
-                    color: '#fff',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: '0 8px 22px rgba(214,77,232,0.3)',
-                  }}
-                >
-                  Go to Discover
-                </button>
-              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -417,12 +340,21 @@ export default function MatchesPage() {
                 const avatarUrl = getPhotoUrl(conv.profile.photos)
                 const initials  = conv.profile.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() ?? '?'
                 const isMenuOpen = menuOpen === conv.conversationId
+                const online = isUserOnline((conv.profile as any).last_active)
 
                 return (
                   <div key={conv.conversationId} style={{ position: 'relative' }}>
-                    <button
+                    <div
                       className="conv-item"
-                      onClick={() => setChatView({ conversationId: conv.conversationId, profile: conv.profile })}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => openConversation(conv)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          openConversation(conv)
+                        }
+                      }}
                       onMouseDown={() => handlePressStart(conv.conversationId)}
                       onMouseUp={handlePressEnd}
                       onTouchStart={() => handlePressStart(conv.conversationId)}
@@ -435,6 +367,7 @@ export default function MatchesPage() {
                         boxShadow: conv.isPinned ? '0 8px 26px rgba(8,1,25,0.32)' : '0 4px 14px rgba(8,1,25,0.22)',
                         cursor: 'pointer', textAlign: 'left',
                         backdropFilter: 'blur(8px)',
+                        opacity: 1,
                       }}
                     >
                       {/* Pin indicator */}
@@ -465,6 +398,22 @@ export default function MatchesPage() {
                             {conv.unreadCount}
                           </div>
                         )}
+                        {online && (
+                          <div
+                            title="Online now"
+                            style={{
+                              position: 'absolute',
+                              bottom: -1,
+                              left: -1,
+                              width: 14,
+                              height: 14,
+                              borderRadius: '50%',
+                              background: '#34d399',
+                              border: '2px solid rgba(18,6,37,0.95)',
+                              boxShadow: '0 0 0 3px rgba(52,211,153,0.2)',
+                            }}
+                          />
+                        )}
                         {/* Muted indicator */}
                         {conv.isMuted && (
                           <div style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: '50%', background: '#fdf8f5', border: '1px solid rgba(244,63,94,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -476,15 +425,30 @@ export default function MatchesPage() {
                       {/* Content */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-                            <span style={{ fontSize: 15, fontWeight: conv.unreadCount > 0 ? 700 : 600, color: '#fff5fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>
+                            <span style={{ fontSize: 15, fontWeight: conv.unreadCount > 0 ? 700 : 600, color: '#fff5fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>
                             {conv.profile.full_name}
                           </span>
-                          <span style={{ fontSize: 11, color: 'rgba(245,219,251,0.64)', flexShrink: 0 }}>
-                            {conv.lastTime ? timeAgo(conv.lastTime) : ''}
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                            {online && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#a7f3d0', fontWeight: 700 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399' }} />
+                                Online
+                              </span>
+                            )}
+                            <span style={{ fontSize: 11, color: 'rgba(245,219,251,0.64)' }}>
+                              {conv.lastTime ? timeAgo(conv.lastTime) : ''}
+                            </span>
+                          </div>
                         </div>
                         <p style={{ fontSize: 13, color: conv.unreadCount > 0 ? '#ffe2f7' : 'rgba(245,220,251,0.72)', fontWeight: conv.unreadCount > 0 ? 600 : 400, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {conv.isMuted ? <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><BellOff size={11} />{conv.lastMessage}</span> : conv.lastMessage}
+                          {conv.isPendingLike ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: '#f9a8d4', border: '1px solid rgba(249,168,212,0.45)', borderRadius: 999, padding: '1px 7px' }}>
+                                Pending
+                              </span>
+                              Waiting for match
+                            </span>
+                          ) : conv.isMuted ? <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><BellOff size={11} />{conv.lastMessage}</span> : conv.lastMessage}
                         </p>
                       </div>
 
@@ -494,12 +458,12 @@ export default function MatchesPage() {
                         style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: isMenuOpen ? 'rgba(244,63,94,0.08)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                         <MoreVertical size={15} color="rgba(244,221,251,0.7)" />
                       </button>
-                    </button>
+                    </div>
 
                     {/* Inline dropdown menu */}
                     {isMenuOpen && (
                       <div
-                        style={{ position: 'absolute', right: 8, top: '100%', zIndex: 100, background: 'white', borderRadius: 16, boxShadow: '0 8px 32px rgba(180,60,80,0.15)', border: '1px solid rgba(244,63,94,0.1)', minWidth: 200, overflow: 'hidden', animation: 'slideUp 0.15s ease' }}
+                        style={{ position: 'absolute', right: 8, top: '100%', zIndex: 100, background: 'white', borderRadius: 12, boxShadow: '0 8px 32px rgba(180,60,80,0.15)', border: '1px solid rgba(244,63,94,0.1)', minWidth: 200, overflow: 'hidden', animation: 'slideUp 0.15s ease' }}
                         onClick={e => e.stopPropagation()}
                       >
                         {[

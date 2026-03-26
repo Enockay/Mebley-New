@@ -249,7 +249,7 @@ export default function ProfileSetup() {
       } catch {
         // Non-fatal for navigation; proxy/discover will fetch fresh profile server-side.
       }
-      router.replace('/discover')
+      router.replace('/browse')
       router.refresh()
     } finally {
       setLoading(false)

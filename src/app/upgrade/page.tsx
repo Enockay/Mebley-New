@@ -15,7 +15,7 @@ function UpgradeContent() {
   useEffect(() => {
     if (success) {
       refreshProfile()
-      const t = setTimeout(() => router.replace('/discover'), 3000)
+      const t = setTimeout(() => router.replace('/browse'), 3000)
       return () => clearTimeout(t)
     }
   }, [success])
@@ -56,7 +56,7 @@ function UpgradeContent() {
             {!errMsg                         && 'Something went wrong. You were not charged.'}
           </p>
           <button
-            onClick={() => router.replace('/discover')}
+            onClick={() => router.replace('/browse')}
             style={{ background: 'linear-gradient(135deg,#f43f5e,#ec4899)', border: 'none', borderRadius: 100, padding: '13px 32px', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
             Back to app
           </button>

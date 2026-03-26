@@ -158,9 +158,9 @@ const FEATURES = [
   { icon: '🎯', title: 'Intent Score',  sub: 'Quality over volume',         desc: 'Your feed ranks by compatibility and shared values, not who paid to boost.' },
 ]
 const HOW = [
-  { n: '01', icon: '📝', title: 'Build your story',      desc: 'Photos, a voice note, prompts that reveal who you actually are — no bio templates.' },
-  { n: '02', icon: '🧵', title: 'Stitch intentionally',  desc: 'Send a Stitch — a personalised like with a note attached. Quality over quantity.' },
-  { n: '03', icon: '💬', title: 'Connect for real',      desc: 'When you both Stitch, a thread forms. Your first message already has something to say.' },
+  { n: '01', icon: '📝', title: 'Build your story',      desc: 'Add photos, prompts, and a short voice note.' },
+  { n: '02', icon: '🧵', title: 'Stitch intentionally',  desc: 'Send a thoughtful like with a personal note.' },
+  { n: '03', icon: '💬', title: 'Connect for real',      desc: 'When it is mutual, start a meaningful chat.' },
 ]
 const HERO_PILLARS = [
   {
@@ -253,9 +253,9 @@ const HERO_FEED = [
   },
 ]
 const VALUES = [
-  { icon: '💎', title: 'Depth over swipes',   desc: 'We designed every feature to push past the surface. No swipe gamification, no endless scroll.' },
-  { icon: '🌐', title: 'Globally inclusive',  desc: 'Built from day one to connect people across race, culture and continent without bias in the algorithm.' },
-  { icon: '🔒', title: 'Safe by design',      desc: 'Photo verification, report tools, and proactive moderation so you can be open without being exposed.' },
+  { icon: '💎', title: 'Depth over swipes',   desc: 'Designed for better conversations, not endless swiping.' },
+  { icon: '🌐', title: 'Globally inclusive',  desc: 'Connect across cultures with a fair matching system.' },
+  { icon: '🔒', title: 'Safe by design',      desc: 'Verification, reporting, and moderation built in.' },
 ]
 const FAQS = [
   { q: 'How does matching work on Mebley?', a: 'Matches are ranked by intent, profile quality, shared values, and engagement patterns - not swipe volume.' },
@@ -464,29 +464,29 @@ export default function LandingPage() {
   return (
     <div
       className="relative min-h-screen overflow-x-hidden bg-[radial-gradient(34%_46%_at_22%_26%,rgba(174,16,127,0.26),transparent_72%),radial-gradient(38%_52%_at_82%_12%,rgba(88,12,120,0.33),transparent_70%),linear-gradient(135deg,#120018_0%,#2b043f_48%,#70004b_78%,#d1005f_100%)] text-white"
-    >
+      >
       <div className="relative z-10">
         <nav
-          className={`fixed top-0 z-40 flex w-full items-center justify-between border-b border-[#22161d]/10 px-4 py-3 backdrop-blur-md transition-all md:px-10 ${
+          className={`fixed top-0 z-40 flex w-full items-center justify-between border-b border-white/10 px-3 py-2.5 backdrop-blur-md transition-all sm:px-4 md:px-8 ${
             scrollY > 50 ? 'bg-[#18031f]/88 shadow-[0_8px_30px_rgba(8,2,12,0.35)]' : 'bg-[#14021c]/78'
           }`}
         >
-          <a href="/" className="flex items-center gap-3 text-white/95">
+          <a href="/" className="flex items-center gap-2 sm:gap-3 text-white/95 min-w-0">
             <img
               src="/icon.svg"
               alt="Mebley logo"
-              className="h-11 w-11 rounded-full object-cover shadow-[0_8px_20px_rgba(229,90,111,0.22)]"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full object-cover shadow-[0_8px_20px_rgba(229,90,111,0.22)]"
             />
-            <span className="leading-none">
+            <span className="leading-none min-w-0">
               <motion.span
-                className="block bg-gradient-to-r from-[#1e3a8a] via-[#ef6180] via-[#df7a77] to-[#c88d62] bg-clip-text font-sans text-[2rem] font-bold leading-none text-transparent"
+                className="block bg-gradient-to-r from-[#6f86d6] via-[#ef6180] via-[#df7a77] to-[#c88d62] bg-clip-text font-sans text-[1.05rem] sm:text-[1.35rem] md:text-[1.9rem] font-bold leading-none text-transparent truncate"
                 style={{ backgroundSize: '220% 220%' }}
                 animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
                 transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
               >
                 Mebley
               </motion.span>
-              <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">Modern Connections</span>
+              <span className="mt-1 hidden sm:block text-[9px] md:text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Modern Connections</span>
             </span>
           </a>
           <ul className="hidden items-center gap-2 md:flex">
@@ -511,7 +511,7 @@ export default function LandingPage() {
               </li>
             ))}
           </ul>
-          <MagBtn href="/auth" className="group inline-flex items-center gap-2 rounded-full border border-[#4a2532] bg-gradient-to-r from-[#2a0d19] via-[#3a1322] to-[#2f101d] px-7 py-3 text-sm font-semibold text-[#fff5f0] shadow-[0_10px_24px_rgba(33,12,22,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#6a3444] hover:shadow-[0_14px_28px_rgba(201,93,121,0.25)]">
+          <MagBtn href="/auth" className="group inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-[#4a2532] bg-gradient-to-r from-[#2a0d19] via-[#3a1322] to-[#2f101d] px-4 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm font-semibold text-[#fff5f0] shadow-[0_10px_24px_rgba(33,12,22,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#6a3444] hover:shadow-[0_14px_28px_rgba(201,93,121,0.25)] whitespace-nowrap">
             <span>Get started</span>
             <span className="text-[#f6b3c4] transition-transform duration-300 group-hover:translate-x-0.5">→</span>
           </MagBtn>
@@ -556,7 +556,7 @@ export default function LandingPage() {
             </motion.div>
 
               <h1
-                className="max-w-4xl text-[2.8rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-[3.6rem]"
+                className="max-w-4xl text-[1.9rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-[2.2rem] lg:text-[2.5rem]"
                 style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
               >
                 Find your person,
@@ -566,12 +566,12 @@ export default function LandingPage() {
             </h1>
 
           <motion.p
-                className="mt-8 max-w-3xl text-lg leading-relaxed text-[#f0dce7]/95 md:text-[2rem]"
+                className="mt-5 max-w-3xl text-sm leading-relaxed text-[#f0dce7]/95 md:text-[0.95rem]"
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.96, ease: EASE }}
           >
-                Mebley helps ambitious people build real relationships through thoughtful profiles, voice-first chemistry, and quality matches across 40+ countries.
+                Build real relationships with thoughtful profiles, voice-first chemistry, and better matches.
             </motion.p>
 
           <motion.div
@@ -580,10 +580,10 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 1.12 }}
           >
-                <MagBtn href="/auth" className="w-full rounded-full bg-gradient-to-r from-[#ec5575] to-[#c9784a] px-10 py-4 text-center text-base font-semibold text-white shadow-[0_18px_36px_rgba(227,102,112,0.32)] sm:w-auto">
+                <MagBtn href="/auth" className="w-full rounded-full bg-gradient-to-r from-[#ec5575] to-[#c9784a] px-10 py-4 text-center text-sm font-semibold text-white shadow-[0_18px_36px_rgba(227,102,112,0.32)] sm:w-auto">
                   Start free →
             </MagBtn>
-                <MagBtn href="#features" className="w-full rounded-full border border-white/35 bg-white/10 px-10 py-4 text-center text-base font-medium text-white transition hover:bg-white/15 sm:w-auto">
+                <MagBtn href="#features" className="w-full rounded-full border border-white/35 bg-white/10 px-10 py-4 text-center text-sm font-medium text-white transition hover:bg-white/15 sm:w-auto">
                   Explore how it works
             </MagBtn>
             </motion.div>
@@ -659,9 +659,9 @@ export default function LandingPage() {
                     <div className="flex items-start gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8d7df] text-[#e25173]">{item.icon}</div>
                       <div>
-                        <div className="text-lg font-semibold text-[#23161d]">{item.title}</div>
-                        <div className="text-sm text-[#5a4850]">{item.text}</div>
-                        <div className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-[#8f6c74]">
+                        <div className="text-base font-semibold text-[#23161d]">{item.title}</div>
+                        <div className="text-xs text-[#5a4850]">{item.text}</div>
+                        <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#8f6c74]">
                           {item.user} · {item.meta}
                         </div>
                       </div>
@@ -673,7 +673,7 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div
-            className="mx-auto mt-8 flex max-w-7xl flex-wrap items-center gap-3 text-sm text-[#4a3a41]/85"
+            className="mx-auto mt-8 flex max-w-7xl flex-wrap items-center gap-3 text-xs text-[#4a3a41]/85"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1.22 }}
@@ -694,15 +694,15 @@ export default function LandingPage() {
                     i !== HERO_PILLARS.length - 1 ? 'md:border-r md:border-[#f7e2d0]/10' : ''
                   } ${i === 0 ? 'bg-[#341720]/70 md:-ml-2' : ''}`}
                 >
-                  <div className="text-4xl font-semibold text-[#b48a7f] md:text-[2.6rem]">{item.n}</div>
+                  <div className="text-3xl font-semibold text-[#b48a7f] md:text-[2.2rem]">{item.n}</div>
                   <div className="mt-4 h-[3px] w-14 rounded-full bg-gradient-to-r from-[#f0617a] to-[#d47a56]" />
                   <h3
-                    className="mt-8 text-2xl font-sans font-bold leading-tight text-rose-50 md:text-[2rem]"
+                    className="mt-7 text-xl font-sans font-bold leading-tight text-rose-50 md:text-[1.7rem]"
                     style={{ color: '#fff4ee', textShadow: '0 2px 12px rgba(0,0,0,0.35)' }}
                   >
                     {item.title}
                   </h3>
-                  <p className="mt-5 max-w-md text-lg leading-relaxed text-[#e5d6cd]/95 md:text-[1.18rem]">{item.desc}</p>
+                  <p className="mt-4 max-w-md text-base leading-relaxed text-[#e5d6cd]/95 md:text-[1rem]">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -710,8 +710,8 @@ export default function LandingPage() {
             <motion.div className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-3 rounded-3xl border border-white/15 bg-white/[0.04] p-4 backdrop-blur-xl md:grid-cols-4">
             {STATS.map((s) => (
               <div key={s.l} className="text-center">
-                  <div className="text-3xl font-extrabold text-white md:text-[2.1rem]">{s.v}</div>
-                  <div className="text-xs font-medium tracking-wide text-white/70">{s.l}</div>
+                  <div className="text-[1.7rem] font-extrabold text-white md:text-[1.9rem]">{s.v}</div>
+                  <div className="text-[11px] font-medium tracking-wide text-white/70">{s.l}</div>
               </div>
               ))}
             </motion.div>
@@ -723,7 +723,7 @@ export default function LandingPage() {
             <div className="grid items-center gap-10 md:grid-cols-[1fr_1fr] md:gap-14">
               <div className="text-[#f6eaf1]">
                 <h2
-                  className="max-w-lg text-2xl font-sans font-bold leading-tight tracking-tight text-white md:text-[2rem]"
+                  className="max-w-lg text-xl font-sans font-bold leading-tight tracking-tight text-white md:text-[1.7rem]"
                   style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
                 >
                   Real love starts with
@@ -731,27 +731,27 @@ export default function LandingPage() {
                     real intent.
                   </span>
                 </h2>
-                <p className="mt-8 max-w-xl text-lg leading-relaxed text-[#f0dce7]/90 md:text-[2rem]">
-                  We built Mebley because the world deserved a dating app where ambition meets authenticity - and where great relationships actually begin.
+                <p className="mt-5 max-w-xl text-sm leading-relaxed text-[#f0dce7]/90 md:text-[0.98rem]">
+                  Mebley is built for authentic connections, not endless swiping.
                 </p>
               </div>
 
-              <div className="grid overflow-hidden rounded-[30px] border border-white/20 bg-white/8 backdrop-blur-md md:grid-cols-2">
+              <div className="grid overflow-hidden rounded-[20px] border border-white/20 bg-white/8 backdrop-blur-md md:grid-cols-2">
                 <div className="border-b border-r border-white/15 p-8 md:p-10">
-                  <div className="font-sans text-6xl font-extrabold text-[#fff5fb]">12<span className="text-[#ec5f79]">k+</span></div>
-                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#ecd8e3]">Active users</div>
+                  <div className="font-sans text-5xl font-extrabold text-[#fff5fb] md:text-[3.2rem]">12<span className="text-[#ec5f79]">k+</span></div>
+                  <div className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#ecd8e3]">Active users</div>
                 </div>
                 <div className="border-b border-white/15 p-8 md:p-10">
-                  <div className="font-sans text-6xl font-extrabold text-[#fff5fb]">40<span className="text-[#ec5f79]">+</span></div>
-                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#ecd8e3]">Countries</div>
+                  <div className="font-sans text-5xl font-extrabold text-[#fff5fb] md:text-[3.2rem]">40<span className="text-[#ec5f79]">+</span></div>
+                  <div className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#ecd8e3]">Countries</div>
                 </div>
                 <div className="border-r border-white/15 p-8 md:p-10">
-                  <div className="font-sans text-6xl font-extrabold text-[#fff5fb]">4.8<span className="text-[#ec5f79]">★</span></div>
-                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#ecd8e3]">App rating</div>
+                  <div className="font-sans text-5xl font-extrabold text-[#fff5fb] md:text-[3.2rem]">4.8<span className="text-[#ec5f79]">★</span></div>
+                  <div className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#ecd8e3]">App rating</div>
                 </div>
                 <div className="bg-[#1d0b12]/80 p-8 md:p-10">
-                  <div className="font-sans text-6xl font-extrabold text-[#f2e8e0]">3<span className="text-[#ec5f79]">k+</span></div>
-                  <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-[#b6a4ad]">Couples formed</div>
+                  <div className="font-sans text-5xl font-extrabold text-[#f2e8e0] md:text-[3.2rem]">3<span className="text-[#ec5f79]">k+</span></div>
+                  <div className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#b6a4ad]">Couples formed</div>
                 </div>
               </div>
             </div>
@@ -761,7 +761,7 @@ export default function LandingPage() {
               <div className="absolute -right-20 bottom-4 h-64 w-64 rounded-full bg-[#6e3b2f]/20 blur-2xl" />
               <div className="relative z-10">
                 <h3
-                  className="text-2xl font-sans font-bold leading-tight tracking-tight text-white md:text-[2rem]"
+                  className="text-xl font-sans font-bold leading-tight tracking-tight text-white md:text-[1.7rem]"
                   style={{ color: '#ffffff', textShadow: '0 2px 12px rgba(0,0,0,0.45)' }}
                 >
                   Your person is
@@ -769,8 +769,8 @@ export default function LandingPage() {
                     already here.
                   </span>
                 </h3>
-                <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-[#d8c7ce] md:text-[2rem]">
-                  Join thousands building something real. Start free - no card required.
+                <p className="mx-auto mt-4 max-w-3xl text-sm leading-relaxed text-[#d8c7ce] md:text-[0.98rem]">
+                  Join thousands building something real. Start free.
                 </p>
                 <div className="mt-10">
                   <MagBtn href="/auth" className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#ee5d7d] to-[#d77b5d] px-12 py-4 text-base font-semibold text-white shadow-[0_16px_36px_rgba(236,95,121,0.3)]">
@@ -802,13 +802,13 @@ export default function LandingPage() {
               transition={{ duration: 0.55, ease: EASE }}
             >
               <h2
-                className="text-2xl font-sans font-bold tracking-tight text-white md:text-[2rem]"
+                className="text-xl font-sans font-bold tracking-tight text-white md:text-[1.65rem]"
                 style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
               >
                 How Mebley works
               </h2>
               <motion.span
-                className="rounded-full border border-white/25 bg-white/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/80"
+                className="rounded-full border border-white/25 bg-white/8 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.11em] text-white/80"
                 whileHover={{ scale: 1.04 }}
               >
                 Simple by design
@@ -827,96 +827,25 @@ export default function LandingPage() {
                   className="rounded-[18px] border border-white/15 bg-white/6 p-6 backdrop-blur-md"
                 >
                   <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#ef6180]/20 text-lg">{item.icon}</div>
-                  <div className="mt-4 text-sm font-semibold uppercase tracking-[0.12em] text-[#ffc1d3]">{item.n}</div>
+                  <div className="mt-4 text-xs font-semibold uppercase tracking-[0.11em] text-[#ffc1d3]">{item.n}</div>
                   <h3
-                    className="mt-2 text-xl font-sans font-bold text-white"
+                    className="mt-2 text-lg font-sans font-bold text-white"
                     style={{ color: '#fff8fd', textShadow: '0 2px 12px rgba(4,1,9,0.55)' }}
                   >
                     {item.title}
                   </h3>
-                  <p className="mt-3 text-base leading-relaxed text-[#ead8e4]">{item.desc}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-[#ead8e4]">{item.desc}</p>
                 </motion.div>
               ))}
             </div>
           </div>
           </section>
 
-        <section className="relative overflow-hidden bg-[radial-gradient(58%_70%_at_12%_18%,rgba(187,32,119,0.16),transparent_68%),radial-gradient(42%_58%_at_88%_20%,rgba(80,16,122,0.18),transparent_70%),linear-gradient(135deg,#100117_0%,#21042b_48%,#3a0734_74%,#5d0f42_100%)] px-6 py-16 md:px-12 md:py-20">
-          <motion.div
-            className="pointer-events-none absolute left-12 top-10 h-56 w-56 rounded-full bg-[#7d2ab7]/16 blur-3xl"
-            animate={{ scale: [1, 1.06, 1], opacity: [0.6, 0.85, 0.6] }}
-            transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-2">
-            <motion.div
-              className="rounded-[24px] border border-white/15 bg-white/7 p-7 backdrop-blur-md"
-              initial={{ opacity: 0, x: -24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.6, ease: EASE }}
-            >
-              <h2
-                className="text-2xl font-sans font-bold tracking-tight text-white md:text-[2rem]"
-                style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
-              >
-                Safety and verification
-              </h2>
-              <p className="mt-4 text-base leading-relaxed text-[#ecdbe6]">Built with trust-first controls so great conversations can happen safely.</p>
-              <div className="mt-6 grid gap-3">
-                {VALUES.map((item, i) => (
-                  <motion.div
-                    key={item.title}
-                    className="rounded-[14px] border border-white/12 bg-black/15 p-4"
-                    initial={{ opacity: 0, y: 14 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.45, delay: i * 0.08, ease: EASE }}
-                    whileHover={{ y: -2, borderColor: 'rgba(255,255,255,0.28)' }}
-                  >
-                    <div className="text-sm font-semibold uppercase tracking-[0.1em] text-[#ffb9cd]">{item.icon} {item.title}</div>
-                    <p className="mt-2 text-sm leading-relaxed text-[#e8d5e1]">{item.desc}</p>
-              </motion.div>
-              ))}
-              </div>
-            </motion.div>
-            <motion.div
-              className="rounded-[24px] border border-white/15 bg-white/7 p-7 backdrop-blur-md"
-              initial={{ opacity: 0, x: 24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.6, ease: EASE }}
-            >
-              <h2
-                className="text-2xl font-sans font-bold tracking-tight text-white md:text-[2rem]"
-                style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
-              >
-                Questions people ask
-              </h2>
-              <div className="mt-6 space-y-3">
-                {FAQS.map((item, i) => (
-                  <motion.details
-                    key={item.q}
-                    className="rounded-[14px] border border-white/12 bg-black/15 p-4"
-                    initial={{ opacity: 0, y: 14 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.45, delay: i * 0.08, ease: EASE }}
-                    whileHover={{ y: -2, borderColor: 'rgba(255,255,255,0.28)' }}
-                  >
-                    <summary className="cursor-pointer list-none text-base font-semibold text-white">{item.q}</summary>
-                    <p className="mt-2 text-sm leading-relaxed text-[#e8d5e1]">{item.a}</p>
-                  </motion.details>
-                ))}
-              </div>
-            </motion.div>
-            </div>
-          </section>
-
         <section id="stories" className="bg-[radial-gradient(55%_70%_at_10%_8%,rgba(190,28,116,0.24),transparent_66%),radial-gradient(45%_60%_at_86%_20%,rgba(82,16,120,0.24),transparent_70%),linear-gradient(135deg,#110118_0%,#260331_45%,#4d0838_76%,#740f4a_100%)] px-6 pb-16 md:px-12 md:pb-20">
           <div className="mx-auto max-w-7xl">
             <div className="mb-8 text-center md:mb-10">
               <h2
-                className="text-2xl font-sans font-bold leading-tight tracking-tight text-white md:text-[2rem]"
+                className="text-xl font-sans font-bold leading-tight tracking-tight text-white md:text-[1.7rem]"
                 style={{ color: '#ffffff', textShadow: '0 3px 18px rgba(4,1,9,0.62)' }}
               >
                 Stories stitched with
@@ -924,7 +853,7 @@ export default function LandingPage() {
                   intention.
                 </span>
               </h2>
-              <p className="mx-auto mt-5 max-w-3xl text-base text-[#f0dce7]/90 md:text-xl">
+              <p className="mx-auto mt-4 max-w-3xl text-sm text-[#f0dce7]/90 md:text-[1rem]">
                 Real people. Real chemistry. Real conversations that led to something meaningful.
               </p>
             </div>
@@ -937,11 +866,11 @@ export default function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -16 }}
                 transition={{ duration: 0.4, ease: EASE }}
-              >
+            >
                 <div className="absolute -left-24 top-6 h-72 w-72 rounded-full bg-[#7c3550]/20 blur-3xl" />
                 <div className="absolute -right-24 bottom-6 h-72 w-72 rounded-full bg-[#734033]/20 blur-3xl" />
                 <div className="relative z-10">
-                  <p className="font-sans text-2xl font-medium leading-relaxed text-[#f9efe8] md:text-[2rem]">
+                  <p className="font-sans text-xl font-medium italic leading-relaxed text-[#f9efe8] md:text-[1.7rem]">
                 &ldquo;{TESTIMONIALS[activeT].text}&rdquo;
               </p>
                   <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
@@ -950,11 +879,11 @@ export default function LandingPage() {
                   {TESTIMONIALS[activeT].name[0]}
                 </div>
                       <div>
-                        <div className="text-base font-semibold text-[#f7ece5] md:text-lg">
+                        <div className="text-sm font-semibold text-[#f7ece5] md:text-base">
                           {TESTIMONIALS[activeT].name}, {TESTIMONIALS[activeT].age}
                         </div>
-                        <div className="text-sm text-[#cab6be] md:text-base">{TESTIMONIALS[activeT].city}</div>
-                        <div className="text-sm font-semibold text-[#ffadc2]">{TESTIMONIALS[activeT].match}</div>
+                        <div className="text-xs text-[#cab6be] md:text-sm">{TESTIMONIALS[activeT].city}</div>
+                        <div className="text-xs font-semibold text-[#ffadc2] md:text-sm">{TESTIMONIALS[activeT].match}</div>
                 </div>
               </div>
 
@@ -990,7 +919,7 @@ export default function LandingPage() {
                   <span className="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-2xl font-sans font-bold tracking-tight text-transparent md:text-[2rem]">
                     Mebley
                   </span>
-                </a>
+              </a>
                 <p className="mt-3 max-w-xs text-base leading-relaxed text-slate-400">
                   Dating built for people who want something real. Stitch your story.
                 </p>

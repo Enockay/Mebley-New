@@ -1,13 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
 import { S3Client } from '@aws-sdk/client-s3'
 
-const s3 = new S3Client({ region: process.env.AWS_REGION! })
+const region = process.env.AWS_REGION
+const bucket = process.env.AWS_S3_BUCKET
+const s3 = new S3Client({ region: region! })
+
+function isInvalidBaseUrl(value: string | undefined): boolean {
+  if (!value) return true
+  const normalized = value.trim().toLowerCase()
+  return normalized.length === 0 || normalized === 'undefined' || normalized === 'null'
+}
+
+function normalizeBaseUrl(rawValue: string | undefined): string {
+  if (isInvalidBaseUrl(rawValue)) return ''
+  const trimmed = rawValue.trim()
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+  return withProtocol.replace(/\/+$/, '')
+}
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUserFromRequest(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { conversationId, messageId, fileType, mediaType } = await req.json()
@@ -19,8 +33,21 @@ export async function POST(req: NextRequest) {
 
   const ext      = fileType.split('/')[1] ?? 'bin'
   const s3Key    = `chat/${conversationId}/${messageId}/${mediaType}.${ext}`
-  const bucket   = process.env.AWS_S3_BUCKET!
-  const cfBase   = process.env.CLOUDFRONT_URL!
+  const cfBase = normalizeBaseUrl(process.env.CLOUDFRONT_URL)
+    || normalizeBaseUrl(process.env.CLOUDFRONT_DOMAIN)
+
+  // If CLOUDFRONT_URL isn't configured, fall back to the public S3 URL format.
+  // This prevents `mediaUrl: undefined` in chat messages.
+  const mediaBaseUrl = cfBase
+    ? cfBase
+    : `https://${bucket}.${region}.amazonaws.com`
+
+  if (!bucket || !region) {
+    return NextResponse.json(
+      { error: 'Missing AWS configuration (AWS_S3_BUCKET/AWS_REGION)' },
+      { status: 500 }
+    )
+  }
 
   const { url, fields } = await createPresignedPost(s3, {
     Bucket:     bucket,
@@ -37,6 +64,6 @@ export async function POST(req: NextRequest) {
     url,
     fields,
     s3Key,
-    cloudfrontUrl: `${cfBase}/${s3Key}`,
+    cloudfrontUrl: `${mediaBaseUrl}/${s3Key}`,
   })
 }

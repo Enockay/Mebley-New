@@ -13,9 +13,9 @@ export default function SetupPage() {
   useEffect(() => {
     if (!loading) {
       if (!user) router.push('/auth')
-      // If profile is complete enough (has interests), go to discover
+      // If profile is complete enough (has interests), go to browse
       else if (profile && profile.interests && (profile.interests as string[]).length > 0) {
-        router.push('/discover')
+        router.push('/browse')
       }
     }
   }, [user, profile, loading, router])

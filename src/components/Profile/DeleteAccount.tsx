@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Trash2, AlertTriangle, Loader2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase-client'
 
-export default function DeleteAccount() {
+export default function DeleteAccount({ embedded = false }: { embedded?: boolean }) {
   const supabase = createClient()
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
@@ -44,21 +44,23 @@ export default function DeleteAccount() {
   return (
     <>
       {/* ── Trigger button ── */}
-      <div className="border border-red-200 rounded-2xl p-5 bg-red-50/40">
+      <div className={embedded ? 'border border-white/25 rounded-2xl p-5 bg-white/10 backdrop-blur-md' : 'border border-red-200 rounded-2xl p-5 bg-red-50/40'}>
         <div className="flex items-start gap-3 mb-4">
-          <div className="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <Trash2 size={16} className="text-red-500" />
+          <div className={embedded ? 'w-9 h-9 bg-pink-200/20 rounded-full flex items-center justify-center flex-shrink-0' : 'w-9 h-9 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0'}>
+            <Trash2 size={16} className={embedded ? 'text-pink-200' : 'text-red-500'} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">Delete Account</p>
-            <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+            <p className={embedded ? 'text-sm font-semibold text-pink-50' : 'text-sm font-semibold text-gray-900'}>Delete Account</p>
+            <p className={embedded ? 'text-xs text-pink-100/85 mt-0.5 leading-relaxed' : 'text-xs text-gray-500 mt-0.5 leading-relaxed'}>
               Permanently delete your profile, photos, and all messages. This cannot be undone.
             </p>
           </div>
         </div>
         <button
           onClick={() => { setShowModal(true); setConfirm(''); setError('') }}
-          className="w-full py-2.5 border-2 border-red-300 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors"
+          className={embedded
+            ? 'w-full py-2.5 border-2 border-pink-300/70 text-pink-100 rounded-xl text-sm font-semibold hover:bg-pink-300/10 transition-colors'
+            : 'w-full py-2.5 border-2 border-red-300 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors'}
         >
           Delete My Account
         </button>

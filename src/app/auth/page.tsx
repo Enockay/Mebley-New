@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
+import { createClient } from '@/lib/supabase-client'
 
 function PrivacyNote({ text }: { text: string }) {
   return (
@@ -212,8 +213,39 @@ function AuthPageInner() {
   )
 
   const handleGoogle = async () => {
-    setGoogleLoading(false)
-    setError('Google sign in is temporarily unavailable during auth migration.')
+    setError('')
+    setGoogleLoading(true)
+    try {
+      const supabase = createClient()
+      const redirectTo = `${window.location.origin}/auth/callback`
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      })
+
+      if (error) {
+        setError(error.message || 'Google sign in failed')
+        setGoogleLoading(false)
+        return
+      }
+
+      if (data?.url) {
+        window.location.assign(data.url)
+        return
+      }
+
+      setError('Could not start Google sign in. Please try again.')
+    } catch (e: any) {
+      setError(e?.message || 'Google sign in failed')
+    } finally {
+      setGoogleLoading(false)
+    }
   }
 
   const handleSignUp = async () => {
@@ -260,7 +292,7 @@ function AuthPageInner() {
     const { error } = await signIn(loginEmail, loginPass)
     setLoading(false)
     if (error) { setError(error.message); return }
-    router.push('/discover')
+    router.push('/browse')
   }
 
   const handleForgotPassword = async () => {
@@ -270,12 +302,12 @@ function AuthPageInner() {
   }
 
   const s = {
-    input:    { width: '100%', padding: '14px 14px 14px 42px', border: '1.5px solid #e2e8f0', borderRadius: 16, fontSize: 14, color: '#0f172a', outline: 'none', background: 'white', fontFamily: 'inherit', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' },
+    input:    { width: '100%', padding: '11px 12px 11px 38px', border: '1.5px solid #e2e8f0', borderRadius: 12, fontSize: 14, color: '#0f172a', outline: 'none', background: 'white', fontFamily: 'inherit', boxSizing: 'border-box' as const, transition: 'border-color 0.2s' },
     label:    { display: 'block', fontSize: 11, fontWeight: 600 as const, color: '#64748b', marginBottom: 6, letterSpacing: '0.06em', textTransform: 'uppercase' as const },
     primary:  { width: '100%', padding: '14px', borderRadius: 16, background: 'linear-gradient(135deg,#f43f5e,#e11d48)', color: 'white', border: 'none', fontSize: 14, fontWeight: 600 as const, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 20px rgba(244,63,94,0.3)', fontFamily: 'inherit' },
     secondary: { width: '100%', padding: '14px', borderRadius: 16, border: '1.5px solid #e2e8f0', background: 'white', fontSize: 14, fontWeight: 500 as const, color: '#475569', cursor: 'pointer', fontFamily: 'inherit' },
     google:   { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '14px 16px', border: '1.5px solid #e2e8f0', borderRadius: 16, fontSize: 14, fontWeight: 500 as const, color: '#374151', background: 'white', cursor: 'pointer', fontFamily: 'inherit' },
-    iconPos:  { position: 'absolute' as const, left: 14, top: '50%', transform: 'translateY(-50%)' },
+    iconPos:  { position: 'absolute' as const, left: 12, top: '50%', transform: 'translateY(-50%)' },
   }
 
   const Err = () => error ? (
@@ -331,19 +363,19 @@ function AuthPageInner() {
 
         {/* Card */}
         <div className="relative z-10 flex flex-1 items-start justify-center px-4 pb-12 pt-2">
-          <div className="card-in w-full max-w-[460px] overflow-hidden rounded-[18px] border border-[#e8d7e3] bg-[linear-gradient(145deg,rgba(255,248,251,0.96),rgba(249,239,246,0.94))] shadow-[0_8px_36px_rgba(18,7,25,0.3),0_24px_90px_rgba(18,7,25,0.22)] backdrop-blur-[3px]">
+          <div className="card-in w-full max-w-[460px] overflow-hidden rounded-[18px] border border-white/18 bg-[linear-gradient(165deg,rgba(26,10,45,0.92),rgba(14,6,30,0.92))] shadow-[0_8px_36px_rgba(8,2,20,0.4),0_24px_90px_rgba(8,2,20,0.32)] backdrop-blur-[8px]">
 
             {/* ── LANDING ── */}
             {mode === 'landing' && (
               <div className="p-9 md:p-10">
                 <div className="mb-8 text-center">
-                  <h2 className="m-0 font-['Fraunces'] text-5xl font-black leading-[0.95] tracking-tight text-[#1b1017] md:text-7xl">
+                  <h2 className="m-0 font-['Fraunces'] text-5xl font-black leading-[0.95] tracking-tight text-[#fff4ff] md:text-7xl">
                     Find your
                     <span className="mt-1 block bg-gradient-to-r from-[#ef5f7f] via-[#d97a68] to-[#c8915d] bg-clip-text font-semibold italic text-transparent">
                       person
                     </span>
                   </h2>
-                  <p className="mt-3 text-sm leading-relaxed text-[#5f4f58] md:text-base">
+                  <p className="mt-3 text-sm leading-relaxed text-[rgba(233,213,255,0.82)] md:text-base">
                     Real connections. Real people.
                     <br />
                     Across the globe.
@@ -383,11 +415,11 @@ function AuthPageInner() {
             {/* ── SIGN IN ── */}
             {mode === 'signin' && (
               <div style={{ padding: 36 }}>
-                <button onClick={() => { setMode('landing'); setError('') }} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, marginBottom: 24, padding: 0, fontFamily: 'inherit' }}>
+                <button onClick={() => { setMode('landing'); setError('') }} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(233,213,255,0.78)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, marginBottom: 24, padding: 0, fontFamily: 'inherit' }}>
                   <ArrowLeft size={15} /> Back
                 </button>
-                <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 600, color: '#0f172a', margin: '0 0 4px' }}>Welcome back</h2>
-                <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 24px' }}>Sign in to continue where you left off.</p>
+                <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 600, color: '#fff4ff', margin: '0 0 4px' }}>Welcome back</h2>
+                <p style={{ color: 'rgba(233,213,255,0.78)', fontSize: 13, margin: '0 0 24px' }}>Sign in to continue where you left off.</p>
 
                 {resetSent && (
                   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -464,11 +496,11 @@ function AuthPageInner() {
                   <ConfirmationScreen email={email} onResend={handleResend} />
                 ) : (
                   <>
-                    <button onClick={() => { setMode('landing'); setError('') }} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, marginBottom: 24, padding: 0, fontFamily: 'inherit' }}>
+                    <button onClick={() => { setMode('landing'); setError('') }} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(233,213,255,0.78)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, marginBottom: 24, padding: 0, fontFamily: 'inherit' }}>
                       <ArrowLeft size={15} /> Back
                     </button>
-                    <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 600, color: '#0f172a', margin: '0 0 4px' }}>Create your account</h2>
-                    <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 24px' }}>Join thousands building meaningful connections.</p>
+                    <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, fontWeight: 600, color: '#fff4ff', margin: '0 0 4px' }}>Create your account</h2>
+                    <p style={{ color: 'rgba(233,213,255,0.78)', fontSize: 13, margin: '0 0 24px' }}>Join thousands building meaningful connections.</p>
 
                     <Err />
 

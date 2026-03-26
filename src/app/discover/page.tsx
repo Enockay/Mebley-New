@@ -8,6 +8,7 @@ import Discover from '@/components/Discover/Discover'
 export default function DiscoverPage() {
   const { user, profile, loading } = useAuth()
   const router = useRouter()
+  const discoverBg = 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.24), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.22), transparent 74%), linear-gradient(140deg,#0a031a 0%,#16042b 36%,#2b0644 70%,#3f0854 100%)'
 
   useEffect(() => {
     if (loading) return                               // still resolving — wait
@@ -23,7 +24,7 @@ export default function DiscoverPage() {
         minHeight: '100vh',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexDirection: 'column', gap: 16,
-        background: 'var(--linen)',
+        background: discoverBg,
       }}>
         <div style={{
           width: 44, height: 44,
@@ -32,7 +33,7 @@ export default function DiscoverPage() {
           borderRadius: '50%',
           animation: 'spin-slow 0.9s linear infinite',
         }} />
-        <p style={{ color: '#a37a82', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
+        <p style={{ color: 'rgba(245,220,250,0.85)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
           Loading…
         </p>
       </div>
@@ -40,7 +41,7 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div style={{ flex: 1 }}>
+    <div style={{ flex: 1, background: discoverBg }}>
       <Discover />
     </div>
   )

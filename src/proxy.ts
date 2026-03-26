@@ -6,7 +6,7 @@
  *
  * Responsibilities:
  *  1. Protect private routes — redirect unauthenticated users to /auth
- *  3. Redirect authenticated users away from /auth → /discover
+ *  3. Redirect authenticated users away from /auth → /browse
  *  4. Profile-setup gate — incomplete profiles go to /setup
  *  5. Protect all API routes (except public ones) — return 401 JSON
  *  6. Apply security headers on every response
@@ -46,8 +46,10 @@ function isApiRoute(pathname: string): boolean {
   return pathname.startsWith('/api/')
 }
 
-function applySecurityHeaders(response: NextResponse): NextResponse {
-  response.headers.set('X-Frame-Options', 'DENY')
+function applySecurityHeaders(response: NextResponse, request?: NextRequest): NextResponse {
+  // Allow same-origin framing so we can embed internal pages in right-side panels.
+  // Keep it strict by default, but permit SAMEORIGIN which is equivalent to frame-ancestors 'self'.
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN')
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
@@ -55,6 +57,8 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
     'Permissions-Policy',
     'camera=(), microphone=(), geolocation=(self), payment=()'
   )
+  // Relax frame-ancestors for same-origin embedding. If needed later we can tighten
+  // by checking request?.nextUrl for specific routes/params.
   response.headers.set(
     'Content-Security-Policy',
     [
@@ -62,9 +66,9 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.onesignal.com https://onesignal.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://*.amazonaws.com https://*.cloudfront.net",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.twilio.com https://onesignal.com https://*.amazonaws.com https://*.cloudfront.net",
-      "frame-ancestors 'none'",
+      "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://*.amazonaws.com https://*.cloudfront.net https://*.giphy.com https://*.giphyusercontent.com https://media.tenor.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.twilio.com https://onesignal.com https://*.amazonaws.com https://*.cloudfront.net https://api.giphy.com https://tenor.googleapis.com",
+      "frame-ancestors 'self'",
     ].join('; ')
   )
   return response
@@ -81,7 +85,7 @@ export async function proxy(request: NextRequest) {
   // ── 4. Public API routes — skip auth, apply headers only ────────────────
   if (isApiRoute(pathname)) {
     if (isPublicApi(pathname)) {
-      return applySecurityHeaders(authResponse)
+      return applySecurityHeaders(authResponse, request)
     }
 
     // All other API routes require authentication
@@ -92,21 +96,21 @@ export async function proxy(request: NextRequest) {
       )
     }
 
-    return applySecurityHeaders(authResponse)
+    return applySecurityHeaders(authResponse, request)
   }
 
   // ── 5. Root path handling ────────────────────────────────────────────────
   if (pathname === '/') {
     if (user) {
-      return NextResponse.redirect(new URL('/discover', request.url))
+      return NextResponse.redirect(new URL('/browse', request.url))
     }
-    return applySecurityHeaders(authResponse)
+    return applySecurityHeaders(authResponse, request)
   }
 
   // ── 6. Public pages — redirect authed users away from /auth ─────────────
   if (isPublicPage(pathname)) {
     if (user && pathname === '/auth') {
-      return NextResponse.redirect(new URL('/discover', request.url))
+      return NextResponse.redirect(new URL('/browse', request.url))
     }
     return applySecurityHeaders(authResponse)
   }
@@ -140,7 +144,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // ── 9. User is on /setup but already completed it — send to discover ─────
+  // ── 9. User is on /setup but already completed it — send to browse ─────
   if (pathname === '/setup') {
     const profileRes = await pgQuery<{ full_name: string | null; username: string | null; interests: string[] | null }>(
       'SELECT full_name, username, interests FROM profiles WHERE id = $1 LIMIT 1',
@@ -156,12 +160,12 @@ export async function proxy(request: NextRequest) {
     )
 
     if (hasCompletedSetup) {
-      return NextResponse.redirect(new URL('/discover', request.url))
+      return NextResponse.redirect(new URL('/browse', request.url))
     }
   }
 
   // ── 10. All checks passed ─────────────────────────────────────────────────
-  return applySecurityHeaders(authResponse)
+  return applySecurityHeaders(authResponse, request)
 }
 
 // ── Matcher — which paths this proxy runs on ──────────────────────────────────

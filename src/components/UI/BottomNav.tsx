@@ -1,7 +1,9 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Heart, Sparkles, MessageCircle, User } from 'lucide-react'
+import { usePaywall } from '@/hooks/usePaywall'
 
 const navItems = [
   { href: '/discover', label: 'Discover', icon: Heart },
@@ -13,6 +15,69 @@ const navItems = [
 export default function BottomNav() {
   const pathname = usePathname()
   const router   = useRouter()
+  const { closePaywall } = usePaywall()
+  const [unreadChats, setUnreadChats] = useState(0)
+
+  useEffect(() => {
+    let active = true
+
+    const loadUnreadChats = async () => {
+      try {
+        const res = await fetch('/api/chat/conversations', { cache: 'no-store' })
+        if (!res.ok) return
+        const data = await res.json()
+        const convos = Array.isArray(data?.conversations) ? data.conversations : []
+        const unreadTotal = convos.reduce((sum: number, conv: any) => {
+          const count = typeof conv?.unreadCount === 'number' ? conv.unreadCount : 0
+          return sum + Math.max(0, count)
+        }, 0)
+        if (active) setUnreadChats(unreadTotal)
+      } catch {
+        // Ignore transient polling failures.
+      }
+    }
+
+    loadUnreadChats()
+    const timer = setInterval(loadUnreadChats, 15000)
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
+  }, [])
+
+  // Hide bottom nav when the page is rendered in an embedded iframe/panel
+  const isEmbedded = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('embedded') === '1'
+    : false
+  if (isEmbedded) return null
+  const handleNavClick = (href: string) => {
+    if (href === '/profile') {
+      closePaywall()
+    }
+    if (pathname === '/browse' && href === '/matches') {
+      const isMobile = typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false
+      if (isMobile) {
+        router.push('/matches')
+        return
+      }
+      router.push('/browse?panel=chats')
+      return
+    }
+    if (pathname === '/browse' && href === '/profile') {
+      const isMobile = typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false
+      if (isMobile) {
+        router.push('/profile')
+        return
+      }
+      // Mark this as an intentional request so Browse can ignore stale query params on reload.
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem('browse:open-profile-panel', '1')
+      }
+      router.push('/browse?panel=profile-settings')
+      return
+    }
+    router.push(href)
+  }
 
   return (
     <nav
@@ -21,12 +86,12 @@ export default function BottomNav() {
         bottom:          0,
         left:            0,
         right:           0,
-        zIndex:          50,
+        zIndex:          320,
         background:      'linear-gradient(135deg, rgba(20,7,31,0.92), rgba(40,12,50,0.88))',
         backdropFilter:  'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        borderTop:       '1px solid rgba(255,255,255,0.14)',
-        boxShadow:       '0 -6px 28px rgba(8, 2, 16, 0.36)',
+        borderTop:       'none',
+        boxShadow:       '0 -6px 28px rgba(8, 2, 16, 0.22)',
         height:          '72px',
         display:         'flex',
         alignItems:      'center',
@@ -43,13 +108,17 @@ export default function BottomNav() {
           padding:        '0 8px',
         }}
       >
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {navItems
+          // Temporarily hide Discover from nav without deleting code
+          .filter(item => item.href !== '/discover')
+          .map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + '/')
+          const showUnreadBadge = href === '/matches' && unreadChats > 0
 
           return (
             <button
               key={href}
-              onClick={() => router.push(href)}
+              onClick={() => handleNavClick(href)}
               style={{
                 display:        'flex',
                 flexDirection:  'column',
@@ -98,6 +167,30 @@ export default function BottomNav() {
                   }}
                   strokeWidth={isActive ? 2.2 : 1.8}
                 />
+                {showUnreadBadge && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -10,
+                      minWidth: 16,
+                      height: 16,
+                      borderRadius: 999,
+                      padding: '0 4px',
+                      background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+                      color: '#fff',
+                      fontSize: 9,
+                      fontWeight: 700,
+                      lineHeight: '16px',
+                      textAlign: 'center',
+                      border: '1px solid rgba(255,255,255,0.5)',
+                      boxShadow: '0 4px 10px rgba(244,63,94,0.4)',
+                    }}
+                    aria-label={`${unreadChats} unread chats`}
+                  >
+                    {unreadChats > 99 ? '99+' : unreadChats}
+                  </span>
+                )}
               </div>
 
               {/* Label */}

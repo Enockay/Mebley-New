@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/messages/[conversationId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getMessages, saveMessage } from '@/lib/mongodb'
+import { getMessages, markMessagesAsRead, saveMessage } from '@/lib/mongodb'
 import { rateLimit } from '@/lib/rateLimit'
 import { validateMessage } from '@/lib/validation'
 import { notifyMessage } from '@/lib/notifications'
 import { pgQuery } from '@/lib/postgres'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
+import { emitConversationMessage } from '@/lib/chat-events'
 
 export async function GET(
   request: NextRequest,
@@ -54,6 +55,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Opening a conversation marks incoming messages as read for this user.
+    await markMessagesAsRead(conversationId, user.id)
     const messages = await getMessages(conversationId, 1, 50)
     return NextResponse.json({ messages: messages.reverse(), page: 1, limit: 50 })
 
@@ -167,8 +170,7 @@ export async function POST(
       ).catch(err => console.error('[notifyMessage] failed:', err))
     }
 
-   return NextResponse.json({
-    message: {
+    const responseMessage = {
       id:             message._id?.toString(),
       conversationId: message.conversationId,
       senderId:       message.senderId,
@@ -183,7 +185,10 @@ export async function POST(
       isRead:         message.isRead,
       createdAt:      message.createdAt,
     }
-   }, { status: 201 })
+
+    emitConversationMessage(conversationId, responseMessage)
+
+    return NextResponse.json({ message: responseMessage }, { status: 201 })
 
   } catch (error) {
     console.error('POST message error:', error)

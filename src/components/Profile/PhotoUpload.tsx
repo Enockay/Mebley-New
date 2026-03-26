@@ -143,7 +143,7 @@ export default function PhotoUpload({
   return (
     <div className="space-y-4">
 
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-[rgba(233,213,255,0.78)]">
         Slot 0 is your <strong>profile picture</strong>. Add up to 6 photos total.
       </p>
 
@@ -156,11 +156,11 @@ export default function PhotoUpload({
             <div
               key={slot}
               className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all ${
-                s.state === 'done'      ? 'border-green-300' :
-                s.state === 'error'    ? 'border-red-300'   :
-                s.state === 'uploading'? 'border-blue-300'  :
-                isProfile              ? 'border-rose-200 border-dashed' :
-                                         'border-gray-200 border-dashed'
+                s.state === 'done'      ? 'border-green-400/45' :
+                s.state === 'error'     ? 'border-red-400/45'   :
+                s.state === 'uploading' ? 'border-blue-400/45'  :
+                isProfile               ? 'border-rose-400/45 border-dashed' :
+                                          'border-white/28 border-dashed'
               }`}
             >
               {/* ── Done: show photo ── */}
@@ -189,10 +189,10 @@ export default function PhotoUpload({
 
               {/* ── Uploading: progress ── */}
               {s.state === 'uploading' && (
-                <div className="w-full h-full bg-blue-50 flex flex-col items-center justify-center gap-2">
+                <div className="w-full h-full bg-blue-500/12 flex flex-col items-center justify-center gap-2">
                   <Loader2 size={20} className="text-blue-500 animate-spin" />
-                  <span className="text-xs text-blue-600 font-medium">{s.progress}%</span>
-                  <div className="w-3/4 bg-blue-100 rounded-full h-1">
+                  <span className="text-xs text-blue-200 font-medium">{s.progress}%</span>
+                  <div className="w-3/4 bg-blue-200/20 rounded-full h-1">
                     <div
                       className="bg-blue-500 h-1 rounded-full transition-all"
                       style={{ width: `${s.progress}%` }}
@@ -205,11 +205,11 @@ export default function PhotoUpload({
               {s.state === 'error' && (
                 <button
                   onClick={() => fileInputRefs.current[slot]?.click()}
-                  className="w-full h-full bg-red-50 flex flex-col items-center justify-center gap-1 p-2"
+                  className="w-full h-full bg-red-500/12 flex flex-col items-center justify-center gap-1 p-2"
                 >
                   <AlertCircle size={18} className="text-red-400" />
-                  <span className="text-xs text-red-500 text-center leading-tight">{s.error}</span>
-                  <span className="text-xs text-red-400">Tap to retry</span>
+                  <span className="text-xs text-red-200 text-center leading-tight">{s.error}</span>
+                  <span className="text-xs text-red-300">Tap to retry</span>
                 </button>
               )}
 
@@ -219,19 +219,19 @@ export default function PhotoUpload({
                   onClick={() => fileInputRefs.current[slot]?.click()}
                   className={`w-full h-full flex flex-col items-center justify-center gap-1.5 transition-colors ${
                     isProfile
-                      ? 'bg-rose-50 hover:bg-rose-100'
-                      : 'bg-gray-50 hover:bg-gray-100'
+                      ? 'bg-rose-500/12 hover:bg-rose-500/20'
+                      : 'bg-white/8 hover:bg-white/12'
                   }`}
                 >
                   {isProfile ? (
                     <>
-                      <Camera size={20} className="text-rose-400" />
-                      <span className="text-xs text-rose-500 font-medium">Profile pic</span>
+                      <Camera size={20} className="text-rose-300" />
+                      <span className="text-xs text-rose-200 font-medium">Profile pic</span>
                     </>
                   ) : (
                     <>
-                      <Upload size={18} className="text-gray-400" />
-                      <span className="text-xs text-gray-400">Photo {slot + 1}</span>
+                      <Upload size={18} className="text-[rgba(233,213,255,0.7)]" />
+                      <span className="text-xs text-[rgba(233,213,255,0.72)]">Photo {slot + 1}</span>
                     </>
                   )}
                 </button>
@@ -254,7 +254,7 @@ export default function PhotoUpload({
         })}
       </div>
 
-      <p className="text-xs text-gray-400 text-center">
+      <p className="text-xs text-[rgba(233,213,255,0.62)] text-center">
         Tap any slot to upload · Max 10MB per photo · JPEG, PNG, WebP
       </p>
     </div>

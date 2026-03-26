@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePathname } from 'next/navigation'
 
 const SUBSCRIPTION_TIERS = [
   {
@@ -100,6 +101,8 @@ export default function PaywallModal({
   onSpendCredits,
 }: Props) {
   const { user, profile } = useAuth()
+  const pathname = usePathname()
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false)
 
   const mode: Mode           = defaultTab === 'plans' ? 'plans' : 'spend'
   const [cycle, setCycle]    = useState<'weekly' | 'monthly'>('monthly')
@@ -110,6 +113,19 @@ export default function PaywallModal({
   )
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError]     = useState<string | null>(null)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mql = window.matchMedia('(min-width: 1024px)')
+    const sync = () => setIsDesktopViewport(mql.matches)
+    sync()
+    mql.addEventListener('change', sync)
+    return () => mql.removeEventListener('change', sync)
+  }, [])
+
+  const isDesktopBrowse = pathname === '/browse' && isDesktopViewport
+  const drawerBackground = isDesktopBrowse
+    ? 'linear-gradient(165deg, rgba(26,10,45,0.98), rgba(14,6,30,0.98))'
+    : '#0f0409'
 
   const currentPlan   = (profile as any)?.plan ?? 'free'
   const walletBalance = (profile as any)?.credit_balance ?? 0
@@ -158,34 +174,75 @@ export default function PaywallModal({
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 900, backdropFilter: 'blur(8px)' }}
-          />
+          {/* Backdrop (mobile + non-browse only). Desktop browse behaves like profile drawer. */}
+          {!isDesktopBrowse && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={onClose}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.78)',
+                zIndex: 900,
+                backdropFilter: 'blur(8px)',
+              }}
+            />
+          )}
 
           {/* Sheet */}
           <motion.div
-            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+            initial={isDesktopBrowse ? { x: '100%' } : { y: '100%' }}
+            animate={isDesktopBrowse ? { x: 0 } : { y: 0 }}
+            exit={isDesktopBrowse ? { x: '100%' } : { y: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
             style={{
-              position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 901,
-              background: '#0f0409',
-              borderRadius: '28px 28px 0 0',
+              position: 'fixed',
+              bottom: isDesktopBrowse ? 72 : 0,
+              top: isDesktopBrowse ? 62 : 'auto',
+              left: 0,
+              right: 0,
+              zIndex: isDesktopBrowse ? 181 : 901,
+              width: '100%',
+              maxWidth: isDesktopBrowse ? 520 : undefined,
+              marginLeft: isDesktopBrowse ? 'auto' : undefined,
+              background: drawerBackground,
+              borderRadius: isDesktopBrowse ? 0 : '28px 28px 0 0',
               border: '1px solid rgba(255,255,255,0.1)',
-              borderBottom: 'none',
-              maxHeight: '92vh',
+              borderBottom: isDesktopBrowse ? '1px solid rgba(255,255,255,0.1)' : 'none',
+              borderLeft: isDesktopBrowse ? '1px solid rgba(255,255,255,0.15)' : undefined,
+              maxHeight: isDesktopBrowse ? 'none' : '92vh',
               overflowY: 'auto',
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
             {/* Drag handle */}
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+            <div style={{ display: isDesktopBrowse ? 'none' : 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
             </div>
 
-            <div style={{ padding: '16px 20px 48px' }}>
+            <div style={{ padding: '16px 20px 48px', position: 'relative' }}>
+              <button
+                onClick={onClose}
+                aria-label="Close paywall"
+                style={{
+                  position: 'absolute',
+                  top: 10,
+                  right: 12,
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  background: 'rgba(255,255,255,0.08)',
+                  color: 'rgba(255,255,255,0.86)',
+                  cursor: 'pointer',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: 18,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
 
               {/* ── PLANS MODE ── */}
               {mode === 'plans' && (

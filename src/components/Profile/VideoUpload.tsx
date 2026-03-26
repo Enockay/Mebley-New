@@ -412,12 +412,12 @@ export default function VideoUpload({
         return (
           <div
             key={slot}
-            className={`rounded-2xl border-2 overflow-hidden transition-all ${
-              s.uploadState === 'done'  ? 'border-green-300 bg-green-50'  :
-              s.uploadState === 'error' ? 'border-red-300 bg-red-50'      :
-              isUploading               ? 'border-blue-300 bg-blue-50'    :
-              required                  ? 'border-rose-200 bg-rose-50/30' :
-                                          'border-gray-200 bg-gray-50'
+            className={`rounded-2xl border overflow-hidden transition-all ${
+              s.uploadState === 'done'  ? 'border-green-400/40 bg-green-500/10'  :
+              s.uploadState === 'error' ? 'border-red-400/40 bg-red-500/10'      :
+              isUploading               ? 'border-blue-400/40 bg-blue-500/10'    :
+              required                  ? 'border-rose-400/35 bg-rose-500/10' :
+                                          'border-white/14 bg-white/6'
             }`}
           >
             {/* Hidden file input — always mounted so click works */}
@@ -439,24 +439,24 @@ export default function VideoUpload({
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold text-gray-900">{label}</h3>
+                    <h3 className="font-semibold text-[rgba(245,228,255,0.95)]">{label}</h3>
                     {required && (
-                      <span className="text-xs bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-medium">
+                      <span className="text-xs bg-rose-500/15 text-rose-300 px-2 py-0.5 rounded-full font-medium border border-rose-400/35">
                         Required
                       </span>
                     )}
                     {s.uploadState === 'done' && (
-                      <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                      <span className="text-xs bg-green-500/15 text-green-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 border border-green-400/35">
                         <Check size={10} /> Uploaded
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{description}</p>
+                  <p className="text-xs text-[rgba(233,213,255,0.72)] mt-1">{description}</p>
                 </div>
                 {s.uploadState === 'done' && (
                   <button
                     onClick={() => resetSlot(slot)}
-                    className="p-2 hover:bg-red-100 rounded-full transition-colors"
+                    className="p-2 hover:bg-red-500/18 rounded-full transition-colors"
                   >
                     <Trash2 size={16} className="text-red-500" />
                   </button>
@@ -528,13 +528,13 @@ export default function VideoUpload({
                     onClick={() => update(slot, { mode: 'record', uploadState: 'idle', error: null })}
                     className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 border-dashed transition-all ${
                       required
-                        ? 'border-rose-300 text-rose-600 hover:bg-rose-50'
-                        : 'border-gray-300 text-gray-500 hover:bg-gray-100'
+                        ? 'border-rose-400/45 text-rose-300 hover:bg-rose-500/10'
+                        : 'border-white/24 text-[rgba(233,213,255,0.85)] hover:bg-white/8'
                     }`}
                   >
                     <Camera size={24} />
                     <span className="text-sm font-medium">Record Video</span>
-                    <span className="text-xs text-gray-400">Use camera</span>
+                    <span className="text-xs text-[rgba(233,213,255,0.6)]">Use camera</span>
                   </button>
 
                   {/* Upload — triggers always-mounted hidden input */}
@@ -542,13 +542,13 @@ export default function VideoUpload({
                     onClick={() => fileInputRefs.current[slot]?.click()}
                     className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 border-dashed transition-all ${
                       required
-                        ? 'border-rose-300 text-rose-600 hover:bg-rose-50'
-                        : 'border-gray-300 text-gray-500 hover:bg-gray-100'
+                        ? 'border-rose-400/45 text-rose-300 hover:bg-rose-500/10'
+                        : 'border-white/24 text-[rgba(233,213,255,0.85)] hover:bg-white/8'
                     }`}
                   >
                     <Upload size={24} />
                     <span className="text-sm font-medium">Upload File</span>
-                    <span className="text-xs text-gray-400">MP4, MOV, WebM</span>
+                    <span className="text-xs text-[rgba(233,213,255,0.6)]">MP4, MOV, WebM</span>
                   </button>
                 </div>
               )}
@@ -752,21 +752,21 @@ export default function VideoUpload({
       })}
 
       {/* ── Tips accordion ── */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl overflow-hidden">
+      <div className="bg-amber-500/10 border border-amber-300/40 rounded-xl overflow-hidden">
         <button
           onClick={() => setExpandedTips(t => !t)}
           className="w-full flex items-center justify-between px-4 py-3"
         >
-          <span className="text-xs text-amber-700 font-semibold">
+          <span className="text-xs text-amber-200 font-semibold">
             💡 Tips for a great intro video
           </span>
           {expandedTips
-            ? <ChevronUp size={16} className="text-amber-500" />
-            : <ChevronDown size={16} className="text-amber-500" />
+            ? <ChevronUp size={16} className="text-amber-300" />
+            : <ChevronDown size={16} className="text-amber-300" />
           }
         </button>
         {expandedTips && (
-          <ul className="px-4 pb-3 space-y-1.5 text-xs text-amber-600">
+          <ul className="px-4 pb-3 space-y-1.5 text-xs text-amber-100/90">
             <li>• <strong>Good lighting</strong> — face a window or bright lamp</li>
             <li>• <strong>Speak clearly</strong> — say your name, what you do, what you're looking for</li>
             <li>• <strong>Be yourself</strong> — authentic beats perfect every time</li>

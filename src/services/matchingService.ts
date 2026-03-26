@@ -1,7 +1,5 @@
 'use client'
 
-import { createBrowserSupabaseClient } from '@/lib/supabase-client'
-
 export interface MatchProfile {
   id: string
   username: string
@@ -40,32 +38,36 @@ export async function getDiscoverProfiles(page = 1, limit = 20): Promise<Discove
   return response.json()
 }
 
-export async function likeProfile(likeeId: string): Promise<{ isMatch: boolean }> {
-  const supabase = createBrowserSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export async function likeProfile(likeeId: string): Promise<{ isMatch: boolean; conversationId?: string | null }> {
+  const response = await fetch('/api/likes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ likeeId }),
+  })
 
-  if (!user) throw new Error('Not authenticated')
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(error.error || `HTTP ${response.status}`)
+  }
 
-  const { error } = await supabase
-    .from('likes')
-    .insert({ liker_id: user.id, likee_id: likeeId })
-
-  if (error) throw error
-
-  // Check if mutual match
-  const { data: mutualLike } = await supabase
-    .from('likes')
-    .select('id')
-    .eq('liker_id', likeeId)
-    .eq('likee_id', user.id)
-    .maybeSingle()
-
-  return { isMatch: !!mutualLike }
+  const data = await response.json()
+  return {
+    isMatch: !!data?.isMatch,
+    conversationId: data?.conversationId ?? null,
+  }
 }
 
 export async function passProfile(passedId: string): Promise<void> {
-  // For now just a client-side skip — could store in DB later
-  console.log('Passed profile:', passedId)
+  const response = await fetch('/api/passes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ passedId }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(error.error || `HTTP ${response.status}`)
+  }
 }
 
 export async function blockUser(userId: string, reason?: string): Promise<void> {
