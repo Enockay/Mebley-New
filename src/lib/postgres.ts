@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { Pool, type PoolClient, type QueryResult } from 'pg'
+import { Pool, type PoolClient, type QueryResult, type QueryResultRow } from 'pg'
 
 const connectionString = process.env.DATABASE_URL
 
@@ -51,7 +51,7 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPg.__mebleyPgPool = pool
 }
 
-export async function pgQuery<T = unknown>(
+export async function pgQuery<T extends QueryResultRow = QueryResultRow>(
   text: string,
   values: unknown[] = []
 ): Promise<QueryResult<T>> {

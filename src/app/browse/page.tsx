@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase-client'
@@ -499,7 +499,7 @@ function SwipeCard({
 const supabase = createClient()
 
 // ── Browse Page ───────────────────────────────────────────────────
-export default function BrowsePage() {
+function BrowsePageContent() {
   const supabase = createClient()
   const { user, profile, loading } = useAuth()
   const router = useRouter()
@@ -1622,5 +1622,13 @@ export default function BrowsePage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function BrowsePage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#120018' }} />}>
+      <BrowsePageContent />
+    </Suspense>
   )
 }

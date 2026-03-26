@@ -71,14 +71,18 @@ export async function passProfile(passedId: string): Promise<void> {
 }
 
 export async function blockUser(userId: string, reason?: string): Promise<void> {
-  const supabase = createBrowserSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const response = await fetch('/api/moderation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'block',
+      targetId: userId,
+      reason,
+    }),
+  })
 
-  if (!user) throw new Error('Not authenticated')
-
-  const { error } = await supabase
-    .from('blocked_users')
-    .insert({ blocker_id: user.id, blocked_id: userId, reason })
-
-  if (error) throw error
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(error.error || `HTTP ${response.status}`)
+  }
 }

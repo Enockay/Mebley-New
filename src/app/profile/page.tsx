@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -70,7 +70,7 @@ const s = {
   section: { display: 'flex', flexDirection: 'column' as const, gap: 12 },
 }
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const supabase = createClient()
   const { user, profile, loading, refreshProfile, creditBalance } = useAuth()
   const { openPaywall } = usePaywall()
@@ -652,5 +652,13 @@ export default function ProfilePage() {
         />
       )}
     </>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#12022a' }} />}>
+      <ProfilePageContent />
+    </Suspense>
   )
 }

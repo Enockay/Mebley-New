@@ -2,6 +2,7 @@
 'use client'
 
 import './globals.css'
+import { Suspense } from 'react'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { OneSignalProvider } from '@/contexts/OneSignalContext'
 import NavWrapper from '@/components/UI/NavWrapper'
@@ -17,10 +18,12 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <NavWrapper>
-        <PushPermissionPrompt />
-        {children}
-      </NavWrapper>
+      <Suspense fallback={<>{children}</>}>
+        <NavWrapper>
+          <PushPermissionPrompt />
+          {children}
+        </NavWrapper>
+      </Suspense>
 
       {/* Global paywall — renders above everything */}
       <PaywallModal

@@ -7,15 +7,15 @@ const region = process.env.AWS_REGION
 const bucket = process.env.AWS_S3_BUCKET
 const s3 = new S3Client({ region: region! })
 
-function isInvalidBaseUrl(value: string | undefined): boolean {
-  if (!value) return true
+function isValidBaseUrl(value: string | undefined): value is string {
+  if (!value) return false
   const normalized = value.trim().toLowerCase()
-  return normalized.length === 0 || normalized === 'undefined' || normalized === 'null'
+  return normalized.length > 0 && normalized !== 'undefined' && normalized !== 'null'
 }
 
 function normalizeBaseUrl(rawValue: string | undefined): string {
-  if (isInvalidBaseUrl(rawValue)) return ''
-  const trimmed = rawValue?.trim() ?? ''
+  if (!isValidBaseUrl(rawValue)) return ''
+  const trimmed = rawValue.trim()
   const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
   return withProtocol.replace(/\/+$/, '')
 }
