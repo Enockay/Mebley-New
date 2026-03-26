@@ -15,7 +15,7 @@ function isInvalidBaseUrl(value: string | undefined): boolean {
 
 function normalizeBaseUrl(rawValue: string | undefined): string {
   if (isInvalidBaseUrl(rawValue)) return ''
-  const trimmed = rawValue.trim()
+  const trimmed = rawValue?.trim() ?? ''
   const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
   return withProtocol.replace(/\/+$/, '')
 }
