@@ -298,7 +298,7 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
                 placeholder="Search conversations…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{ width: '100%', padding: '11px 14px 11px 38px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.14)', fontSize: 14, color: '#fff2fb', fontFamily: "'DM Sans',sans-serif", outline: 'none', boxSizing: 'border-box' as const, backdropFilter: 'blur(6px)' }}
+                style={{ width: '100%', padding: '11px 14px 11px 38px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.14)', fontSize: 14, color: '#fff2fb', fontFamily: "'DM Sans',sans-serif", outline: 'none', boxSizing: 'border-box' as const, backdropFilter: 'blur(6px)' }}
               />
             </div>
           )}
@@ -313,7 +313,7 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
           {fetching ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[1,2,3].map(i => (
-                <div key={i} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 18, border: '1px solid rgba(255,255,255,0.14)', padding: '16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div key={i} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.14)', padding: '16px', display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{ width: 54, height: 54, borderRadius: '50%', background: 'rgba(244,63,94,0.06)', flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ height: 14, background: 'rgba(255,255,255,0.14)', borderRadius: 7, width: '55%', marginBottom: 8 }} />
@@ -361,7 +361,7 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
                       onTouchEnd={handlePressEnd}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 14,
-                        padding: '13px 14px', borderRadius: 18, width: '100%',
+                        padding: '13px 14px', borderRadius: 10, width: '100%',
                         background: conv.isPinned ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)',
                         border: `1.5px solid ${conv.isPinned ? 'rgba(255,255,255,0.32)' : conv.unreadCount > 0 ? 'rgba(236,72,153,0.4)' : 'rgba(255,255,255,0.12)'}`,
                         boxShadow: conv.isPinned ? '0 8px 26px rgba(8,1,25,0.32)' : '0 4px 14px rgba(8,1,25,0.22)',
@@ -463,7 +463,7 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
                     {/* Inline dropdown menu */}
                     {isMenuOpen && (
                       <div
-                        style={{ position: 'absolute', right: 8, top: '100%', zIndex: 100, background: 'white', borderRadius: 12, boxShadow: '0 8px 32px rgba(180,60,80,0.15)', border: '1px solid rgba(244,63,94,0.1)', minWidth: 200, overflow: 'hidden', animation: 'slideUp 0.15s ease' }}
+                        style={{ position: 'absolute', right: 8, top: '100%', zIndex: 100, background: 'white', borderRadius: 10, boxShadow: '0 8px 32px rgba(180,60,80,0.15)', border: '1px solid rgba(244,63,94,0.1)', minWidth: 200, overflow: 'hidden', animation: 'slideUp 0.15s ease' }}
                         onClick={e => e.stopPropagation()}
                       >
                         {[
@@ -494,7 +494,7 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
           {!showArchived && conversations.some(c => c.isArchived) && (
             <button
               onClick={() => setShowArchived(true)}
-              style={{ width: '100%', marginTop: 16, padding: '14px', borderRadius: 16, border: '1.5px solid rgba(244,63,94,0.1)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#a37a82', fontFamily: "'DM Sans',sans-serif" }}>
+              style={{ width: '100%', marginTop: 16, padding: '14px', borderRadius: 10, border: '1.5px solid rgba(244,63,94,0.1)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#a37a82', fontFamily: "'DM Sans',sans-serif" }}>
               <Archive size={15} />
               View archived chats
               <ChevronRight size={15} />

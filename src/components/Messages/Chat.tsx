@@ -88,6 +88,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
   const { profile: currentProfile } = useAuth()
   const isPendingConversation = conversationId.startsWith('pending-')
   const bottomInsetPadding = 'max(10px, env(safe-area-inset-bottom))'
+  const navBarOffset = embedded ? 0 : 72
 
   // Messages
   const [messages, setMessages]         = useState<MongoMessage[]>([])
@@ -687,7 +688,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        height: embedded ? '100%' : 'calc(100dvh - 72px)',
+        height: '100%',
         background: 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.26), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.24), transparent 74%), linear-gradient(140deg,#090019 0%,#17032f 36%,#2a0645 70%,#3d0853 100%)',
         fontFamily: "'DM Sans', sans-serif",
         position: 'relative',
@@ -983,7 +984,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
         )}
 
         {/* ── Input bar ── */}
-        <div style={{ background: 'rgba(13,4,27,0.66)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.16)', padding: '10px 12px', paddingBottom: bottomInsetPadding, flexShrink: 0 }}>
+        <div style={{ background: 'rgba(13,4,27,0.66)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.16)', padding: '10px 12px', paddingBottom: embedded ? bottomInsetPadding : '10px', marginBottom: navBarOffset, flexShrink: 0 }}>
           {pendingImage && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
               <div style={{ width: 58, height: 58, borderRadius: 16, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.06)', flexShrink: 0 }}>

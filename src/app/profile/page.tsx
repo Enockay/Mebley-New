@@ -64,7 +64,7 @@ const s = {
     background: 'radial-gradient(42% 48% at 10% 88%, rgba(236,72,153,0.16), transparent 72%), radial-gradient(36% 42% at 92% 12%, rgba(139,92,246,0.16), transparent 74%), linear-gradient(150deg,#f7f1f8 0%,#f6eef7 32%,#f5edf8 68%,#f2eaf7 100%)',
     fontFamily: "'Inter', 'DM Sans', sans-serif",
   },
-  card:    { background: 'rgba(255,255,255,0.74)', backdropFilter: 'blur(14px)', borderRadius: 20, border: '1px solid rgba(192,126,170,0.18)', boxShadow: '0 10px 34px rgba(75,33,104,0.08)', padding: '20px' } as React.CSSProperties,
+  card:    { background: 'rgba(255,255,255,0.74)', backdropFilter: 'blur(14px)', borderRadius: 10, border: '1px solid rgba(192,126,170,0.18)', boxShadow: '0 10px 34px rgba(75,33,104,0.08)', padding: '20px' } as React.CSSProperties,
   label:   { fontSize: 10, fontWeight: 800, color: '#8f6f88', letterSpacing: '0.14em', textTransform: 'uppercase' as const, marginBottom: 10 },
   chip:    (color: string) => ({ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, background: `${color}14`, border: `1px solid ${color}35`, color, fontFamily: "'Inter','DM Sans',sans-serif" }),
   section: { display: 'flex', flexDirection: 'column' as const, gap: 12 },
@@ -228,7 +228,7 @@ function ProfilePageContent() {
         <div style={{ maxWidth: 520, margin: '0 auto', padding: useDarkProfileTheme ? '16px 12px 16px' : '80px 16px 100px' }}>
 
           {/* ── Hero section — circular avatar + name ── */}
-          <div className="profile-fade" data-profile-card="1" style={{ ...cardSurface, marginBottom: 12, padding: '28px 24px' }}>
+          <div className="profile-fade" data-profile-card="1" style={{ ...cardSurface, borderRadius: 10, marginBottom: 12, padding: '24px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
 
               {/* Circular avatar */}
@@ -561,7 +561,7 @@ function ProfilePageContent() {
               {!introVideo && <span style={{ fontSize: 11, color: '#c4a0a8', fontWeight: 500 }}>Optional</span>}
             </div>
             {introVideo ? (
-              <div style={{ borderRadius: 14, overflow: 'hidden', background: '#0f0409', aspectRatio: '16/9' }}>
+              <div style={{ borderRadius: 10, overflow: 'hidden', background: '#0f0409', aspectRatio: '16/9' }}>
                 {playingSlot === 0 ? (
                   <video src={introVideo.cloudfront_url} controls autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
@@ -585,7 +585,7 @@ function ProfilePageContent() {
               <button
                 onClick={() => openEdit()}
                 style={{
-                  width: '100%', aspectRatio: '16/9', borderRadius: 14,
+                  width: '100%', aspectRatio: '16/9', borderRadius: 10,
                   border: '1.5px dashed rgba(244,63,94,0.2)',
                   background: 'rgba(244,63,94,0.02)',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -613,7 +613,7 @@ function ProfilePageContent() {
                 { value: interests.length,    label: `Interest${interests.length !== 1 ? 's' : ''}` },
               ].map(({ value, label }) => (
                 <div key={label} style={{
-                  padding: '14px 8px', borderRadius: 14,
+                  padding: '14px 8px', borderRadius: 10,
                   background: 'rgba(244,63,94,0.04)',
                   border: '1px solid rgba(244,63,94,0.08)',
                 }}>

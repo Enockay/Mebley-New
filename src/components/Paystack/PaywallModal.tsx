@@ -123,9 +123,7 @@ export default function PaywallModal({
   }, [])
 
   const isDesktopBrowse = pathname === '/browse' && isDesktopViewport
-  const drawerBackground = isDesktopBrowse
-    ? 'linear-gradient(165deg, rgba(26,10,45,0.98), rgba(14,6,30,0.98))'
-    : '#0f0409'
+  const drawerBackground = 'linear-gradient(165deg, rgba(26,10,45,0.98), rgba(14,6,30,0.98))'
 
   const currentPlan   = (profile as any)?.plan ?? 'free'
   const walletBalance = (profile as any)?.credit_balance ?? 0
@@ -182,9 +180,9 @@ export default function PaywallModal({
               style={{
                 position: 'fixed',
                 inset: 0,
-                background: 'rgba(0,0,0,0.78)',
+                background: 'rgba(0,0,0,0.18)',
                 zIndex: 900,
-                backdropFilter: 'blur(8px)',
+                backdropFilter: 'blur(2px)',
               }}
             />
           )}
