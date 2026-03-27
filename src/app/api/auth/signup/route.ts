@@ -55,6 +55,26 @@ export async function POST(request: NextRequest) {
       [user.id, `user_${user.id.replace(/-/g, '').slice(0, 10)}`]
     )
 
+    // Grant starter credits once on account creation.
+    const walletInsert = await pgQuery<{ id: string }>(
+      `
+      INSERT INTO credit_wallets (user_id, balance, lifetime_earned, lifetime_spent)
+      VALUES ($1, 25, 25, 0)
+      ON CONFLICT (user_id) DO NOTHING
+      RETURNING id
+      `,
+      [user.id]
+    )
+    if ((walletInsert.rowCount ?? 0) > 0) {
+      await pgQuery(
+        `
+        INSERT INTO credit_transactions (user_id, amount, balance_after, type, reference_type, description)
+        VALUES ($1, 25, 25, 'starter_grant', 'signup', 'Welcome bonus: 25 free credits')
+        `,
+        [user.id]
+      )
+    }
+
     const token = issueSessionToken()
     const { expiresAt } = await createAuthSession({
       userId: user.id,

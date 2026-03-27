@@ -6,10 +6,9 @@ import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 // ─── Subscription plans — exact prices from spec ──────────────────────────
 export const SUBSCRIPTION_PLANS = {
-  premium_weekly:  { tier: 'premium', billing_period: 'weekly',  usd: 5.99,  label: 'Premium Weekly'  },
-  premium_monthly: { tier: 'premium', billing_period: 'monthly', usd: 14.99, label: 'Premium Monthly' },
-  vip_weekly:      { tier: 'vip',     billing_period: 'weekly',  usd: 11.99, label: 'VIP Weekly'      },
-  vip_monthly:     { tier: 'vip',     billing_period: 'monthly', usd: 29.99, label: 'VIP Monthly'     },
+  starter_monthly: { tier: 'starter', billing_period: 'monthly', usd: 5.00,  label: 'Starter Monthly', monthly_credits: 100 },
+  premium_monthly: { tier: 'premium', billing_period: 'monthly', usd: 10.00, label: 'Premium Monthly', monthly_credits: 250 },
+  vip_monthly:     { tier: 'vip',     billing_period: 'monthly', usd: 15.00, label: 'VIP Monthly',     monthly_credits: 450 },
 } as const
 
 // ─── Credit packs — exact prices from spec ───────────────────────────────
@@ -106,7 +105,7 @@ export async function POST(req: NextRequest) {
         paystack_ref:             reference,
         current_period_start:     new Date().toISOString(),
         current_period_end:       new Date().toISOString(), // set properly on confirm
-        weekly_credits_allocated: plan.tier === 'premium' ? 50 : 150,
+        weekly_credits_allocated: plan.monthly_credits,
       })
 
       if (subInsertError) {
@@ -115,36 +114,7 @@ export async function POST(req: NextRequest) {
       }
 
     } else if (type === 'credits') {
-      const pack = CREDIT_PACKS[product as CreditPackKey]
-      if (!pack) return NextResponse.json({ error: 'Invalid pack' }, { status: 400 })
-      amountCents = Math.round(pack.usd * 100)
-      label       = pack.label
-
-      // Look up the credit_pack_id from credit_packs table
-      const { data: packRow } = await db
-        .from('credit_packs')
-        .select('id')
-        .ilike('name', pack.pack_key)
-        .maybeSingle()
-
-      // DB columns: credits_purchased, bonus_credits, amount_usd, paystack_ref (added by patch)
-      const { error: orderInsertError } = await db.from('stripe_orders').insert({
-        user_id:           paymentUserId,
-        stripe_session_id: reference,  // also stored here as fallback
-        paystack_ref:      reference,  // ✓ added by patch SQL
-        pack_key:          pack.pack_key,
-        credit_pack_id:    packRow?.id ?? null,
-        credits_purchased: pack.credits,  // ✓ actual column name
-        bonus_credits:     pack.bonus,    // ✓ actual column name
-        amount_usd:        pack.usd,      // ✓ actual column name
-        status:            'pending',
-      })
-
-      if (orderInsertError) {
-        console.error('[paystack/initialize] failed to create pending credit order:', orderInsertError)
-        return NextResponse.json({ error: 'Could not create pending credit order' }, { status: 500 })
-      }
-
+      return NextResponse.json({ error: 'Direct credit packs are disabled. Choose a monthly plan.' }, { status: 400 })
     } else {
       return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
     }

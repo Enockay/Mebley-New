@@ -295,10 +295,11 @@ function ProfilePageContent() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                   <h1 style={{
                     fontFamily: "'Fraunces', serif",
-                    fontSize: 24, fontWeight: 700,
+                    fontSize: isMobile ? 20 : 24, fontWeight: 700,
                     color: '#2d1b1f', margin: 0,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     letterSpacing: '-0.01em',
+                    lineHeight: 1.1,
                   }}>
                     {profile.full_name || 'Your Name'}
                   </h1>

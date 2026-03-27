@@ -10,7 +10,11 @@ const db = () => createClient(
 )
 
 // ─── Weekly credits per tier (from spec) ──────────────────────────────────
-const WEEKLY_CREDITS: Record<string, number> = { premium: 50, vip: 150 }
+const PLAN_CREDITS: Record<string, number> = {
+  starter: 100,
+  premium: 250,
+  vip: 450,
+}
 
 // ─── Add credits to wallet — handles upsert + lifetime tracking ───────────
 async function addCredits(
@@ -112,10 +116,10 @@ async function fulfill(reference: string) {
     }).eq('id', sub.user_id)
 
     // Grant first week's credits
-    const weeklyCredits = WEEKLY_CREDITS[sub.tier] ?? 0
-    if (weeklyCredits > 0) {
-      await addCredits(supabase, sub.user_id, weeklyCredits, 'subscription_grant',
-        `${sub.tier} weekly credits (first grant)`)
+    const planCredits = PLAN_CREDITS[sub.tier] ?? 0
+    if (planCredits > 0) {
+      await addCredits(supabase, sub.user_id, planCredits, 'subscription_grant',
+        `${sub.tier} monthly credits`)
     }
 
     return { ok: true, type: 'subscription', tier: sub.tier }

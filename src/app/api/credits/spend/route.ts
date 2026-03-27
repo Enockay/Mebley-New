@@ -1,8 +1,7 @@
 // src/app/api/credits/spend/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 // ─── Exact credit costs from spec ────────────────────────────────────────
 const MOMENT_COSTS: Record<string, number> = {
@@ -23,6 +22,13 @@ const BOOST_CONFIG: Record<string, { credits: number; hours: number }> = {
   power:   { credits: 400, hours: 120 },
 }
 
+// Optional premium actions (ready for future UI wiring).
+const PREMIUM_ACTION_COSTS: Record<string, number> = {
+  priority_delivery: 40,
+  profile_rewind: 25,
+  super_intent_message: 60,
+}
+
 // Moment expiry hours
 const MOMENT_EXPIRY_HOURS: Record<string, number> = {
   here_tonight:  6,
@@ -37,24 +43,20 @@ const MOMENT_EXPIRY_HOURS: Record<string, number> = {
 export async function POST(req: NextRequest) {
   try {
     // 1. Auth
-    const cookieStore  = await cookies()
-    const supabaseAuth = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { getAll: () => cookieStore.getAll() } }
-    )
-    const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser()
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const user = await getAuthUserFromRequest(req)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { product, type, receiver_id } = await req.json()
-    // type: 'moment' | 'boost'
+    // type: 'moment' | 'boost' | 'premium_action'
 
     const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
     // 2. Get cost
     const cost = type === 'boost'
       ? BOOST_CONFIG[product]?.credits
-      : MOMENT_COSTS[product]
+      : type === 'premium_action'
+        ? PREMIUM_ACTION_COSTS[product]
+        : MOMENT_COSTS[product]
 
     if (!cost) return NextResponse.json({ error: `Unknown product: ${product}` }, { status: 400 })
 
@@ -87,7 +89,7 @@ export async function POST(req: NextRequest) {
       user_id:        user.id,
       amount:         -cost,           // negative = debit
       balance_after:  newBalance,      // ✓ actual column
-      type:           type === 'boost' ? 'boost_purchase' : 'moment_spend',
+      type:           type === 'boost' ? 'boost_purchase' : type === 'premium_action' ? 'premium_action_spend' : 'moment_spend',
       reference_type: type,            // ✓ actual column
       description:    `Spent ${cost} credits on ${product}`,  // ✓ actual column
     })
@@ -124,6 +126,8 @@ export async function POST(req: NextRequest) {
         expires_at:    expiresAt,        // ✓ actual column
         status:        'active',
       })
+    } else if (type === 'premium_action') {
+      // No additional row required yet; credit transaction above is the source of truth.
     }
 
     return NextResponse.json({ ok: true, new_balance: newBalance })

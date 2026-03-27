@@ -8,21 +8,33 @@ import { usePathname } from 'next/navigation'
 
 const SUBSCRIPTION_TIERS = [
   {
+    plan:    'starter',
+    name:    'Starter',
+    emoji:   '🪙',
+    color:   '#f97316',
+    badge:   null as string | null,
+    monthly: 5.00,
+    features: [
+      '100 credits/month',
+      'Perfect for getting started',
+      'Use credits on Moments & Boosts',
+    ],
+  },
+  {
     plan:    'premium',
     name:    'Premium',
     emoji:   '✨',
     color:   '#f43f5e',
     badge:   null as string | null,
-    weekly:  5.99,
-    monthly: 14.99,
+    monthly: 10.00,
     features: [
       'See who liked you',
       'Unlimited likes',
       'Read receipts',
       'Advanced filters',
       'Priority in Discover',
-      '50 credits/week',
-      '1 Quick Boost/week',
+      '250 credits/month',
+      '1 Quick Boost/month',
     ],
   },
   {
@@ -31,24 +43,16 @@ const SUBSCRIPTION_TIERS = [
     emoji:   '👑',
     color:   '#e8a020',
     badge:   'Most popular' as string | null,
-    weekly:  11.99,
-    monthly: 29.99,
+    monthly: 15.00,
     features: [
       'Everything in Premium',
-      '150 credits/week',
-      '1 Day Boost/week',
+      '450 credits/month',
+      '1 Day Boost/month',
       'VIP badge on profile',
-      'Higher weekly credits',
-      'Bigger weekly boost',
+      'Highest monthly credits',
+      'Biggest monthly boost',
     ],
   },
-]
-
-const CREDIT_PACKS = [
-  { key: 'starter', label: 'Starter', price: 4.99,  credits: 100,  bonus: 0,   badge: null          },
-  { key: 'popular', label: 'Popular', price: 19.99, credits: 300,  bonus: 30,  badge: '🔥 Popular'  },
-  { key: 'value',   label: 'Value',   price: 39.99, credits: 700,  bonus: 100, badge: 'Best value'  },
-  { key: 'mega',    label: 'Mega',    price: 74.99, credits: 1600, bonus: 300, badge: null          },
 ]
 
 const MOMENTS = [
@@ -83,7 +87,7 @@ const BOOSTS = [
 ]
 
 type Mode = 'plans' | 'spend'
-type SpendSection = 'credits' | 'moments' | 'boosts'
+type SpendSection = 'moments' | 'boosts'
 
 interface Props {
   open:            boolean
@@ -100,16 +104,14 @@ export default function PaywallModal({
   defaultTab = 'plans',
   onSpendCredits,
 }: Props) {
-  const { user, profile } = useAuth()
+  const { user, profile, creditBalance } = useAuth()
   const pathname = usePathname()
   const [isDesktopViewport, setIsDesktopViewport] = useState(false)
 
-  const mode: Mode           = defaultTab === 'plans' ? 'plans' : 'spend'
-  const [cycle, setCycle]    = useState<'weekly' | 'monthly'>('monthly')
+  const mode: Mode           = (defaultTab === 'plans' || defaultTab === 'credits') ? 'plans' : 'spend'
   const [section, setSection] = useState<SpendSection>(
-    defaultTab === 'credits' ? 'credits' :
     defaultTab === 'moments' ? 'moments' :
-    defaultTab === 'boosts'  ? 'boosts'  : 'credits'
+    defaultTab === 'boosts'  ? 'boosts'  : 'moments'
   )
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError]     = useState<string | null>(null)
@@ -126,7 +128,7 @@ export default function PaywallModal({
   const drawerBackground = 'linear-gradient(165deg, rgba(26,10,45,0.98), rgba(14,6,30,0.98))'
 
   const currentPlan   = (profile as any)?.plan ?? 'free'
-  const walletBalance = (profile as any)?.credit_balance ?? 0
+  const walletBalance = Math.max(0, Number(creditBalance ?? 0))
 
   async function pay(type: 'subscription' | 'credits', product: string) {
     if (!user) return
@@ -163,9 +165,8 @@ export default function PaywallModal({
   }
 
   const sectionTabs: { key: SpendSection; label: string }[] = [
-    { key: 'credits', label: '💳 Buy Credits' },
-    { key: 'moments', label: '✨ Moments'     },
-    { key: 'boosts',  label: '🚀 Boosts'      },
+    { key: 'moments', label: '✨ Moments' },
+    { key: 'boosts',  label: '🚀 Boosts'  },
   ]
 
   return (
@@ -256,24 +257,17 @@ export default function PaywallModal({
                     </p>
                   </div>
 
-                  {/* Billing toggle */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 20 }}>
-                    <span style={{ fontSize: 13, color: cycle === 'weekly' ? '#fff' : 'rgba(255,255,255,0.4)' }}>Weekly</span>
-                    <button
-                      onClick={() => setCycle(c => c === 'weekly' ? 'monthly' : 'weekly')}
-                      style={{ width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', position: 'relative', background: cycle === 'monthly' ? '#f43f5e' : 'rgba(255,255,255,0.15)', transition: 'background 0.2s' }}>
-                      <div style={{ position: 'absolute', top: 2, left: cycle === 'monthly' ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
-                    </button>
-                    <span style={{ fontSize: 13, color: cycle === 'monthly' ? '#fff' : 'rgba(255,255,255,0.4)' }}>
-                      Monthly <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700 }}>save ~58%</span>
+                  <div style={{ textAlign: 'center', marginBottom: 18 }}>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.68)', fontWeight: 700 }}>
+                      All plans are monthly billing
                     </span>
                   </div>
 
                   {/* Plan cards */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     {SUBSCRIPTION_TIERS.map(tier => {
-                      const price   = cycle === 'weekly' ? tier.weekly : tier.monthly
-                      const planKey = `${tier.plan}_${cycle}`
+                      const price   = tier.monthly
+                      const planKey = `${tier.plan}_monthly`
                       const owned   = currentPlan === tier.plan
                       return (
                         <div key={tier.plan} style={{
@@ -294,7 +288,7 @@ export default function PaywallModal({
                               <div style={{ fontSize: 24, fontWeight: 800, color: tier.color, lineHeight: 1 }}>
                                 ${price}
                                 <span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>
-                                  /{cycle === 'weekly' ? 'wk' : 'mo'}
+                                  /mo
                                 </span>
                               </div>
                             </div>
@@ -342,7 +336,7 @@ export default function PaywallModal({
                   </div>
 
                   {/* Section tabs */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: 4, marginBottom: 22, gap: 3 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: 4, marginBottom: 22, gap: 3 }}>
                     {sectionTabs.map(t => (
                       <button
                         key={t.key}
@@ -358,50 +352,6 @@ export default function PaywallModal({
                       </button>
                     ))}
                   </div>
-
-                  {/* Buy Credits */}
-                  {section === 'credits' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.56)', margin: '0 0 10px', textAlign: 'center' }}>
-                        Credits never expire · Use on Moments &amp; Boosts
-                      </p>
-                      {CREDIT_PACKS.map(pack => (
-                        <div key={pack.key} style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
-                          border: '1px solid rgba(255,255,255,0.13)',
-                          borderRadius: 12, padding: '18px 18px', position: 'relative',
-                          boxShadow: '0 8px 24px rgba(8,2,20,0.2)',
-                        }}>
-                          {pack.badge && (
-                            <div style={{ position: 'absolute', top: -10, right: 12, background: 'linear-gradient(135deg,#f43f5e,#ec4899)', borderRadius: 12, padding: '3px 9px', fontSize: 11, fontWeight: 700, color: '#fff', boxShadow: '0 6px 16px rgba(244,63,94,0.35)' }}>
-                              {pack.badge}
-                            </div>
-                          )}
-                          <div>
-                            <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.08, marginBottom: 6 }}>{pack.label}</div>
-                            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 1.2 }}>
-                              {pack.credits.toLocaleString()} credits
-                              {pack.bonus > 0 && <span style={{ color: '#4ade80', marginLeft: 4 }}>+{pack.bonus} bonus</span>}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => pay('credits', pack.key)}
-                            disabled={loading === pack.key}
-                            style={{
-                              background: 'linear-gradient(135deg,#f43f5e,#ec4899)',
-                              border: 'none', borderRadius: 16, padding: '10px 16px',
-                              color: '#fff', fontSize: 16, fontWeight: 800,
-                              cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
-                              opacity: loading === pack.key ? 0.6 : 1, whiteSpace: 'nowrap',
-                              boxShadow: '0 10px 22px rgba(244,63,94,0.36)',
-                            }}>
-                            {loading === pack.key ? '…' : `$${pack.price}`}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
 
                   {/* Moments */}
                   {section === 'moments' && (
@@ -426,7 +376,7 @@ export default function PaywallModal({
                                 </div>
                               </div>
                               <button
-                                onClick={() => canAfford ? spendCredits(m.key, m.credits) : setSection('credits')}
+                                onClick={() => canAfford ? spendCredits(m.key, m.credits) : setError('Not enough credits. Upgrade your monthly plan to get more credits.')}
                                 disabled={loading === m.key}
                                 style={{
                                   background: canAfford ? 'rgba(232,160,32,0.18)' : 'rgba(255,255,255,0.06)',
@@ -469,7 +419,7 @@ export default function PaywallModal({
                               </div>
                             </div>
                             <button
-                              onClick={() => canAfford ? spendCredits(b.key, b.credits) : setSection('credits')}
+                              onClick={() => canAfford ? spendCredits(b.key, b.credits) : setError('Not enough credits. Upgrade your monthly plan to get more credits.')}
                               disabled={loading === b.key}
                               style={{
                                 background: canAfford ? 'rgba(244,63,94,0.18)' : 'rgba(255,255,255,0.06)',

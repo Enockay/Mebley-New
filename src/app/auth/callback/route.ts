@@ -109,6 +109,34 @@ async function ensureAppAuthAndRedirect(params: {
   return response
 }
 
+async function grantStarterCreditsIfMissing(userId: string) {
+  try {
+    const walletInsert = await pgQuery<{ id: string }>(
+      `
+      INSERT INTO credit_wallets (user_id, balance, lifetime_earned, lifetime_spent)
+      VALUES ($1, 25, 25, 0)
+      ON CONFLICT (user_id) DO NOTHING
+      RETURNING id
+      `,
+      [userId]
+    )
+    if ((walletInsert.rowCount ?? 0) > 0) {
+      await pgQuery(
+        `
+        INSERT INTO credit_transactions (user_id, amount, balance_after, type, reference_type, description)
+        VALUES ($1, 25, 25, 'starter_grant', 'signup', 'Welcome bonus: 25 free credits')
+        `,
+        [userId]
+      )
+    }
+  } catch (err: any) {
+    // Non-fatal for OAuth completion if optional wallet tables are not present yet.
+    if (err?.code !== '42P01') {
+      console.error('[auth/callback] starter credits grant failed:', err)
+    }
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code             = searchParams.get('code')
@@ -232,6 +260,8 @@ export async function GET(request: NextRequest) {
       // Don't block login — user can still proceed, profile will be created at setup
     }
 
+    await grantStarterCreditsIfMissing(appUserId)
+
     return ensureAppAuthAndRedirect({
       origin,
       request,
@@ -290,6 +320,8 @@ export async function GET(request: NextRequest) {
       console.error('[auth/callback] Fallback profile upsert error:', upsertErr.message)
     }
   }
+
+  await grantStarterCreditsIfMissing(appUserId)
 
   return ensureAppAuthAndRedirect({
     origin,

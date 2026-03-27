@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 import { pgQuery } from '@/lib/postgres'
+import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,6 +23,40 @@ export async function GET(request: NextRequest) {
       // Allow auth/me to work even before optional wallet tables are migrated.
       if (walletError?.code !== '42P01') {
         throw walletError
+      }
+    }
+
+    // Billing writes can happen in the Supabase-backed DB. If local PG lookup is zero,
+    // resolve by id/email there and use that wallet balance so UI reflects purchases.
+    if (creditBalance <= 0) {
+      try {
+        const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+        let billingUserId = user.id
+
+        const { data: appUserById } = await (db as any)
+          .from('app_users')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (!appUserById && user.email) {
+          const { data: appUserByEmail } = await (db as any)
+            .from('app_users')
+            .select('id')
+            .ilike('email', user.email)
+            .maybeSingle()
+          if (appUserByEmail?.id) billingUserId = appUserByEmail.id
+        }
+
+        const { data: wallet } = await (db as any)
+          .from('credit_wallets')
+          .select('balance')
+          .eq('user_id', billingUserId)
+          .maybeSingle()
+
+        creditBalance = wallet?.balance ?? creditBalance
+      } catch {
+        // Non-fatal: keep PG-derived balance.
       }
     }
 

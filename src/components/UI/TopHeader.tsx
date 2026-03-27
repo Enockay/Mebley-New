@@ -105,24 +105,6 @@ export default function TopHeader() {
         {/* Right side */}
         <div className="flex items-center gap-2 sm:gap-3" style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
 
-          {/* Upgrade — free users only */}
-          {currentPlan === 'free' && (
-            <button
-              className="hidden sm:inline-flex"
-              onClick={() => openPaywall('general', 'plans')}
-              style={{
-                alignItems: 'center', gap: '5px',
-                padding: '6px 12px', borderRadius: '100px', border: 'none',
-                background: 'linear-gradient(135deg, #d64de8, #ee5ca6)',
-                color: 'white', fontSize: '12px', fontWeight: 700,
-                fontFamily: "'DM Sans', sans-serif",
-                cursor: 'pointer', whiteSpace: 'nowrap',
-                boxShadow: '0 2px 12px rgba(214,77,232,0.34)',
-              }}>
-              ✨ Upgrade
-            </button>
-          )}
-
           {/* Credits */}
           <button
             className="inline-flex"
