@@ -88,7 +88,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
   const { profile: currentProfile } = useAuth()
   const isPendingConversation = conversationId.startsWith('pending-')
   const bottomInsetPadding = 'max(10px, env(safe-area-inset-bottom))'
-  const navBarOffset = embedded ? 0 : 72
+  const navBarOffset = embedded ? 0 : 71
 
   // Messages
   const [messages, setMessages]         = useState<MongoMessage[]>([])
@@ -775,7 +775,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
         )}
 
         {/* ── Messages ── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px', paddingBottom: 16 + navBarOffset, display: 'flex', flexDirection: 'column', position: 'relative' }}>
           {loading ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2.5px solid rgba(244,63,94,0.15)', borderTopColor: '#f43f5e', animation: 'spin 0.8s linear infinite' }} />
@@ -918,7 +918,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
                   </div>
                 )
               })}
-              <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} style={{ height: navBarOffset }} />
             </div>
           )}
 
