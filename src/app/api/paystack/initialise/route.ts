@@ -34,9 +34,31 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const db         = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Resolve a user id that is guaranteed to exist in Supabase public.app_users.
+    // Some environments may have app-session IDs coming from a different DB cluster.
+    let paymentUserId = user.id
+    const { data: appUserById } = await (db as any)
+      .from('app_users')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!appUserById && user.email) {
+      const { data: appUserByEmail } = await (db as any)
+        .from('app_users')
+        .select('id')
+        .ilike('email', user.email)
+        .maybeSingle()
+      if (appUserByEmail?.id) paymentUserId = appUserByEmail.id
+    }
+
+    if (!paymentUserId) {
+      return NextResponse.json({ error: 'Could not resolve billing user' }, { status: 500 })
+    }
     const body: Body  = await req.json()
     const { type, product } = body
-    const reference   = `cro_${type}_${product}_${user.id.slice(0,8)}_${Date.now()}`
+    const reference   = `cro_${type}_${product}_${paymentUserId.slice(0,8)}_${Date.now()}`
     let amountCents   = 0
     let label         = ''
 
@@ -49,7 +71,7 @@ export async function POST(req: NextRequest) {
 
       // DB columns: tier, billing_period, paystack_ref (added by patch SQL)
       const { error: subInsertError } = await db.from('subscriptions').insert({
-        user_id:                  user.id,
+        user_id:                  paymentUserId,
         tier:                     plan.tier,          // ✓ actual column name
         billing_period:           plan.billing_period,// ✓ actual column name
         status:                   'pending',
@@ -79,7 +101,7 @@ export async function POST(req: NextRequest) {
 
       // DB columns: credits_purchased, bonus_credits, amount_usd, paystack_ref (added by patch)
       const { error: orderInsertError } = await db.from('stripe_orders').insert({
-        user_id:           user.id,
+        user_id:           paymentUserId,
         stripe_session_id: reference,  // also stored here as fallback
         paystack_ref:      reference,  // ✓ added by patch SQL
         pack_key:          pack.pack_key,
@@ -114,7 +136,8 @@ export async function POST(req: NextRequest) {
         callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/paystack/verify?ref=${reference}`,
         channels:     ['card',],
         metadata: {
-          user_id: user.id,
+          user_id: paymentUserId,
+          auth_user_id: user.id,
           product,
           type,
           custom_fields: [

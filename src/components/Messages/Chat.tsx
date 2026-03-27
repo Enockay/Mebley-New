@@ -1063,7 +1063,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
               value={text}
               onChange={e => setText(e.target.value)}
               placeholder={isPendingConversation ? 'Waiting for match to unlock chat…' : `Message ${otherProfile.full_name?.split(' ')[0] ?? ''}…`}
-              style={{ flex: 1, padding: '11px 16px', borderRadius: 24, border: '1.5px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.12)', fontSize: 14, color: '#fff2fb', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
+              style={{ flex: 1, minWidth: 0, padding: '11px 16px', borderRadius: 24, border: '1.5px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.12)', fontSize: 14, color: '#fff2fb', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
               disabled={sending || isPendingConversation || !!pendingImage}
             />
             <button

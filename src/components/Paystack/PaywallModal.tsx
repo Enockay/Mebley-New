@@ -333,7 +333,7 @@ export default function PaywallModal({
                   {/* Header */}
                   <div style={{ textAlign: 'center', marginBottom: 24 }}>
                     <div style={{ fontSize: 38, marginBottom: 8 }}>🧵</div>
-                    <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 30, fontWeight: 700, color: '#fff', margin: '0 0 8px', lineHeight: 1.05 }}>
+                    <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: '#fff', margin: '0 0 8px', lineHeight: 1.05 }}>
                       Credits & Moments
                     </h2>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(232,160,32,0.16)', border: '1px solid rgba(232,160,32,0.34)', borderRadius: 100, padding: '7px 16px', fontSize: 14, color: '#e8a020', fontWeight: 700, marginTop: 4 }}>
