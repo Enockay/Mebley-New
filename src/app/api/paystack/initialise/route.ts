@@ -2,8 +2,7 @@
 // src/app/api/paystack/initialize/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 // ─── Subscription plans — exact prices from spec ──────────────────────────
 export const SUBSCRIPTION_PLANS = {
@@ -30,21 +29,9 @@ type Body =
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Auth
-    const cookieStore  = await cookies()
-    const supabaseAuth = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookies) => cookies.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        ),
-      }
-    })
-    const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser()
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // 1. Auth (Postgres-native app session; user.id maps to app_users.id)
+    const user = await getAuthUserFromRequest(req)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const db         = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
     const body: Body  = await req.json()

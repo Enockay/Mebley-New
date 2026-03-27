@@ -226,16 +226,16 @@ export default function PaywallModal({
                   position: 'absolute',
                   top: 10,
                   right: 12,
-                  width: 32,
-                  height: 32,
+                  width: 36,
+                  height: 36,
                   borderRadius: '50%',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  background: 'rgba(255,255,255,0.08)',
-                  color: 'rgba(255,255,255,0.86)',
+                  border: '1px solid rgba(255,255,255,0.24)',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'rgba(255,255,255,0.92)',
                   cursor: 'pointer',
                   display: 'grid',
                   placeItems: 'center',
-                  fontSize: 18,
+                  fontSize: 20,
                   lineHeight: 1,
                 }}
               >
@@ -331,28 +331,28 @@ export default function PaywallModal({
               {mode === 'spend' && (
                 <>
                   {/* Header */}
-                  <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                    <div style={{ fontSize: 36, marginBottom: 6 }}>🧵</div>
-                    <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: '#fff', margin: '0 0 6px' }}>
+                  <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                    <div style={{ fontSize: 38, marginBottom: 8 }}>🧵</div>
+                    <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 30, fontWeight: 700, color: '#fff', margin: '0 0 8px', lineHeight: 1.05 }}>
                       Credits & Moments
                     </h2>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(232,160,32,0.15)', border: '1px solid rgba(232,160,32,0.3)', borderRadius: 100, padding: '5px 14px', fontSize: 13, color: '#e8a020', fontWeight: 700, marginTop: 4 }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(232,160,32,0.16)', border: '1px solid rgba(232,160,32,0.34)', borderRadius: 100, padding: '7px 16px', fontSize: 14, color: '#e8a020', fontWeight: 700, marginTop: 4 }}>
                       🪙 {walletBalance.toLocaleString()} credits
                     </div>
                   </div>
 
                   {/* Section tabs */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', background: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: 3, marginBottom: 20, gap: 2 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: 4, marginBottom: 22, gap: 3 }}>
                     {sectionTabs.map(t => (
                       <button
                         key={t.key}
                         onClick={() => setSection(t.key)}
                         style={{
-                          padding: '9px 4px', borderRadius: 11, border: 'none', cursor: 'pointer',
-                          fontSize: 11, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+                          padding: '11px 6px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                          fontSize: 13, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
                           transition: 'all 0.2s',
-                          background: section === t.key ? 'rgba(244,63,94,0.22)' : 'transparent',
-                          color: section === t.key ? '#f43f5e' : 'rgba(255,255,255,0.45)',
+                          background: section === t.key ? 'linear-gradient(135deg, rgba(244,63,94,0.28), rgba(236,72,153,0.18))' : 'transparent',
+                          color: section === t.key ? '#ffdbe9' : 'rgba(255,255,255,0.58)',
                         }}>
                         {t.label}
                       </button>
@@ -362,24 +362,25 @@ export default function PaywallModal({
                   {/* Buy Credits */}
                   {section === 'credits' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: '0 0 6px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.56)', margin: '0 0 10px', textAlign: 'center' }}>
                         Credits never expire · Use on Moments &amp; Boosts
                       </p>
                       {CREDIT_PACKS.map(pack => (
                         <div key={pack.key} style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          background: 'rgba(255,255,255,0.04)',
-                          border: '1px solid rgba(255,255,255,0.09)',
-                          borderRadius: 14, padding: '14px 16px', position: 'relative',
+                          background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+                          border: '1px solid rgba(255,255,255,0.13)',
+                          borderRadius: 12, padding: '18px 18px', position: 'relative',
+                          boxShadow: '0 8px 24px rgba(8,2,20,0.2)',
                         }}>
                           {pack.badge && (
-                            <div style={{ position: 'absolute', top: -9, right: 12, background: '#f43f5e', borderRadius: 100, padding: '2px 8px', fontSize: 10, fontWeight: 700, color: '#fff' }}>
+                            <div style={{ position: 'absolute', top: -10, right: 12, background: 'linear-gradient(135deg,#f43f5e,#ec4899)', borderRadius: 12, padding: '3px 9px', fontSize: 11, fontWeight: 700, color: '#fff', boxShadow: '0 6px 16px rgba(244,63,94,0.35)' }}>
                               {pack.badge}
                             </div>
                           )}
                           <div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{pack.label}</div>
-                            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', lineHeight: 1.08, marginBottom: 6 }}>{pack.label}</div>
+                            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', lineHeight: 1.2 }}>
                               {pack.credits.toLocaleString()} credits
                               {pack.bonus > 0 && <span style={{ color: '#4ade80', marginLeft: 4 }}>+{pack.bonus} bonus</span>}
                             </div>
@@ -389,10 +390,11 @@ export default function PaywallModal({
                             disabled={loading === pack.key}
                             style={{
                               background: 'linear-gradient(135deg,#f43f5e,#ec4899)',
-                              border: 'none', borderRadius: 100, padding: '9px 18px',
-                              color: '#fff', fontSize: 14, fontWeight: 700,
+                              border: 'none', borderRadius: 16, padding: '10px 16px',
+                              color: '#fff', fontSize: 16, fontWeight: 800,
                               cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
                               opacity: loading === pack.key ? 0.6 : 1, whiteSpace: 'nowrap',
+                              boxShadow: '0 10px 22px rgba(244,63,94,0.36)',
                             }}>
                             {loading === pack.key ? '…' : `$${pack.price}`}
                           </button>
@@ -404,23 +406,23 @@ export default function PaywallModal({
                   {/* Moments */}
                   {section === 'moments' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: '0 0 6px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.56)', margin: '0 0 8px', textAlign: 'center' }}>
                         Stand out and get noticed
                       </p>
                       {MOMENTS.map(m => {
                         const canAfford = walletBalance >= m.credits
                         return (
                           <div key={m.key} style={{
-                            background: 'rgba(255,255,255,0.04)',
-                            border: `1px solid rgba(255,255,255,0.08)`,
-                            borderRadius: 16, padding: '16px 14px',
+                            background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+                            border: `1px solid rgba(255,255,255,0.12)`,
+                            borderRadius: 12, padding: '16px 14px',
                           }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1 }}>
                                 <span style={{ fontSize: 26, flexShrink: 0 }}>{m.emoji}</span>
                                 <div>
-                                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{m.label}</div>
-                                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{m.desc}</div>
+                                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 3 }}>{m.label}</div>
+                                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 1.45 }}>{m.desc}</div>
                                 </div>
                               </div>
                               <button
@@ -429,7 +431,7 @@ export default function PaywallModal({
                                 style={{
                                   background: canAfford ? 'rgba(232,160,32,0.18)' : 'rgba(255,255,255,0.06)',
                                   border: `1px solid ${canAfford ? 'rgba(232,160,32,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                                  borderRadius: 100, padding: '8px 14px',
+                                  borderRadius: 14, padding: '7px 12px',
                                   color: canAfford ? '#e8a020' : 'rgba(255,255,255,0.3)',
                                   fontSize: 12, fontWeight: 700, cursor: 'pointer',
                                   fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
@@ -447,7 +449,7 @@ export default function PaywallModal({
                   {/* Boosts */}
                   {section === 'boosts' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: '0 0 6px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.56)', margin: '0 0 8px', textAlign: 'center' }}>
                         Get more visibility in Discover
                       </p>
                       {BOOSTS.map(b => {
@@ -455,15 +457,15 @@ export default function PaywallModal({
                         return (
                           <div key={b.key} style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: 'rgba(255,255,255,0.04)',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            borderRadius: 14, padding: '14px 16px',
+                            background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            borderRadius: 12, padding: '16px 16px',
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                               <span style={{ fontSize: 26 }}>{b.emoji}</span>
                               <div>
-                                <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{b.label}</div>
-                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{b.duration}</div>
+                                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{b.label}</div>
+                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.58)' }}>{b.duration}</div>
                               </div>
                             </div>
                             <button
@@ -472,7 +474,7 @@ export default function PaywallModal({
                               style={{
                                 background: canAfford ? 'rgba(244,63,94,0.18)' : 'rgba(255,255,255,0.06)',
                                 border: `1px solid ${canAfford ? 'rgba(244,63,94,0.35)' : 'rgba(255,255,255,0.1)'}`,
-                                borderRadius: 100, padding: '9px 18px',
+                                borderRadius: 14, padding: '7px 12px',
                                 color: canAfford ? '#f43f5e' : 'rgba(255,255,255,0.3)',
                                 fontSize: 13, fontWeight: 700, cursor: 'pointer',
                                 fontFamily: 'DM Sans, sans-serif', whiteSpace: 'nowrap',
@@ -489,7 +491,7 @@ export default function PaywallModal({
               )}
 
               {/* Footer note */}
-              <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 24, lineHeight: 1.6 }}>
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.42)', marginTop: 26, lineHeight: 1.6 }}>
                 💳 Visa, Mastercard &amp; all major cards accepted<br />
                 Powered by Paystack · Credits never expire · Not cashable
               </p>
