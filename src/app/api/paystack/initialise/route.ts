@@ -101,7 +101,9 @@ export async function POST(req: NextRequest) {
         user_id:                  paymentUserId,
         tier:                     plan.tier,          // ✓ actual column name
         billing_period:           plan.billing_period,// ✓ actual column name
-        status:                   'pending',
+        // Some deployments restrict subscriptions.status via check constraint and do not allow "pending".
+        // We use active here and let verify/webhook decide whether monthly credits were already granted.
+        status:                   'active',
         paystack_ref:             reference,
         current_period_start:     new Date().toISOString(),
         current_period_end:       new Date().toISOString(), // set properly on confirm

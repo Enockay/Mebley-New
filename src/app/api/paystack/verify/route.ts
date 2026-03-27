@@ -64,14 +64,15 @@ async function fulfill(reference: string) {
   const supabase = db()
 
   // Idempotency: if this reference was already fulfilled, treat as success.
+  // For subscriptions, we consider "fulfilled" only after first credit grant marker is set.
   const { data: existingActiveSub } = await supabase
     .from('subscriptions')
-    .select('id, tier')
+    .select('id, tier, weekly_credits_last_reset')
     .eq('paystack_ref', reference)
     .eq('status', 'active')
     .maybeSingle()
 
-  if (existingActiveSub) {
+  if (existingActiveSub && existingActiveSub.weekly_credits_last_reset) {
     return { ok: true, type: 'subscription', tier: existingActiveSub.tier, alreadyFulfilled: true }
   }
 
@@ -92,10 +93,14 @@ async function fulfill(reference: string) {
     .from('subscriptions')
     .select('*')
     .eq('paystack_ref', reference)
-    .eq('status', 'pending')
     .maybeSingle()
 
   if (sub) {
+    // Already granted for this subscription reference.
+    if (sub.weekly_credits_last_reset) {
+      return { ok: true, type: 'subscription', tier: sub.tier, alreadyFulfilled: true }
+    }
+
     const now       = new Date()
     const periodEnd = new Date(now)
     if (sub.billing_period === 'weekly') periodEnd.setDate(periodEnd.getDate() + 7)
