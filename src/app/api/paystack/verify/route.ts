@@ -59,6 +59,30 @@ async function addCredits(
 async function fulfill(reference: string) {
   const supabase = db()
 
+  // Idempotency: if this reference was already fulfilled, treat as success.
+  const { data: existingActiveSub } = await supabase
+    .from('subscriptions')
+    .select('id, tier')
+    .eq('paystack_ref', reference)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (existingActiveSub) {
+    return { ok: true, type: 'subscription', tier: existingActiveSub.tier, alreadyFulfilled: true }
+  }
+
+  const { data: existingCompletedOrder } = await supabase
+    .from('stripe_orders')
+    .select('id, credits_purchased, bonus_credits')
+    .or(`paystack_ref.eq.${reference},stripe_session_id.eq.${reference}`)
+    .eq('status', 'completed')
+    .maybeSingle()
+
+  if (existingCompletedOrder) {
+    const totalCredits = (existingCompletedOrder.credits_purchased ?? 0) + (existingCompletedOrder.bonus_credits ?? 0)
+    return { ok: true, type: 'credits', credits: totalCredits, alreadyFulfilled: true }
+  }
+
   // ── Subscription ─────────────────────────────────────────────────────────
   const { data: sub } = await supabase
     .from('subscriptions')
@@ -101,7 +125,7 @@ async function fulfill(reference: string) {
   const { data: order } = await supabase
     .from('stripe_orders')
     .select('*')
-    .eq('paystack_ref', reference)
+    .or(`paystack_ref.eq.${reference},stripe_session_id.eq.${reference}`)
     .eq('status', 'pending')
     .maybeSingle()
 

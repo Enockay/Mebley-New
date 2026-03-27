@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       label       = plan.label
 
       // DB columns: tier, billing_period, paystack_ref (added by patch SQL)
-      await db.from('subscriptions').insert({
+      const { error: subInsertError } = await db.from('subscriptions').insert({
         user_id:                  user.id,
         tier:                     plan.tier,          // ✓ actual column name
         billing_period:           plan.billing_period,// ✓ actual column name
@@ -71,6 +71,11 @@ export async function POST(req: NextRequest) {
         current_period_end:       new Date().toISOString(), // set properly on confirm
         weekly_credits_allocated: plan.tier === 'premium' ? 50 : 150,
       })
+
+      if (subInsertError) {
+        console.error('[paystack/initialize] failed to create pending subscription:', subInsertError)
+        return NextResponse.json({ error: 'Could not create pending subscription order' }, { status: 500 })
+      }
 
     } else if (type === 'credits') {
       const pack = CREDIT_PACKS[product as CreditPackKey]
@@ -86,7 +91,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle()
 
       // DB columns: credits_purchased, bonus_credits, amount_usd, paystack_ref (added by patch)
-      await db.from('stripe_orders').insert({
+      const { error: orderInsertError } = await db.from('stripe_orders').insert({
         user_id:           user.id,
         stripe_session_id: reference,  // also stored here as fallback
         paystack_ref:      reference,  // ✓ added by patch SQL
@@ -97,6 +102,11 @@ export async function POST(req: NextRequest) {
         amount_usd:        pack.usd,      // ✓ actual column name
         status:            'pending',
       })
+
+      if (orderInsertError) {
+        console.error('[paystack/initialize] failed to create pending credit order:', orderInsertError)
+        return NextResponse.json({ error: 'Could not create pending credit order' }, { status: 500 })
+      }
 
     } else {
       return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
