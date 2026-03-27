@@ -38,23 +38,51 @@ export async function POST(req: NextRequest) {
     // Resolve a user id that is guaranteed to exist in Supabase public.app_users.
     // Some environments may have app-session IDs coming from a different DB cluster.
     let paymentUserId = user.id
+    let hasBillingUser = false
     const { data: appUserById } = await (db as any)
       .from('app_users')
       .select('id')
       .eq('id', user.id)
       .maybeSingle()
 
-    if (!appUserById && user.email) {
+    if (appUserById?.id) {
+      paymentUserId = appUserById.id
+      hasBillingUser = true
+    }
+
+    if (!hasBillingUser && user.email) {
       const { data: appUserByEmail } = await (db as any)
         .from('app_users')
         .select('id')
         .ilike('email', user.email)
         .maybeSingle()
-      if (appUserByEmail?.id) paymentUserId = appUserByEmail.id
+      if (appUserByEmail?.id) {
+        paymentUserId = appUserByEmail.id
+        hasBillingUser = true
+      }
     }
 
-    if (!paymentUserId) {
-      return NextResponse.json({ error: 'Could not resolve billing user' }, { status: 500 })
+    if (!hasBillingUser) {
+      // Ensure FK target exists in Supabase billing DB even when auth sessions
+      // are backed by a different Postgres cluster.
+      const fallbackEmail = user.email?.trim().toLowerCase()
+      if (!fallbackEmail) {
+        return NextResponse.json({ error: 'Could not resolve billing user email' }, { status: 500 })
+      }
+      const { error: createBillingUserError } = await (db as any).from('app_users').insert({
+        id: user.id,
+        email: fallbackEmail,
+        // Valid bcrypt hash placeholder; real auth remains in app session DB.
+        password_hash: '$2b$12$C6UzMDM.H6dfI/f/IKcEeO5vW8sELpAo0P5PLf4KJIp4jOSAmhpN6',
+        email_verified: true,
+        is_active: true,
+      })
+
+      if (createBillingUserError) {
+        console.error('[paystack/initialize] failed to create billing app_user:', createBillingUserError)
+        return NextResponse.json({ error: 'Could not create billing user' }, { status: 500 })
+      }
+      paymentUserId = user.id
     }
     const body: Body  = await req.json()
     const { type, product } = body
