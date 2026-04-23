@@ -51,11 +51,11 @@ export default function TopHeader() {
     <header className="px-2 sm:px-4 md:px-6" style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 320,
       height: '62px',
-      background: 'linear-gradient(135deg, rgba(22,8,36,0.9), rgba(44,12,58,0.86))',
+      background: 'rgba(8,6,20,0.88)',
       backdropFilter: 'blur(24px)',
       WebkitBackdropFilter: 'blur(24px)',
-      borderBottom: '1px solid rgba(255,255,255,0.12)',
-      boxShadow: '0 1px 24px rgba(8, 2, 16, 0.38)',
+      borderBottom: '1px solid rgba(255,255,255,0.07)',
+      boxShadow: '0 1px 24px rgba(0,0,0,0.42)',
       display: 'flex', alignItems: 'center',
     }}>
       <div className="w-full" style={{

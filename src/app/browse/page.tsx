@@ -28,6 +28,7 @@ interface BrowseProfile {
   interests: string[]; looking_for: string[]
   photos: { url: string; slot: number }[]; prompts: PromptAnswer[]
   last_active: string | null; profile_completeness: number | null
+  here_tonight?: boolean
 }
 
 interface ScoredProfile { score: number; reasons: string[]; profile: BrowseProfile }
@@ -221,7 +222,7 @@ function SwipeCard({
       ref={cardRef}
       style={{
         position: 'absolute', inset: 0,
-        background: 'linear-gradient(165deg, rgba(26,10,45,0.94), rgba(14,6,30,0.94))',
+        background: 'linear-gradient(165deg, rgba(16,12,36,0.97), rgba(8,6,20,0.97))',
         borderRadius: '14px',
         boxShadow: isTop
           ? '0 24px 68px rgba(7,2,20,0.52), 0 8px 26px rgba(236,72,153,0.16)'
@@ -267,7 +268,7 @@ function SwipeCard({
         ) : (
           <div style={{
             width: '100%', height: '100%',
-            background: 'linear-gradient(135deg, #271046, #161332)',
+            background: 'linear-gradient(135deg, #1a1030, #0e0c24)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <div style={{
@@ -309,8 +310,24 @@ function SwipeCard({
           </div>
         )}
 
-        {/* Active badge */}
-        {isActive && (
+        {/* Here Tonight badge */}
+        {p.here_tonight && (
+          <div style={{
+            position: 'absolute', top: 12, left: 12,
+            display: 'flex', alignItems: 'center', gap: 5,
+            background: 'linear-gradient(135deg, rgba(240,56,104,0.72), rgba(184,32,60,0.72))',
+            backdropFilter: 'blur(8px)',
+            borderRadius: 20, padding: '4px 10px',
+            boxShadow: '0 2px 12px rgba(240,56,104,0.35)',
+            border: '1px solid rgba(240,56,104,0.45)',
+          }}>
+            <span style={{ fontSize: 12 }}>🔥</span>
+            <span style={{ fontSize: 11, color: '#fff0f4', fontWeight: 700 }}>Here Tonight</span>
+          </div>
+        )}
+
+        {/* Active badge — shown only when no Here Tonight badge */}
+        {isActive && !p.here_tonight && (
           <div style={{
             position: 'absolute', top: 12, left: 12,
             display: 'flex', alignItems: 'center', gap: 5,
@@ -442,7 +459,7 @@ function SwipeCard({
         display: 'flex', flexDirection: 'column',
         justifyContent: 'center',
         overflow: 'hidden',
-        background: 'linear-gradient(180deg, rgba(8,4,18,0.96), rgba(10,5,20,0.99))',
+        background: 'linear-gradient(180deg, rgba(10,8,26,0.97), rgba(8,6,20,0.99))',
             }}>
         <div style={{
           flexShrink: 0,
@@ -852,11 +869,7 @@ function BrowsePageContent() {
       boxSizing: 'border-box',
       overflow: 'hidden',
       overscrollBehavior: 'none',
-      background: `
-        radial-gradient(34% 46% at 22% 26%, rgba(174,16,127,0.26), transparent 72%),
-        radial-gradient(38% 52% at 82% 12%, rgba(88,12,120,0.33), transparent 70%),
-        linear-gradient(135deg, #120018 0%, #2b043f 48%, #70004b 78%, #d1005f 100%)
-      `,
+      background: 'transparent',
     }}>
       <div style={{ maxWidth: '520px', margin: '0 auto', padding: '16px 16px', height: '100%', overflow: 'hidden' }}>
 
@@ -880,7 +893,7 @@ function BrowsePageContent() {
                   border: '2px solid rgba(244,63,94,0.3)' }} />
             )}
             <div>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#2d1b1f',
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#fff0f4',
                 fontFamily: "'Fraunces', Georgia, serif" }}>
                 A new stitch! 🪡
               </p>
@@ -909,26 +922,26 @@ function BrowsePageContent() {
           transform: isMobile ? 'none' : 'translateX(-50%)',
           width: isMobile ? '100vw' : 'min(520px, calc(100vw - 32px))',
           zIndex: 35,
-          paddingTop: 10,
-          paddingBottom: 8,
-          paddingLeft: isMobile ? 12 : 2,
-          paddingRight: isMobile ? 12 : 2,
-          background: 'linear-gradient(180deg, rgba(20,2,38,0.96), rgba(20,2,38,0.72) 72%, rgba(20,2,38,0))',
-          backdropFilter: 'blur(6px)',
+          paddingTop: 12,
+          paddingBottom: 10,
+          paddingLeft: isMobile ? 14 : 2,
+          paddingRight: isMobile ? 14 : 2,
+          background: 'linear-gradient(180deg, rgba(8,6,20,0.98) 0%, rgba(8,6,20,0.82) 75%, rgba(8,6,20,0) 100%)',
+          backdropFilter: 'blur(12px)',
         }}>
           <button
             onClick={() => setShowFilters(f => !f)}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 10px', borderRadius: 10,
-              border: `2px solid ${showFilters || activeFilterCount > 0 ? 'rgba(244,63,94,0.5)' : 'rgba(255,255,255,0.22)'}`,
+              padding: '7px 12px', borderRadius: 50,
+              border: `1.5px solid ${showFilters || activeFilterCount > 0 ? 'rgba(240,56,104,0.45)' : 'rgba(255,255,255,0.15)'}`,
               background: showFilters || activeFilterCount > 0
-                ? 'linear-gradient(135deg, rgba(244,63,94,0.12), rgba(236,72,153,0.10))'
-                : 'linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08))',
-              color: showFilters || activeFilterCount > 0 ? '#f472b6' : 'rgba(245,220,251,0.92)',
+                ? 'linear-gradient(135deg, rgba(240,56,104,0.16), rgba(255,122,80,0.10))'
+                : 'rgba(255,255,255,0.07)',
+              color: showFilters || activeFilterCount > 0 ? '#ffb0c4' : 'rgba(240,232,244,0.80)',
               fontSize: 13, fontWeight: 600, cursor: 'pointer',
               fontFamily: "'DM Sans', sans-serif",
-              backdropFilter: 'blur(8px)',
+              backdropFilter: 'blur(10px)',
               transition: 'all 0.2s ease',
             }}>
             <SlidersHorizontal size={14} />
@@ -953,18 +966,18 @@ function BrowsePageContent() {
               onChange={e => setFilters(f => ({ ...f, location: e.target.value }))}
               onKeyDown={e => e.key === 'Enter' && handleApplyFilters()}
               style={{
-                width: '100%', paddingLeft: 32, paddingRight: 12,
-                paddingTop: 6, paddingBottom: 6,
-                border: '2px solid rgba(255,255,255,0.2)',
-                borderRadius: 10, fontSize: 13,
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08))',
-                backdropFilter: 'blur(8px)',
-                color: '#f8e9ff', outline: 'none',
+                width: '100%', paddingLeft: 34, paddingRight: 12,
+                paddingTop: 7, paddingBottom: 7,
+                border: '1.5px solid rgba(255,255,255,0.12)',
+                borderRadius: 50, fontSize: 13,
+                background: 'rgba(255,255,255,0.07)',
+                backdropFilter: 'blur(10px)',
+                color: '#f0e8f4', outline: 'none',
                 fontFamily: "'DM Sans', sans-serif",
                 transition: 'border-color 0.2s',
               }}
-              onFocus={e => e.target.style.borderColor = 'rgba(236,72,153,0.5)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.2)'}
+              onFocus={e => e.target.style.borderColor = 'rgba(240,56,104,0.45)'}
+              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.12)'}
             />
             <style>{`
               input::placeholder { color: rgba(245,220,251,0.62); }
@@ -974,16 +987,16 @@ function BrowsePageContent() {
           {/* View toggle */}
           <div style={{
             display: 'flex', alignItems: 'center',
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08))', borderRadius: 10,
-            padding: 2, gap: 2, border: '1.5px solid rgba(255,255,255,0.2)',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(255,255,255,0.07)', borderRadius: 50,
+            padding: 3, gap: 2, border: '1.5px solid rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(10px)',
           }}>
             {(['stack', 'grid'] as const).map(mode => (
               <button key={mode} onClick={() => setViewMode(mode)}
                 style={{
-                  width: 26, height: 26, borderRadius: 10,
+                  width: 28, height: 28, borderRadius: 50,
                   border: 'none', cursor: 'pointer',
-                  background: viewMode === mode ? 'linear-gradient(135deg, #f43f5e, #ec4899)' : 'transparent',
+                  background: viewMode === mode ? 'linear-gradient(135deg, #f03868, #ff7a50)' : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.2s ease',
                   boxShadow: viewMode === mode ? '0 2px 8px rgba(244,63,94,0.3)' : 'none',
@@ -1000,10 +1013,10 @@ function BrowsePageContent() {
         {/* Filter panel */}
         {showFilters && (
           <div style={{
-            background: 'linear-gradient(165deg, rgba(26,10,45,0.94), rgba(14,6,30,0.96))',
-            border: '1px solid rgba(255,255,255,0.14)',
+            background: 'rgba(16,12,36,0.97)',
+            border: '1px solid rgba(255,255,255,0.09)',
             borderRadius: 24, padding: 20, marginBottom: 16,
-            boxShadow: '0 16px 46px rgba(8,2,20,0.45), 0 4px 20px rgba(123, 31, 73, 0.16)',
+            boxShadow: '0 16px 46px rgba(0,0,0,0.5), 0 4px 20px rgba(240,56,104,0.10)',
             backdropFilter: 'blur(16px)',
           }}>
             {/* Age */}
@@ -1139,35 +1152,55 @@ function BrowsePageContent() {
           </div>
 
         ) : scored.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 16, textAlign: 'center' }}>
-            <div style={{ opacity: 0.25, marginBottom: 8 }}>
-              <Image src="/icon.svg" alt="Mebley logo" width={48} height={48} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '50px 0 80px', gap: 0, textAlign: 'center' }}>
+            {/* Glowing heart icon */}
+            <div style={{ position: 'relative', marginBottom: 28 }}>
+              <div style={{
+                position: 'absolute', inset: -24,
+                background: 'radial-gradient(circle, rgba(240,56,104,0.22) 0%, transparent 70%)',
+                borderRadius: '50%',
+              }} />
+              <div style={{
+                width: 80, height: 80, borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(240,56,104,0.18), rgba(255,122,80,0.12))',
+                border: '1px solid rgba(240,56,104,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 32px rgba(240,56,104,0.20), 0 8px 24px rgba(0,0,0,0.3)',
+                backdropFilter: 'blur(8px)',
+                position: 'relative',
+              }}>
+                <Image src="/icon.svg" alt="Mebley" width={38} height={38} style={{ opacity: 0.9 }} />
+              </div>
             </div>
             <h3 style={{
-              margin: 0,
+              margin: '0 0 10px',
               fontFamily: "'Fraunces', Georgia, serif",
-              fontSize: 22,
-              color: '#fff6fb',
-              textShadow: '0 6px 24px rgba(255, 116, 196, 0.28), 0 2px 12px rgba(0,0,0,0.42)',
+              fontSize: 24, fontWeight: 700,
+              color: '#f0e8f4',
+              lineHeight: 1.2,
             }}>
-              No profiles found
+              {activeFilterCount > 0 ? 'No one matches yet' : 'You\'re all caught up'}
             </h3>
             <p style={{
-              margin: 0,
-              color: 'rgba(255, 233, 246, 0.82)',
-              fontSize: 14,
-              maxWidth: 260,
+              margin: '0 0 24px',
+              color: 'rgba(240,232,244,0.52)',
+              fontSize: 14, lineHeight: 1.7,
+              maxWidth: 240,
               fontFamily: "'DM Sans', sans-serif",
             }}>
-              {activeFilterCount > 0 ? 'Try adjusting your filters.' : 'New people join every day — check back soon.'}
+              {activeFilterCount > 0
+                ? 'Widen your filters to discover more people nearby.'
+                : 'New people join every day.\nCheck back soon for fresh matches.'}
             </p>
             {activeFilterCount > 0 && (
               <button onClick={handleResetFilters} style={{
-                padding: '10px 24px', borderRadius: 50,
-                background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
-                border: 'none', color: 'white', fontSize: 13,
+                padding: '12px 28px', borderRadius: 50,
+                background: 'linear-gradient(135deg, #f03868, #ff7a50)',
+                border: 'none', color: 'white', fontSize: 14,
                 fontWeight: 600, cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(244,63,94,0.3)',
+                fontFamily: "'DM Sans', sans-serif",
+                boxShadow: '0 6px 24px rgba(240,56,104,0.35)',
+                letterSpacing: '0.01em',
               }}>Clear filters</button>
             )}
           </div>
@@ -1266,8 +1299,8 @@ function BrowsePageContent() {
                 style={{
                   marginTop: 16, display: 'flex', alignItems: 'center', gap: 8,
                   padding: '10px 24px', borderRadius: 50,
-                  border: '1.5px solid rgba(244,63,94,0.2)',
-                  background: 'rgba(255,255,255,0.8)', color: '#8b7280',
+                  border: '1.5px solid rgba(240,56,104,0.28)',
+                  background: 'rgba(255,255,255,0.07)', color: 'rgba(240,232,244,0.8)',
                   fontSize: 13, fontWeight: 500, cursor: 'pointer',
                   fontFamily: "'DM Sans', sans-serif",
                   backdropFilter: 'blur(8px)',
@@ -1301,24 +1334,25 @@ function BrowsePageContent() {
 
                 return (
                   <div key={p.id} style={{
-                    background: 'rgba(255,251,249,0.97)',
+                    background: 'rgba(255,255,255,0.06)',
                     borderRadius: 20,
                     overflow: 'hidden',
-                    border: '1px solid rgba(244,63,94,0.08)',
-                    boxShadow: '0 4px 20px rgba(180,60,80,0.08)',
+                    border: '1px solid rgba(255,255,255,0.09)',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.32)',
+                    backdropFilter: 'blur(12px)',
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                   }}
                     onMouseEnter={e => {
                       e.currentTarget.style.transform = 'translateY(-3px)'
-                      e.currentTarget.style.boxShadow = '0 8px 32px rgba(180,60,80,0.15)'
+                      e.currentTarget.style.boxShadow = '0 8px 36px rgba(240,56,104,0.18)'
                     }}
                     onMouseLeave={e => {
                       e.currentTarget.style.transform = 'translateY(0)'
-                      e.currentTarget.style.boxShadow = '0 4px 20px rgba(180,60,80,0.08)'
+                      e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.32)'
                     }}
                   >
                     {/* Photo */}
-                    <div style={{ position: 'relative', aspectRatio: '3/4', background: 'linear-gradient(135deg, #fce7f3, #fdf2f8)' }}>
+                    <div style={{ position: 'relative', aspectRatio: '3/4', background: 'linear-gradient(135deg, #1a1030, #0e0c24)' }}>
                       {photoUrl ? (
                         <img src={photoUrl} alt={p.full_name}
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -1330,10 +1364,16 @@ function BrowsePageContent() {
                         </div>
                       )}
                       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(26,10,15,0.6) 0%, transparent 50%)', pointerEvents: 'none' }} />
-                      {isActive && (
-                        <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: '3px 8px' }}>
+                      {p.here_tonight && (
+                        <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', alignItems: 'center', gap: 3, background: 'linear-gradient(135deg, rgba(240,56,104,0.82), rgba(184,32,60,0.82))', backdropFilter: 'blur(6px)', borderRadius: 20, padding: '3px 8px', border: '1px solid rgba(240,56,104,0.5)', boxShadow: '0 2px 10px rgba(240,56,104,0.3)' }}>
+                          <span style={{ fontSize: 10 }}>🔥</span>
+                          <span style={{ fontSize: 10, color: '#fff0f4', fontWeight: 700 }}>Here Tonight</span>
+                        </div>
+                      )}
+                      {isActive && !p.here_tonight && (
+                        <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(6px)', borderRadius: 20, padding: '3px 8px', border: '1px solid rgba(255,255,255,0.2)' }}>
                           <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e' }} />
-                          <span style={{ fontSize: 10, color: '#374151', fontWeight: 600 }}>Active</span>
+                          <span style={{ fontSize: 10, color: '#e9fbe9', fontWeight: 600 }}>Active</span>
                         </div>
                       )}
                       {/* Prompt overlay */}
@@ -1347,13 +1387,13 @@ function BrowsePageContent() {
 
                     {/* Info */}
                     <div style={{ padding: '10px 12px' }}>
-                      <h3 style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#2d1b1f', fontFamily: "'Fraunces', Georgia, serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <h3 style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#f0e8f4', fontFamily: "'Fraunces', Georgia, serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {p.full_name}{ageLabel ? `, ${ageLabel}` : ''}
                       </h3>
                       {p.location && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 6 }}>
                           <MapPin size={10} color="#a37a82" />
-                          <span style={{ fontSize: 11, color: '#a37a82', fontFamily: "'DM Sans', sans-serif" }}>{p.location}</span>
+                          <span style={{ fontSize: 11, color: 'rgba(240,232,244,0.55)', fontFamily: "'DM Sans', sans-serif" }}>{p.location}</span>
                         </div>
                       )}
                       {p.interests?.length > 0 && (
@@ -1368,11 +1408,11 @@ function BrowsePageContent() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => handlePass(p.id)} disabled={!!isActing} style={{
                           flex: 1, padding: '7px', borderRadius: 12,
-                          border: '1.5px solid rgba(244,63,94,0.12)', background: 'white',
+                          border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)',
                           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           opacity: isActing ? 0.4 : 1,
                         }}>
-                          <X size={15} color="#9ca3af" />
+                          <X size={15} color="rgba(240,232,244,0.6)" />
                         </button>
                         <button onClick={() => handleLike(sp)} disabled={!!isActing} style={{
                           flex: 1, padding: '7px', borderRadius: 12,
@@ -1401,8 +1441,8 @@ function BrowsePageContent() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '11px 28px', borderRadius: 50,
-                    border: '1.5px solid rgba(244,63,94,0.2)',
-                    background: 'rgba(255,255,255,0.8)', color: '#8b7280',
+                    border: '1.5px solid rgba(240,56,104,0.28)',
+                    background: 'rgba(255,255,255,0.07)', color: 'rgba(240,232,244,0.8)',
                     fontSize: 13, fontWeight: 500, cursor: 'pointer',
                     fontFamily: "'DM Sans', sans-serif",
                     opacity: loadingMore ? 0.5 : 1,
@@ -1424,7 +1464,7 @@ function BrowsePageContent() {
           height: '100%',
           overflow: 'hidden',
           borderRight: isMobile ? 'none' : '1px solid rgba(255,255,255,0.15)',
-          background: 'linear-gradient(165deg, rgba(26,10,45,0.98), rgba(14,6,30,0.98))',
+          background: 'rgba(12,10,30,0.99)',
           padding: 0,
           boxShadow: '0 8px 20px rgba(8,2,20,0.2)',
         }}>
@@ -1469,7 +1509,7 @@ function BrowsePageContent() {
             overflow: 'hidden',
             marginLeft: 'auto',
             borderLeft: '1px solid rgba(255,255,255,0.15)',
-            background: 'linear-gradient(165deg, rgba(26,10,45,0.98), rgba(14,6,30,0.98))',
+            background: 'rgba(12,10,30,0.99)',
             padding: 0,
             boxShadow: '0 8px 20px rgba(8,2,20,0.2)',
           }}>
@@ -1496,7 +1536,7 @@ function BrowsePageContent() {
             overflowY: 'auto',
             marginLeft: isMobile ? 0 : 'auto',
             borderLeft: isMobile ? 'none' : '1px solid rgba(255,255,255,0.15)',
-            background: 'linear-gradient(165deg, rgba(26,10,45,0.98), rgba(14,6,30,0.98))',
+            background: 'rgba(12,10,30,0.99)',
             padding: 16,
             boxShadow: '0 8px 20px rgba(8,2,20,0.2)',
           }}>
@@ -1627,7 +1667,7 @@ function BrowsePageContent() {
 
 export default function BrowsePage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#120018' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0c0a1e' }} />}>
       <BrowsePageContent />
     </Suspense>
   )

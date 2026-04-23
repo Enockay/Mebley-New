@@ -53,10 +53,10 @@ html {
 
 body {
   background:
-    radial-gradient(34% 46% at 22% 26%, rgba(174, 16, 127, 0.26), transparent 72%),
-    radial-gradient(38% 52% at 82% 12%, rgba(88, 12, 120, 0.33), transparent 70%),
-    linear-gradient(135deg, #120018 0%, #2b043f 48%, #70004b 78%, #d1005f 100%);
-  color: #f8e9ff;
+    radial-gradient(ellipse 65% 55% at 12% 18%, rgba(240, 56, 104, 0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 55% 65% at 88% 82%, rgba(120, 40, 200, 0.09) 0%, transparent 70%),
+    #0c0a1e;
+  color: #f0e8f4;
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
@@ -89,6 +89,13 @@ h3 {
   font-weight: 600;
   color: var(--text-dark);
   line-height: 1.2;
+}
+
+/* Landing page overrides — dark background needs white headings */
+.landing-page h1,
+.landing-page h2,
+.landing-page h3 {
+  color: #ffffff;
 }
 
 /* ── Card Styles ───────────────────────────────────────────────── */
@@ -323,7 +330,7 @@ h3 {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(20, 2, 38, 0.65);
+  background: rgba(8, 6, 20, 0.65);
 }
 
 ::-webkit-scrollbar-thumb {

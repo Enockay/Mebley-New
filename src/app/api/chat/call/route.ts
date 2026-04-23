@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { channelName, conversationId } = await req.json()
+  const { channelName, conversationId, joining } = await req.json()
   if (!channelName) return NextResponse.json({ error: 'Missing channelName' }, { status: 400 })
 
   const appId             = process.env.NEXT_PUBLIC_AGORA_APP_ID!
@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
     appId, appCert, channelName, 0, RtcRole.PUBLISHER, privilegeExpire, privilegeExpire
   )
 
-  // Send incoming call notification to the other user
-  if (conversationId) {
+  // Send incoming call notification to the other user (skip when callee is joining)
+  if (conversationId && !joining) {
     try {
       const admin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -87,7 +87,7 @@ export default function BottomNav() {
         left:            0,
         right:           0,
         zIndex:          320,
-        background:      'linear-gradient(135deg, rgba(20,7,31,0.92), rgba(40,12,50,0.88))',
+        background:      'rgba(8,6,20,0.92)',
         backdropFilter:  'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         borderTop:       'none',
@@ -130,7 +130,7 @@ export default function BottomNav() {
                 cursor:         'pointer',
                 transition:     'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 background:     isActive
-                  ? 'linear-gradient(135deg, rgba(214,77,232,0.2), rgba(238,92,166,0.16))'
+                  ? 'linear-gradient(135deg, rgba(240,56,104,0.18), rgba(255,122,80,0.10))'
                   : 'transparent',
                 transform:      isActive ? 'translateY(-2px)' : 'translateY(0)',
                 minWidth:       '64px',
@@ -151,7 +151,7 @@ export default function BottomNav() {
                       position:     'absolute',
                       inset:        '-4px',
                       borderRadius: '50%',
-                      background:   'radial-gradient(circle, rgba(214,77,232,0.26), transparent)',
+                      background:   'radial-gradient(circle, rgba(240,56,104,0.28), transparent)',
                       animation:    'pulse-rose 2s ease-in-out infinite',
                     }}
                   />
@@ -159,8 +159,8 @@ export default function BottomNav() {
                 <Icon
                   size={isActive ? 23 : 22}
                   style={{
-                    color:      isActive ? '#f5d6ff' : 'rgba(255,255,255,0.58)',
-                    fill:       isActive ? 'rgba(214,77,232,0.2)' : 'none',
+                    color:      isActive ? '#ffd8e4' : 'rgba(255,255,255,0.52)',
+                    fill:       isActive ? 'rgba(240,56,104,0.16)' : 'none',
                     transition: 'all 0.25s ease',
                     position:   'relative',
                     zIndex:     1,
@@ -199,7 +199,7 @@ export default function BottomNav() {
                   fontSize:     '10px',
                   fontFamily:   "'DM Sans', sans-serif",
                   fontWeight:   isActive ? '600' : '400',
-                  color:        isActive ? '#f5d6ff' : 'rgba(255,255,255,0.58)',
+                  color:        isActive ? '#ffd8e4' : 'rgba(255,255,255,0.52)',
                   letterSpacing: '0.02em',
                   transition:   'all 0.25s ease',
                 }}
@@ -216,8 +216,8 @@ export default function BottomNav() {
                     width:        '4px',
                     height:       '4px',
                     borderRadius: '50%',
-                    background:   'linear-gradient(135deg, #d64de8, #ee5ca6)',
-                    boxShadow:    '0 0 6px rgba(214,77,232,0.65)',
+                    background:   'linear-gradient(135deg, #f03868, #ff7a50)',
+                    boxShadow:    '0 0 6px rgba(240,56,104,0.65)',
                   }}
                 />
               )}

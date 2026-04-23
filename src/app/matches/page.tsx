@@ -152,7 +152,7 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
   if (loading) return (
     <div style={{
       minHeight: '100vh',
-      background: 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.26), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.24), transparent 74%), linear-gradient(140deg,#090019 0%,#17032f 36%,#2a0645 70%,#3d0853 100%)',
+      background: 'transparent',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -252,7 +252,7 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
 
       <div style={{
         minHeight: '100%',
-        background: 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.26), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.24), transparent 74%), radial-gradient(30% 34% at 52% 48%, rgba(228,112,208,0.14), transparent 72%), linear-gradient(140deg,#090019 0%,#17032f 36%,#2a0645 70%,#3d0853 100%)',
+        background: 'transparent',
         fontFamily: "'DM Sans', sans-serif",
         paddingTop: embedded ? 18 : 'max(12px, env(safe-area-inset-top))',
         paddingBottom: embedded ? 18 : 90,
@@ -463,7 +463,7 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
                     {/* Inline dropdown menu */}
                     {isMenuOpen && (
                       <div
-                        style={{ position: 'absolute', right: 8, top: '100%', zIndex: 100, background: 'white', borderRadius: 10, boxShadow: '0 8px 32px rgba(180,60,80,0.15)', border: '1px solid rgba(244,63,94,0.1)', minWidth: 200, overflow: 'hidden', animation: 'slideUp 0.15s ease' }}
+                        style={{ position: 'absolute', right: 8, top: '100%', zIndex: 100, background: 'rgba(18,14,38,0.98)', backdropFilter: 'blur(20px)', borderRadius: 14, boxShadow: '0 12px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', minWidth: 200, overflow: 'hidden', animation: 'slideUp 0.15s ease' }}
                         onClick={e => e.stopPropagation()}
                       >
                         {[
@@ -479,7 +479,7 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
                             style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontFamily: "'DM Sans',sans-serif", borderBottom: item.action === 'archive' ? '1px solid rgba(244,63,94,0.06)' : 'none' }}
                           >
                             <item.icon size={15} color={item.color} />
-                            <span style={{ fontSize: 14, fontWeight: 500, color: item.action === 'block' ? '#ef4444' : '#2d1b1f' }}>{item.label}</span>
+                            <span style={{ fontSize: 14, fontWeight: 500, color: item.action === 'block' ? '#ff6b6b' : '#f0e8f4' }}>{item.label}</span>
                           </button>
                         ))}
                       </div>
@@ -494,7 +494,7 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
           {!showArchived && conversations.some(c => c.isArchived) && (
             <button
               onClick={() => setShowArchived(true)}
-              style={{ width: '100%', marginTop: 16, padding: '14px', borderRadius: 10, border: '1.5px solid rgba(244,63,94,0.1)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#a37a82', fontFamily: "'DM Sans',sans-serif" }}>
+              style={{ width: '100%', marginTop: 16, padding: '14px', borderRadius: 14, border: '1.5px solid rgba(240,56,104,0.18)', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'rgba(240,232,244,0.7)', fontFamily: "'DM Sans',sans-serif" }}>
               <Archive size={15} />
               View archived chats
               <ChevronRight size={15} />

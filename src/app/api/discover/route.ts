@@ -315,7 +315,29 @@ export async function GET(request: NextRequest) {
       .sort((a: any, b: any) => b.score - a.score)
       .slice(0, pageLimit)
 
-    return NextResponse.json({ profiles: sorted, page, total: sorted.length })
+    // ── Here Tonight flags ────────────────────────────────────────────────────
+    const sortedIds = sorted.map((s: any) => s.profile.id)
+    let hereTonightSet = new Set<string>()
+    if (sortedIds.length > 0) {
+      const htRes = await pgQuery<{ sender_id: string }>(
+        `
+        SELECT DISTINCT sender_id
+        FROM moments
+        WHERE type = 'here_tonight'
+          AND expires_at > NOW()
+          AND sender_id = ANY($1::uuid[])
+        `,
+        [sortedIds]
+      )
+      hereTonightSet = new Set(htRes.rows.map(r => r.sender_id))
+    }
+
+    const withFlags = sorted.map((s: any) => ({
+      ...s,
+      profile: { ...s.profile, here_tonight: hereTonightSet.has(s.profile.id) },
+    }))
+
+    return NextResponse.json({ profiles: withFlags, page, total: withFlags.length })
 
   } catch (error) {
     console.error('Discover error:', error)

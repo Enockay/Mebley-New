@@ -39,9 +39,10 @@ export default function NavWrapper({ children }: { children: React.ReactNode }) 
       className="flex flex-col h-screen"
       style={{
         background: `
-          radial-gradient(34% 46% at 22% 26%, rgba(174,16,127,0.26), transparent 72%),
-          radial-gradient(38% 52% at 82% 12%, rgba(88,12,120,0.33), transparent 70%),
-          linear-gradient(135deg, #120018 0%, #2b043f 48%, #70004b 78%, #d1005f 100%)
+          radial-gradient(ellipse 55% 40% at 10% 90%, rgba(240,56,104,0.13) 0%, transparent 65%),
+          radial-gradient(ellipse 45% 55% at 90% 10%, rgba(110,40,190,0.11) 0%, transparent 65%),
+          radial-gradient(ellipse 70% 50% at 50% 50%, rgba(20,14,50,0.5) 0%, transparent 80%),
+          #0c0a1e
         `,
       }}
     >

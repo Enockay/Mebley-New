@@ -92,15 +92,15 @@ function ProfilePageContent() {
   const pageStyle: React.CSSProperties = useDarkProfileTheme
     ? {
         ...s.page,
-        background: 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.20), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.18), transparent 74%), linear-gradient(140deg, #12022a 0%, #24033f 38%, #3f0752 72%, #5f0b5f 100%)',
+        background: 'radial-gradient(ellipse 65% 45% at 12% 88%, rgba(240,56,104,0.09) 0%, transparent 65%), radial-gradient(ellipse 45% 55% at 88% 12%, rgba(100,40,180,0.07) 0%, transparent 65%), #0c0a1e',
       }
     : s.page
   const cardSurface: React.CSSProperties = useDarkProfileTheme
     ? {
         ...s.card,
-        background: 'rgba(19, 10, 38, 0.78)',
-        border: '1px solid rgba(255,255,255,0.14)',
-        boxShadow: '0 8px 20px rgba(8,2,20,0.22)',
+        background: 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255,255,255,0.09)',
+        boxShadow: '0 8px 28px rgba(0,0,0,0.32)',
       }
     : s.card
 
@@ -114,6 +114,9 @@ function ProfilePageContent() {
   const [playingSlot, setPlayingSlot]             = useState<number | null>(null)
   const [visibilityLoading, setVisibilityLoading] = useState(false)
   const [activePhotoIdx, setActivePhotoIdx]       = useState(0)
+  const [hereTonightActive, setHereTonightActive] = useState(false)
+  const [hereTonightExpiry, setHereTonightExpiry] = useState<string | null>(null)
+  const [hereTonightLoading, setHereTonightLoading] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) router.push('/auth')
@@ -150,9 +153,49 @@ function ProfilePageContent() {
     }
   }
 
+  // Fetch Here Tonight status on mount
+  useEffect(() => {
+    if (!user) return
+    fetch('/api/presence/here-tonight')
+      .then(r => r.json())
+      .then(data => {
+        setHereTonightActive(!!data.active)
+        setHereTonightExpiry(data.expiresAt ?? null)
+      })
+      .catch(() => {})
+  }, [user])
+
+  const handleActivateHereTonight = async () => {
+    if (!user || hereTonightLoading) return
+    setHereTonightLoading(true)
+    try {
+      const res = await fetch('/api/credits/spend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product: 'here_tonight', type: 'moment', receiver_id: user.id }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        if (res.status === 402) {
+          openPaywall('general', 'credits')
+        } else {
+          alert(body?.error ?? 'Could not activate Here Tonight')
+        }
+        return
+      }
+      // Re-fetch status to get updated expiry
+      const statusRes = await fetch('/api/presence/here-tonight')
+      const statusData = await statusRes.json()
+      setHereTonightActive(!!statusData.active)
+      setHereTonightExpiry(statusData.expiresAt ?? null)
+    } finally {
+      setHereTonightLoading(false)
+    }
+  }
+
   if (loading || !profile) {
     const loadingBg = useDarkProfileTheme
-      ? 'radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.20), transparent 72%), radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.18), transparent 74%), linear-gradient(140deg, #12022a 0%, #24033f 38%, #3f0752 72%, #5f0b5f 100%)'
+      ? 'radial-gradient(ellipse 65% 45% at 12% 88%, rgba(240,56,104,0.09) 0%, transparent 65%), radial-gradient(ellipse 45% 55% at 88% 12%, rgba(100,40,180,0.07) 0%, transparent 65%), #0c0a1e'
       : 'linear-gradient(150deg,#f7f1f8,#f2eaf7)'
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: loadingBg }}>
@@ -186,6 +229,7 @@ function ProfilePageContent() {
     <>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg) } }
+        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
         .profile-fade { animation: fadeUp 0.4s ease forwards; }
         .card-hover { transition: all 0.2s ease; }
@@ -195,17 +239,17 @@ function ProfilePageContent() {
         .profile-embedded {
           min-height: 100vh;
           background:
-            radial-gradient(44% 50% at 8% 90%, rgba(236,72,153,0.20), transparent 72%),
-            radial-gradient(38% 44% at 92% 10%, rgba(139,92,246,0.18), transparent 74%),
-            linear-gradient(140deg, #12022a 0%, #24033f 38%, #3f0752 72%, #5f0b5f 100%) !important;
+            radial-gradient(ellipse 65% 45% at 12% 88%, rgba(240,56,104,0.09) 0%, transparent 65%),
+            radial-gradient(ellipse 45% 55% at 88% 12%, rgba(100,40,180,0.07) 0%, transparent 65%),
+            #0c0a1e !important;
         }
         .profile-embedded .profile-fade,
         .profile-embedded .card-hover,
         .profile-embedded [data-profile-card='1'] {
-          background: rgba(19, 10, 38, 0.78) !important;
-          border: 1px solid rgba(255,255,255,0.14) !important;
-          box-shadow: 0 8px 20px rgba(8,2,20,0.22) !important;
-          backdrop-filter: blur(10px);
+          background: rgba(255,255,255,0.06) !important;
+          border: 1px solid rgba(255,255,255,0.09) !important;
+          box-shadow: 0 8px 28px rgba(0,0,0,0.32) !important;
+          backdrop-filter: blur(12px);
         }
         .profile-embedded p,
         .profile-embedded h1,
@@ -445,6 +489,58 @@ function ProfilePageContent() {
             </button>
           </div>
 
+          {/* ── Here Tonight ── */}
+          <div data-profile-card="1" style={{ ...cardSurface, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 12,
+                  background: hereTonightActive
+                    ? 'linear-gradient(135deg, rgba(240,56,104,0.18), rgba(184,32,60,0.14))'
+                    : 'rgba(255,255,255,0.06)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: hereTonightActive ? '1px solid rgba(240,56,104,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                  fontSize: 18,
+                }}>🔥</div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
+                    Here Tonight
+                  </p>
+                  <p style={{ fontSize: 11, color: hereTonightActive ? 'rgba(240,56,104,0.9)' : 'rgba(240,232,244,0.5)', margin: '2px 0 0' }}>
+                    {hereTonightActive && hereTonightExpiry
+                      ? `Active · expires ${new Date(hereTonightExpiry).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+                      : 'Tell people you\'re available tonight'}
+                  </p>
+                </div>
+              </div>
+              {hereTonightActive ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(240,56,104,0.18), rgba(184,32,60,0.14))', border: '1px solid rgba(240,56,104,0.3)' }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#f03868', animation: 'pulse-dot 1.5s ease-in-out infinite' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#f03868' }}>Live</span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleActivateHereTonight}
+                  disabled={hereTonightLoading}
+                  style={{
+                    padding: '8px 14px', borderRadius: 20, border: 'none', cursor: hereTonightLoading ? 'default' : 'pointer',
+                    background: 'linear-gradient(135deg, #b8203c, #e03060)',
+                    color: 'white', fontSize: 12, fontWeight: 700,
+                    fontFamily: "'DM Sans', sans-serif",
+                    boxShadow: '0 3px 14px rgba(184,32,60,0.32)',
+                    opacity: hereTonightLoading ? 0.7 : 1,
+                    display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                  }}>
+                  {hereTonightLoading ? '…' : (
+                    <>
+                      <span style={{ fontSize: 11 }}>80 Credits</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* ── About + bio ── */}
           <div data-profile-card="1" style={{ ...cardSurface, marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -658,7 +754,7 @@ function ProfilePageContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#12022a' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0c0a1e' }} />}>
       <ProfilePageContent />
     </Suspense>
   )

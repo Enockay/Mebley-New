@@ -17,10 +17,11 @@ const nextConfig: NextConfig = {
           { key: 'X-XSS-Protection', value: '1; mode=block' },
           // Referrer policy
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          // Permissions policy — allow camera + mic for video recording
+          // Permissions policy — allow camera + mic for video calls
+          // Using * (not self) because (self) is broken in some Chrome versions for localhost
           {
             key: 'Permissions-Policy',
-            value: 'camera=(self), microphone=(self), geolocation=(self), interest-cohort=()'
+            value: 'camera=*, microphone=*, geolocation=(self), interest-cohort=()'
           },
           // Content Security Policy
           {
@@ -34,9 +35,9 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://cdn.onesignal.com",
               // blob: needed for camera preview, CloudFront for video playback
               "media-src 'self' blob: https://d31vt9enmz8sz2.cloudfront.net",
-              // S3 for direct uploads, Supabase for auth/db, CloudFront for playback, OneSignal for push
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com https://crotchet-media.s3.eu-north-1.amazonaws.com https://d31vt9enmz8sz2.cloudfront.net https://onesignal.com https://*.onesignal.com https://api.onesignal.com",
-              // Service worker needs to load OneSignal's SW script
+              // Agora signaling + S3 + Supabase + CloudFront + OneSignal
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com https://crotchet-media.s3.eu-north-1.amazonaws.com https://d31vt9enmz8sz2.cloudfront.net https://onesignal.com https://*.onesignal.com https://api.onesignal.com https://*.agora.io wss://*.agora.io https://*.edge.agora.io wss://*.edge.agora.io",
+              // Service worker needs to load OneSignal's SW script; blob: for Agora audio workers
               "worker-src 'self' https://cdn.onesignal.com blob:",
               "frame-src 'self' https://onesignal.com",
               "frame-ancestors 'self'",
