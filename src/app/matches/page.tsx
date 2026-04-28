@@ -7,13 +7,25 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Chat from '@/components/Messages/Chat'
 import type { Database } from '@/types/database.types'
+import { usePlan } from '@/hooks/usePlan'
+import { usePaywall } from '@/hooks/usePaywall'
 import {
   Search, Pin, BellOff, Archive, Shield,
   MoreVertical, ChevronRight, MessageCircle,
-  Bell, ArchiveRestore, PinOff, Ghost,
+  Bell, ArchiveRestore, PinOff, Ghost, Heart, Lock,
 } from 'lucide-react'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
+
+interface Liker {
+  id:        string
+  full_name: string
+  age_range: string | null
+  location:  string | null
+  photos:    unknown
+  bio:       string | null
+  liked_at:  string
+}
 
 interface Conversation {
   conversationId: string
@@ -61,7 +73,10 @@ function isUserOnline(lastActive?: string | null): boolean {
 export default function MatchesPage({ embedded = false }: { embedded?: boolean }) {
   const { user, profile, loading } = useAuth()
   const router  = useRouter()
+  const { can, tier } = usePlan()
+  const { openPaywall } = usePaywall()
 
+  const [tab, setTab]                       = useState<'messages' | 'liked-me'>('messages')
   const [conversations, setConversations]   = useState<Conversation[]>([])
   const [fetching, setFetching]             = useState(true)
   const [search, setSearch]                 = useState('')
@@ -70,6 +85,12 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
   const [menuOpen, setMenuOpen]             = useState<string | null>(null)
   const [longPressId, setLongPressId]       = useState<string | null>(null)
   const longPressTimer                      = useRef<NodeJS.Timeout | null>(null)
+
+  const [likers, setLikers]         = useState<Liker[]>([])
+  const [likersCount, setLikersCount] = useState(0)
+  const [likersLocked, setLikersLocked] = useState(true)
+  const [likersFetching, setLikersFetching] = useState(false)
+  const [likingBack, setLikingBack] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loading && !user) router.push('/auth')
@@ -97,6 +118,46 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
   }, [profile])
 
   useEffect(() => { loadConversations() }, [loadConversations])
+
+  const loadLikers = useCallback(async () => {
+    if (!user) return
+    setLikersFetching(true)
+    try {
+      const res  = await fetch('/api/likes/received')
+      const data = await res.json()
+      setLikers(Array.isArray(data?.likers) ? data.likers : [])
+      setLikersCount(data?.count ?? 0)
+      setLikersLocked(data?.locked ?? true)
+    } finally {
+      setLikersFetching(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (tab === 'liked-me') loadLikers()
+  }, [tab, loadLikers])
+
+  const handleLikeBack = async (liker: Liker) => {
+    setLikingBack(liker.id)
+    try {
+      const res  = await fetch('/api/likes', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ likeeId: liker.id }),
+      })
+      const data = await res.json()
+      // Remove from likers list (either matched or liked back)
+      setLikers(prev => prev.filter(l => l.id !== liker.id))
+      setLikersCount(prev => Math.max(0, prev - 1))
+      if (data?.isMatch) {
+        // Switch to messages tab to see new match
+        loadConversations()
+        setTab('messages')
+      }
+    } finally {
+      setLikingBack(null)
+    }
+  }
 
   const handleManage = async (action: string, conv: Conversation) => {
     setMenuOpen(null)
@@ -260,37 +321,89 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
         <div style={{ maxWidth: 520, margin: '0 auto', padding: '0 16px' }}>
 
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div>
-              <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: '#fff7fb', margin: '0 0 2px', textShadow: '0 3px 20px rgba(0,0,0,0.35)' }}>
-                {showArchived ? 'Archived' : 'Messages'}
-              </h1>
-              <p style={{ fontSize: 13, color: 'rgba(245,220,250,0.66)', margin: 0 }}>
+          <div style={{ marginBottom: 16 }}>
+            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: '#fff7fb', margin: '0 0 14px', textShadow: '0 3px 20px rgba(0,0,0,0.35)' }}>
+              {tab === 'liked-me' ? 'Liked Me' : showArchived ? 'Archived' : 'Messages'}
+            </h1>
+
+            {/* Tab bar */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+              <button
+                onClick={() => { setTab('messages'); setShowArchived(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 16px', borderRadius: 100,
+                  background: tab === 'messages' ? 'rgba(236,72,153,0.22)' : 'rgba(255,255,255,0.07)',
+                  border: `1.5px solid ${tab === 'messages' ? 'rgba(236,72,153,0.5)' : 'rgba(255,255,255,0.14)'}`,
+                  color: tab === 'messages' ? '#f9a8d4' : 'rgba(245,220,251,0.6)',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  fontFamily: "'DM Sans', sans-serif", backdropFilter: 'blur(8px)',
+                }}
+              >
+                <MessageCircle size={13} />
+                Messages
+              </button>
+
+              <button
+                onClick={() => {
+                  if (!can('who_liked_you')) {
+                    openPaywall('general', 'plans')
+                    return
+                  }
+                  setTab('liked-me')
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 16px', borderRadius: 100,
+                  background: tab === 'liked-me' ? 'rgba(240,56,104,0.22)' : 'rgba(255,255,255,0.07)',
+                  border: `1.5px solid ${tab === 'liked-me' ? 'rgba(240,56,104,0.5)' : 'rgba(255,255,255,0.14)'}`,
+                  color: tab === 'liked-me' ? '#fca5a5' : 'rgba(245,220,251,0.6)',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  fontFamily: "'DM Sans', sans-serif", backdropFilter: 'blur(8px)',
+                  position: 'relative',
+                }}
+              >
+                <Heart size={13} />
+                Liked Me
+                {/* Count badge */}
+                {likersCount > 0 && (
+                  <span style={{
+                    marginLeft: 4, minWidth: 18, height: 18, borderRadius: 999,
+                    background: can('who_liked_you') ? '#f03868' : 'rgba(240,56,104,0.5)',
+                    color: '#fff', fontSize: 10, fontWeight: 700,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '0 5px',
+                  }}>
+                    {can('who_liked_you') ? likersCount : '?'}
+                  </span>
+                )}
+                {!can('who_liked_you') && (
+                  <Lock size={10} style={{ marginLeft: 2, opacity: 0.7 }} />
+                )}
+              </button>
+
+              {/* Archive toggle — only on messages tab */}
+              {tab === 'messages' && (
+                <button
+                  type="button"
+                  title={showArchived ? 'Back to chats' : 'Archived'}
+                  onClick={() => setShowArchived(v => !v)}
+                  style={{ marginLeft: 'auto', width: 36, height: 36, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.2)', background: showArchived ? 'rgba(236,72,153,0.18)' : 'rgba(13,4,27,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}
+                >
+                  {showArchived ? <Ghost size={14} color="#f8ecff" /> : <Archive size={14} color="#f8ecff" />}
+                </button>
+              )}
+            </div>
+
+            {tab === 'messages' && (
+              <p style={{ fontSize: 13, color: 'rgba(245,220,250,0.55)', margin: 0 }}>
                 {visible.length} {visible.length === 1 ? 'conversation' : 'conversations'}
               </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button
-                type="button"
-                title="With chats"
-                onClick={() => setShowArchived(false)}
-                style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.24)', background: !showArchived ? 'rgba(236,72,153,0.2)' : 'rgba(13,4,27,0.32)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}
-              >
-                <MessageCircle size={16} color="#f8ecff" />
-              </button>
-              <button
-                type="button"
-                title="Empty state"
-                onClick={() => setShowArchived(true)}
-                style={{ width: 38, height: 38, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.24)', background: showArchived ? 'rgba(236,72,153,0.2)' : 'rgba(13,4,27,0.32)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}
-              >
-                <Ghost size={16} color="#f8ecff" />
-              </button>
-            </div>
+            )}
           </div>
 
-          {/* Search */}
-          {!showArchived && (
+          {/* Search — messages tab only */}
+          {tab === 'messages' && !showArchived && (
             <div style={{ position: 'relative', marginBottom: 16 }}>
               <Search size={15} color="#a37a82" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
               <input
@@ -303,14 +416,159 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
             </div>
           )}
 
-          {!showArchived && (
+          {tab === 'messages' && !showArchived && (
             <p style={{ fontSize: 12, letterSpacing: '0.16em', color: 'rgba(240,212,249,0.46)', fontWeight: 700, margin: '0 0 10px' }}>
               RECENT
             </p>
           )}
 
-          {/* Conversation list */}
-          {fetching ? (
+          {/* ── Liked Me tab ──────────────────────────────────────────── */}
+          {tab === 'liked-me' && (
+            <>
+              {likersFetching ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[1,2,3].map(i => (
+                    <div key={i} style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(240,56,104,0.08)', flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ height: 14, background: 'rgba(255,255,255,0.14)', borderRadius: 7, width: '50%', marginBottom: 8 }} />
+                        <div style={{ height: 11, background: 'rgba(255,255,255,0.07)', borderRadius: 6, width: '70%' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : likersLocked ? (
+                /* Free/Starter — show blurred upgrade prompt */
+                <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden' }}>
+                  {/* Blurred preview cards */}
+                  {[1,2,3].map(i => (
+                    <div key={i} style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 14, padding: '16px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8, filter: 'blur(6px)', userSelect: 'none' }}>
+                      <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(240,56,104,0.3), rgba(167,139,250,0.3))', flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ height: 14, background: 'rgba(255,255,255,0.3)', borderRadius: 7, width: '45%', marginBottom: 8 }} />
+                        <div style={{ height: 11, background: 'rgba(255,255,255,0.2)', borderRadius: 6, width: '65%' }} />
+                      </div>
+                      <div style={{ width: 72, height: 34, borderRadius: 100, background: 'rgba(240,56,104,0.3)' }} />
+                    </div>
+                  ))}
+                  {/* Overlay */}
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'linear-gradient(to bottom, rgba(12,10,30,0.1), rgba(12,10,30,0.85))',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    padding: '24px 20px', textAlign: 'center',
+                  }}>
+                    <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(240,56,104,0.15)', border: '1.5px solid rgba(240,56,104,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                      <Lock size={22} color="#f03868" />
+                    </div>
+                    {likersCount > 0 ? (
+                      <p style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 700, color: '#fff5fb', margin: '0 0 8px' }}>
+                        {likersCount} {likersCount === 1 ? 'person' : 'people'} liked you
+                      </p>
+                    ) : (
+                      <p style={{ fontSize: 20, fontFamily: "'Fraunces', serif", fontWeight: 700, color: '#fff5fb', margin: '0 0 8px' }}>
+                        See who likes you
+                      </p>
+                    )}
+                    <p style={{ fontSize: 13, color: 'rgba(245,220,251,0.65)', margin: '0 0 20px', lineHeight: 1.5 }}>
+                      Upgrade to Premium to see everyone who liked your profile and like them back instantly.
+                    </p>
+                    <button
+                      onClick={() => openPaywall('general', 'plans')}
+                      style={{
+                        padding: '12px 28px', borderRadius: 100, border: 'none',
+                        background: 'linear-gradient(135deg, #e03060, #f03868)',
+                        color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                        fontFamily: "'DM Sans', sans-serif",
+                        boxShadow: '0 6px 20px rgba(240,56,104,0.35)',
+                      }}
+                    >
+                      Upgrade to Premium
+                    </button>
+                    <p style={{ fontSize: 11, color: 'rgba(245,220,251,0.4)', margin: '12px 0 0' }}>
+                      Premium · {tier === 'starter' ? 'Upgrade your plan' : '$10/month'}
+                    </p>
+                  </div>
+                </div>
+              ) : likers.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <div style={{ fontSize: 56, marginBottom: 16 }}>💝</div>
+                  <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, color: '#fff6fb', margin: '0 0 8px' }}>
+                    No pending likes yet
+                  </h3>
+                  <p style={{ fontSize: 14, color: 'rgba(246,222,250,0.7)', margin: 0, lineHeight: 1.6 }}>
+                    When someone likes your profile before you match, they'll appear here.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {likers.map(liker => {
+                    const avatarUrl = getPhotoUrl(liker.photos)
+                    const initials  = liker.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() ?? '?'
+                    const isLiking  = likingBack === liker.id
+                    return (
+                      <div key={liker.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 14,
+                        padding: '14px', borderRadius: 14,
+                        background: 'rgba(255,255,255,0.07)',
+                        border: '1.5px solid rgba(240,56,104,0.18)',
+                        backdropFilter: 'blur(8px)',
+                      }}>
+                        {/* Avatar */}
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'linear-gradient(135deg, #f43f5e, #ec4899)', padding: 2 }}>
+                          <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#0c0a1e' }}>
+                            {avatarUrl
+                              ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <span style={{ fontSize: 20, fontWeight: 700, color: '#f43f5e', fontFamily: "'Fraunces',serif" }}>{initials}</span>
+                                </div>
+                            }
+                          </div>
+                        </div>
+                        {/* Info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: '#fff5fb', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {liker.full_name}
+                          </p>
+                          <p style={{ fontSize: 12, color: 'rgba(245,220,251,0.55)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {[liker.age_range?.replace('_', '–'), liker.location].filter(Boolean).join(' · ')}
+                          </p>
+                          {liker.bio && (
+                            <p style={{ fontSize: 12, color: 'rgba(245,220,251,0.45)', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {liker.bio}
+                            </p>
+                          )}
+                        </div>
+                        {/* Like back */}
+                        <button
+                          onClick={() => handleLikeBack(liker)}
+                          disabled={isLiking}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '9px 16px', borderRadius: 100, border: 'none',
+                            background: isLiking ? 'rgba(240,56,104,0.3)' : 'linear-gradient(135deg, #e03060, #f03868)',
+                            color: '#fff', fontSize: 13, fontWeight: 700,
+                            cursor: isLiking ? 'default' : 'pointer',
+                            fontFamily: "'DM Sans', sans-serif",
+                            flexShrink: 0,
+                            boxShadow: '0 4px 14px rgba(240,56,104,0.3)',
+                            transition: 'opacity 0.15s',
+                            opacity: isLiking ? 0.7 : 1,
+                          }}
+                        >
+                          <Heart size={13} fill={isLiking ? 'transparent' : '#fff'} />
+                          {isLiking ? '…' : 'Like back'}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── Messages tab ──────────────────────────────────────────── */}
+          {tab === 'messages' && fetching ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[1,2,3].map(i => (
                 <div key={i} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.14)', padding: '16px', display: 'flex', alignItems: 'center', gap: 14 }}>

@@ -8,12 +8,14 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Play, MapPin, Eye, EyeOff, Sparkles,
-  Camera, ChevronRight, Heart, BadgeCheck, Edit3, Coins,
+  Camera, ChevronRight, Heart, BadgeCheck, Edit3, Coins, ShieldCheck, Loader2,
 } from 'lucide-react'
 import EditProfile from '@/components/Profile/EditProfile'
 import DeleteAccount from '@/components/Profile/DeleteAccount'
 import { createClient } from '@/lib/supabase-client'
 import { usePaywall } from '@/hooks/usePaywall'
+import { usePlan } from '@/hooks/usePlan'
+import PlanBadge from '@/components/UI/PlanBadge'
 
 import { RELATIONSHIP_INTENTS, PROFILE_PROMPTS } from '@/types/app-constants'
 
@@ -74,6 +76,7 @@ function ProfilePageContent() {
   const supabase = createClient()
   const { user, profile, loading, refreshProfile, creditBalance } = useAuth()
   const { openPaywall } = usePaywall()
+  const { tier } = usePlan()
   const router = useRouter()
   const searchParams = useSearchParams()
   const isEmbedded = searchParams.get('embedded') === '1'
@@ -117,6 +120,12 @@ function ProfilePageContent() {
   const [hereTonightActive, setHereTonightActive] = useState(false)
   const [hereTonightExpiry, setHereTonightExpiry] = useState<string | null>(null)
   const [hereTonightLoading, setHereTonightLoading] = useState(false)
+  const [spotlightActive, setSpotlightActive]     = useState(false)
+  const [spotlightExpiry, setSpotlightExpiry]     = useState<string | null>(null)
+  const [spotlightLoading, setSpotlightLoading]   = useState(false)
+  const [photoVerified, setPhotoVerified]         = useState(false)
+  const [verifyLoading, setVerifyLoading]         = useState(false)
+  const [verifyResult, setVerifyResult]           = useState<string | null>(null)
 
   useEffect(() => {
     if (!loading && !user) router.push('/auth')
@@ -153,15 +162,20 @@ function ProfilePageContent() {
     }
   }
 
-  // Fetch Here Tonight status on mount
+  // Fetch Here Tonight + Spotlight + Verification status on mount
   useEffect(() => {
     if (!user) return
     fetch('/api/presence/here-tonight')
       .then(r => r.json())
-      .then(data => {
-        setHereTonightActive(!!data.active)
-        setHereTonightExpiry(data.expiresAt ?? null)
-      })
+      .then(data => { setHereTonightActive(!!data.active); setHereTonightExpiry(data.expiresAt ?? null) })
+      .catch(() => {})
+    fetch('/api/presence/spotlight')
+      .then(r => r.json())
+      .then(data => { setSpotlightActive(!!data.active); setSpotlightExpiry(data.expiresAt ?? null) })
+      .catch(() => {})
+    fetch('/api/verification/selfie')
+      .then(r => r.json())
+      .then(data => { setPhotoVerified(!!data.verified) })
       .catch(() => {})
   }, [user])
 
@@ -183,13 +197,54 @@ function ProfilePageContent() {
         }
         return
       }
-      // Re-fetch status to get updated expiry
       const statusRes = await fetch('/api/presence/here-tonight')
       const statusData = await statusRes.json()
       setHereTonightActive(!!statusData.active)
       setHereTonightExpiry(statusData.expiresAt ?? null)
     } finally {
       setHereTonightLoading(false)
+    }
+  }
+
+  const handleActivateSpotlight = async () => {
+    if (!user || spotlightLoading) return
+    setSpotlightLoading(true)
+    try {
+      const res = await fetch('/api/credits/spend', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product: 'spotlight', type: 'boost' }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        if (res.status === 402) { openPaywall('general', 'credits'); return }
+        alert(body?.error ?? 'Could not activate Spotlight')
+        return
+      }
+      const statusRes = await fetch('/api/presence/spotlight')
+      const statusData = await statusRes.json()
+      setSpotlightActive(!!statusData.active)
+      setSpotlightExpiry(statusData.expiresAt ?? null)
+    } finally {
+      setSpotlightLoading(false)
+    }
+  }
+
+  const handleVerifySelfie = async (file: File) => {
+    if (!user || verifyLoading) return
+    setVerifyLoading(true)
+    setVerifyResult(null)
+    try {
+      const fd = new FormData()
+      fd.append('selfie', file)
+      const res = await fetch('/api/verification/selfie', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) { setVerifyResult(data.error ?? 'Verification failed'); return }
+      setPhotoVerified(data.verified)
+      setVerifyResult(data.message)
+    } catch {
+      setVerifyResult('Verification failed. Try again.')
+    } finally {
+      setVerifyLoading(false)
     }
   }
 
@@ -350,6 +405,10 @@ function ProfilePageContent() {
                   {profile.verified_email && (
                     <BadgeCheck size={16} color="#3b82f6" style={{ flexShrink: 0 }} />
                   )}
+                  {photoVerified && (
+                    <ShieldCheck size={16} color="#22c55e" style={{ flexShrink: 0 }} />
+                  )}
+                  <PlanBadge tier={tier} size="sm" />
                 </div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
@@ -539,6 +598,104 @@ function ProfilePageContent() {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* ── Spotlight ── */}
+          <div data-profile-card="1" style={{ ...cardSurface, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 12,
+                  background: spotlightActive
+                    ? 'linear-gradient(135deg, rgba(251,191,36,0.22), rgba(245,158,11,0.15))'
+                    : 'rgba(255,255,255,0.06)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: spotlightActive ? '1px solid rgba(251,191,36,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                  fontSize: 18,
+                }}>✦</div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>Spotlight</p>
+                  <p style={{ fontSize: 11, color: spotlightActive ? 'rgba(251,191,36,0.9)' : 'rgba(240,232,244,0.5)', margin: '2px 0 0' }}>
+                    {spotlightActive && spotlightExpiry
+                      ? `Boosted · expires ${new Date(spotlightExpiry).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+                      : 'Feature your profile at the top for 24h'}
+                  </p>
+                </div>
+              </div>
+              {spotlightActive ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(251,191,36,0.18), rgba(245,158,11,0.14))', border: '1px solid rgba(251,191,36,0.3)' }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#fbbf24', animation: 'pulse-dot 1.5s ease-in-out infinite' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24' }}>Live</span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleActivateSpotlight}
+                  disabled={spotlightLoading}
+                  style={{
+                    padding: '8px 14px', borderRadius: 20, border: 'none', cursor: spotlightLoading ? 'default' : 'pointer',
+                    background: 'linear-gradient(135deg, #d97706, #fbbf24)',
+                    color: '#1a0e00', fontSize: 12, fontWeight: 800,
+                    fontFamily: "'DM Sans', sans-serif",
+                    boxShadow: '0 3px 14px rgba(251,191,36,0.32)',
+                    opacity: spotlightLoading ? 0.7 : 1,
+                    display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                  }}>
+                  {spotlightLoading ? '…' : '120 Credits'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── Photo Verification ── */}
+          <div data-profile-card="1" style={{ ...cardSurface, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: verifyResult ? 12 : 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 12,
+                  background: photoVerified ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.06)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: photoVerified ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(255,255,255,0.08)',
+                }}>
+                  <ShieldCheck size={16} color={photoVerified ? '#22c55e' : '#a37a82'} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
+                    {photoVerified ? 'Photos Verified ✓' : 'Verify Your Photos'}
+                  </p>
+                  <p style={{ fontSize: 11, color: photoVerified ? 'rgba(34,197,94,0.9)' : 'rgba(240,232,244,0.5)', margin: '2px 0 0' }}>
+                    {photoVerified ? 'Verified badge shown on your profile' : 'Take a selfie to earn a verified badge — free'}
+                  </p>
+                </div>
+              </div>
+              {!photoVerified && (
+                <label style={{
+                  padding: '8px 14px', borderRadius: 20, cursor: verifyLoading ? 'default' : 'pointer',
+                  background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
+                  color: 'white', fontSize: 12, fontWeight: 700,
+                  fontFamily: "'DM Sans', sans-serif",
+                  boxShadow: '0 3px 14px rgba(59,130,246,0.3)',
+                  opacity: verifyLoading ? 0.7 : 1,
+                  display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                }}>
+                  {verifyLoading
+                    ? <><Loader2 size={12} style={{ animation: 'spin 0.8s linear infinite' }} /> Verifying…</>
+                    : <><Camera size={12} /> Take Selfie</>
+                  }
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    style={{ display: 'none' }}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) handleVerifySelfie(f) }}
+                  />
+                </label>
+              )}
+            </div>
+            {verifyResult && (
+              <p style={{ margin: 0, fontSize: 12, color: photoVerified ? '#22c55e' : '#f87171', fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                {verifyResult}
+              </p>
+            )}
           </div>
 
           {/* ── About + bio ── */}

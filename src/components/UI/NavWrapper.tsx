@@ -6,7 +6,7 @@ import BottomNav from '@/components/UI/BottomNav'
 import TopHeader from '@/components/UI/TopHeader'
 
 // Routes with no nav ever
-const NO_NAV_ROUTES = ['/', '/auth', '/terms', '/privacy']
+const NO_NAV_ROUTES = ['/', '/auth', '/terms', '/privacy', '/about', '/blog', '/contact', '/upgrade']
 
 // Routes that only hide nav when profile is incomplete
 const SETUP_ROUTES = ['/setup', '/browse', '/discover']

@@ -306,36 +306,54 @@ export async function GET(request: NextRequest) {
             prompts:              candidatePrompts,
             profile_completeness: candidate.profile_completeness,
             last_active:          candidate.last_active,
+            photo_verified:       (candidate as any).photo_verified ?? false,
           },
         }
       })
       .filter(Boolean)
 
+    // Spotlight boost: bump spotlighted profiles to top, then sort by score
     const sorted = scored
       .sort((a: any, b: any) => b.score - a.score)
       .slice(0, pageLimit)
 
-    // ── Here Tonight flags ────────────────────────────────────────────────────
+    // ── Batch flag queries (here_tonight + spotlight) ─────────────────────────
     const sortedIds = sorted.map((s: any) => s.profile.id)
     let hereTonightSet = new Set<string>()
+    let spotlightSet   = new Set<string>()
+
     if (sortedIds.length > 0) {
-      const htRes = await pgQuery<{ sender_id: string }>(
-        `
-        SELECT DISTINCT sender_id
-        FROM moments
-        WHERE type = 'here_tonight'
-          AND expires_at > NOW()
-          AND sender_id = ANY($1::uuid[])
-        `,
-        [sortedIds]
-      )
+      const [htRes, spotRes] = await Promise.all([
+        pgQuery<{ sender_id: string }>(
+          `SELECT DISTINCT sender_id FROM moments
+           WHERE type = 'here_tonight' AND expires_at > NOW() AND sender_id = ANY($1::uuid[])`,
+          [sortedIds]
+        ),
+        pgQuery<{ user_id: string }>(
+          `SELECT DISTINCT user_id FROM boosts
+           WHERE boost_type = 'spotlight' AND expires_at > NOW() AND user_id = ANY($1::uuid[])`,
+          [sortedIds]
+        ),
+      ])
       hereTonightSet = new Set(htRes.rows.map(r => r.sender_id))
+      spotlightSet   = new Set(spotRes.rows.map(r => r.user_id))
     }
 
-    const withFlags = sorted.map((s: any) => ({
-      ...s,
-      profile: { ...s.profile, here_tonight: hereTonightSet.has(s.profile.id) },
-    }))
+    // Re-sort: spotlight profiles first (they paid for visibility), then by score
+    const withFlags = sorted
+      .map((s: any) => ({
+        ...s,
+        profile: {
+          ...s.profile,
+          here_tonight: hereTonightSet.has(s.profile.id),
+          spotlight:    spotlightSet.has(s.profile.id),
+        },
+      }))
+      .sort((a: any, b: any) => {
+        if (a.profile.spotlight && !b.profile.spotlight) return -1
+        if (!a.profile.spotlight && b.profile.spotlight) return 1
+        return b.score - a.score
+      })
 
     return NextResponse.json({ profiles: withFlags, page, total: withFlags.length })
 

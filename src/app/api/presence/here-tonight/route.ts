@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { pgQuery } from '@/lib/postgres'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 
-const admin = () =>
-  createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-// GET /api/presence/here-tonight?userId=<id>  (userId optional — defaults to self)
 export async function GET(req: NextRequest) {
   const user = await getAuthUserFromRequest(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -16,18 +9,16 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const targetId = searchParams.get('userId') ?? user.id
 
-  const { data } = await admin()
-    .from('moments')
-    .select('expires_at')
-    .eq('sender_id', targetId)
-    .eq('type', 'here_tonight')
-    .gt('expires_at', new Date().toISOString())
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  const res = await pgQuery<{ expires_at: string }>(
+    `SELECT expires_at FROM moments
+     WHERE sender_id = $1 AND type = 'here_tonight' AND expires_at > NOW()
+     ORDER BY expires_at DESC LIMIT 1`,
+    [targetId]
+  )
+  const row = res.rows[0] ?? null
 
   return NextResponse.json({
-    active: !!data,
-    expiresAt: data?.expires_at ?? null,
+    active:    !!row,
+    expiresAt: row?.expires_at ?? null,
   })
 }

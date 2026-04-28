@@ -13,7 +13,7 @@ import MatchesPage from '@/app/matches/page'
 import {
   Heart, X, Search, SlidersHorizontal, MapPin,
   RefreshCw, ChevronDown, Sparkles,
-  MoreVertical, LayoutGrid, Layers, ChevronUp,
+  MoreVertical, LayoutGrid, Layers, ChevronUp, BadgeCheck,
 } from 'lucide-react'
 import { RELATIONSHIP_INTENTS, INTERESTS_BY_CATEGORY } from '@/types/app-constants'
 import BlockReport from '@/components/Moderation/BlockReport'
@@ -29,6 +29,8 @@ interface BrowseProfile {
   photos: { url: string; slot: number }[]; prompts: PromptAnswer[]
   last_active: string | null; profile_completeness: number | null
   here_tonight?: boolean
+  spotlight?: boolean
+  photo_verified?: boolean
 }
 
 interface ScoredProfile { score: number; reasons: string[]; profile: BrowseProfile }
@@ -452,6 +454,14 @@ function SwipeCard({
 
       </div>
 
+      {/* ── Spotlight glow border ── */}
+      {p.spotlight && (
+        <div style={{
+          position: 'absolute', inset: 0, borderRadius: 14, pointerEvents: 'none', zIndex: 200,
+          boxShadow: 'inset 0 0 0 2px rgba(251,191,36,0.7), 0 0 28px rgba(251,191,36,0.22)',
+        }} />
+      )}
+
       {/* ── Info area ── */}
       <div style={{
         height: infoHeight,
@@ -465,8 +475,8 @@ function SwipeCard({
           flexShrink: 0,
           display: 'flex',
           flexDirection: 'column',
-          gap: 7,
-          padding: '10px 14px 12px',
+          gap: 6,
+          padding: '8px 14px 10px',
           borderTop: '1px solid rgba(255,255,255,0.14)',
           position: 'relative',
         }}>
@@ -478,6 +488,40 @@ function SwipeCard({
             height: 1,
             background: 'linear-gradient(90deg, transparent, rgba(236,72,153,0.7), transparent)',
           }} />
+
+          {/* ── Match score bar ── */}
+          {(() => {
+            const pct = Math.min(100, Math.round((sp.score / 125) * 100))
+            const color = pct >= 80 ? '#22c55e' : pct >= 60 ? '#f59e0b' : pct >= 40 ? '#f97316' : '#f43f5e'
+            const topReason = sp.reasons?.[0] ?? null
+            return (
+              <div style={{ marginBottom: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Sparkles size={11} color={color} />
+                    <span style={{ fontSize: 11, fontWeight: 700, color, fontFamily: "'DM Sans', sans-serif" }}>
+                      {pct}% match
+                    </span>
+                    {p.photo_verified && (
+                      <BadgeCheck size={12} color="#3b82f6" style={{ flexShrink: 0 }} />
+                    )}
+                    {p.spotlight && (
+                      <span style={{ fontSize: 10, background: 'rgba(251,191,36,0.15)', color: '#fbbf24', padding: '1px 6px', borderRadius: 20, border: '1px solid rgba(251,191,36,0.3)', fontWeight: 700 }}>✦ Spotlight</span>
+                    )}
+                  </div>
+                  {topReason && (
+                    <span style={{ fontSize: 10, color: 'rgba(240,232,244,0.55)', fontFamily: "'DM Sans', sans-serif", maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {topReason}
+                    </span>
+                  )}
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', borderRadius: 2, background: color, width: `${pct}%`, transition: 'width 0.6s ease' }} />
+                </div>
+              </div>
+            )
+          })()}
+
           <button
             onClick={e => { e.stopPropagation(); onViewProfile(sp) }}
             style={{
@@ -497,16 +541,6 @@ function SwipeCard({
           >
             View profile
           </button>
-          <p style={{
-            margin: 0,
-            textAlign: 'center',
-            fontSize: 11,
-            color: 'rgba(236,221,247,0.78)',
-            fontFamily: "'DM Sans', sans-serif",
-            letterSpacing: 0.15,
-          }}>
-            Tap to open full profile details
-          </p>
         </div>
       </div>
     </div>
@@ -1332,13 +1366,16 @@ function BrowsePageContent() {
                 const isActive = p.last_active ? Date.now() - new Date(p.last_active).getTime() < 86_400_000 : false
                 const firstPrompt = p.prompts?.[0] ?? null
 
+                const matchPct = Math.min(100, Math.round((sp.score / 125) * 100))
+                const matchColor = matchPct >= 80 ? '#22c55e' : matchPct >= 60 ? '#f59e0b' : matchPct >= 40 ? '#f97316' : '#f43f5e'
+
                 return (
                   <div key={p.id} style={{
-                    background: 'rgba(255,255,255,0.06)',
+                    background: p.spotlight ? 'rgba(251,191,36,0.06)' : 'rgba(255,255,255,0.06)',
                     borderRadius: 20,
                     overflow: 'hidden',
-                    border: '1px solid rgba(255,255,255,0.09)',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.32)',
+                    border: p.spotlight ? '1.5px solid rgba(251,191,36,0.45)' : '1px solid rgba(255,255,255,0.09)',
+                    boxShadow: p.spotlight ? '0 4px 24px rgba(251,191,36,0.18)' : '0 4px 24px rgba(0,0,0,0.32)',
                     backdropFilter: 'blur(12px)',
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                   }}
@@ -1364,13 +1401,19 @@ function BrowsePageContent() {
                         </div>
                       )}
                       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(26,10,15,0.6) 0%, transparent 50%)', pointerEvents: 'none' }} />
-                      {p.here_tonight && (
+                      {p.spotlight && (
+                        <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', alignItems: 'center', gap: 3, background: 'linear-gradient(135deg, rgba(251,191,36,0.85), rgba(245,158,11,0.85))', backdropFilter: 'blur(6px)', borderRadius: 20, padding: '3px 8px', border: '1px solid rgba(251,191,36,0.5)', boxShadow: '0 2px 10px rgba(251,191,36,0.3)' }}>
+                          <span style={{ fontSize: 10 }}>✦</span>
+                          <span style={{ fontSize: 10, color: '#1a1000', fontWeight: 800 }}>Spotlight</span>
+                        </div>
+                      )}
+                      {p.here_tonight && !p.spotlight && (
                         <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', alignItems: 'center', gap: 3, background: 'linear-gradient(135deg, rgba(240,56,104,0.82), rgba(184,32,60,0.82))', backdropFilter: 'blur(6px)', borderRadius: 20, padding: '3px 8px', border: '1px solid rgba(240,56,104,0.5)', boxShadow: '0 2px 10px rgba(240,56,104,0.3)' }}>
                           <span style={{ fontSize: 10 }}>🔥</span>
                           <span style={{ fontSize: 10, color: '#fff0f4', fontWeight: 700 }}>Here Tonight</span>
                         </div>
                       )}
-                      {isActive && !p.here_tonight && (
+                      {isActive && !p.here_tonight && !p.spotlight && (
                         <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(6px)', borderRadius: 20, padding: '3px 8px', border: '1px solid rgba(255,255,255,0.2)' }}>
                           <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e' }} />
                           <span style={{ fontSize: 10, color: '#e9fbe9', fontWeight: 600 }}>Active</span>
@@ -1387,9 +1430,19 @@ function BrowsePageContent() {
 
                     {/* Info */}
                     <div style={{ padding: '10px 12px' }}>
-                      <h3 style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#f0e8f4', fontFamily: "'Fraunces', Georgia, serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {p.full_name}{ageLabel ? `, ${ageLabel}` : ''}
-                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#f0e8f4', fontFamily: "'Fraunces', Georgia, serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                          {p.full_name}{ageLabel ? `, ${ageLabel}` : ''}
+                        </h3>
+                        {p.photo_verified && <BadgeCheck size={13} color="#3b82f6" style={{ flexShrink: 0 }} />}
+                      </div>
+                      {/* Match score bar */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+                        <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', borderRadius: 2, background: matchColor, width: `${matchPct}%` }} />
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: matchColor, flexShrink: 0 }}>{matchPct}%</span>
+                      </div>
                       {p.location && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 6 }}>
                           <MapPin size={10} color="#a37a82" />

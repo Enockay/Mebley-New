@@ -1,31 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
+import { pgQuery } from '@/lib/postgres'
+
+const sbAdmin = () => createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getAuthUserFromRequest(request)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await request.json()
-    const { slot, s3Key, cloudfrontUrl, durationSeconds } = body
+    const { slot, s3Key, cloudfrontUrl, durationSeconds } = await request.json()
 
     if (![0, 1, 2].includes(slot)) {
       return NextResponse.json({ error: 'Invalid slot' }, { status: 400 })
     }
-
     if (durationSeconds < 30 || durationSeconds > 120) {
-      return NextResponse.json({
-        error: 'Video must be between 30 and 120 seconds'
-      }, { status: 400 })
+      return NextResponse.json({ error: 'Video must be between 30 and 120 seconds' }, { status: 400 })
     }
 
-    // Cast to any — profile_videos exists in the DB but is not yet
-    // present in the auto-generated Supabase TypeScript types file.
+    // profile_videos lives in Supabase
+    const supabase = sbAdmin()
     const { data, error } = await (supabase as any)
       .from('profile_videos')
       .upsert({
@@ -36,30 +35,24 @@ export async function POST(request: NextRequest) {
         duration_seconds: durationSeconds,
         status:           'active',
         updated_at:       new Date().toISOString(),
-      }, {
-        onConflict: 'user_id,slot'
-      })
+      }, { onConflict: 'user_id,slot' })
       .select()
       .single()
 
     if (error) {
-      console.error('Confirm video error:', error)
+      console.error('[videos/confirm]', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // If this is the intro video (slot 0), make profile visible
-    // Cast to any — `visible` exists in DB but is missing from generated types
+    // profiles lives in primary Postgres
     if (slot === 0) {
-      await (supabase as any)
-        .from('profiles')
-        .update({ visible: true })
-        .eq('id', user.id)
+      await pgQuery('UPDATE profiles SET visible = TRUE WHERE id = $1', [user.id])
     }
 
     return NextResponse.json({ video: data })
 
   } catch (error) {
-    console.error('Confirm error:', error)
+    console.error('[videos/confirm]', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

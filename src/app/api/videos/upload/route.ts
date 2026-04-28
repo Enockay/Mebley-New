@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { S3Client } from '@aws-sdk/client-s3'
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getAuthUserFromRequest } from '@/lib/auth-server'
 import { rateLimit } from '@/lib/rateLimit'
 
 const s3 = new S3Client({
@@ -36,12 +36,8 @@ const EXT_MAP: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const user = await getAuthUserFromRequest(request)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const limit = rateLimit(user.id, 'api')
     if (!limit.success) {
