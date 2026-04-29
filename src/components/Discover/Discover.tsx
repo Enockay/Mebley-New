@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { getDiscoverProfiles, likeProfile, passProfile, ScoredProfile } from '@/services/matchingService'
-import { Heart, X, Star, MapPin, RefreshCw } from 'lucide-react'
+import { Heart, X, Star, MapPin, RefreshCw, Sparkles } from 'lucide-react'
+import StitchModal from './StitchModal'
+import VoiceNotePlayer from '@/components/UI/VoiceNotePlayer'
 
 function isUserOnline(lastActive?: string | null): boolean {
   if (!lastActive) return false
@@ -22,6 +24,7 @@ export default function Discover() {
   const [actionLoading, setActionLoading] = useState(false)
   const [pendingNext, setPendingNext]     = useState(false)
   const [showDetails, setShowDetails]     = useState(false)
+  const [showStitch, setShowStitch]       = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const touchStartYRef = useRef<number | null>(null)
 
@@ -83,6 +86,26 @@ export default function Discover() {
     } finally {
       setActionLoading(false)
     }
+  }
+
+  const handleStitchSend = async (note: string) => {
+    if (!current) return
+    const res = await fetch('/api/likes', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ likeeId: current.profile.id, stitch: true, note }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data?.error ?? 'Failed to send Stitch')
+    setShowStitch(false)
+    if (data?.isMatch) {
+      setMatchAlert(`🎉 It's a match with ${current.profile.full_name}!`)
+      setTimeout(() => setMatchAlert(null), 3000)
+    } else {
+      setMatchAlert(`🧵 Stitch sent to ${current.profile.full_name}!`)
+      setTimeout(() => setMatchAlert(null), 2500)
+    }
+    setPendingNext(true)
   }
 
   const nextProfile = () => {
@@ -245,7 +268,15 @@ export default function Discover() {
       )}
 
       <div className="mx-auto w-full max-w-[27.5rem] sm:max-w-[31rem]">
-        <div className="overflow-hidden rounded-[1.65rem] border border-white/15 bg-[linear-gradient(165deg,rgba(26,10,45,0.95),rgba(14,6,30,0.95))] shadow-[0_24px_68px_rgba(7,2,20,0.55),0_8px_26px_rgba(236,72,153,0.16)]">
+        <div
+          className="overflow-hidden rounded-[1.65rem] border bg-[linear-gradient(165deg,rgba(26,10,45,0.95),rgba(14,6,30,0.95))]"
+          style={{
+            borderColor: (profile as any).spotlight ? 'rgba(251,191,36,0.7)' : 'rgba(255,255,255,0.15)',
+            boxShadow: (profile as any).spotlight
+              ? '0 24px 68px rgba(7,2,20,0.55), 0 0 0 2px rgba(251,191,36,0.5), 0 0 32px rgba(251,191,36,0.22)'
+              : '0 24px 68px rgba(7,2,20,0.55), 0 8px 26px rgba(236,72,153,0.16)',
+          }}
+        >
           <div className="relative h-[min(58vh,33rem)] sm:h-[min(60vh,35rem)]">
             {profile.photos && profile.photos.length > 0 ? (
               <img
@@ -259,9 +290,40 @@ export default function Discover() {
               </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-[#080410b3] via-[#08041040] to-transparent" />
-            <div className="absolute left-3 top-3 rounded-2xl border border-white/20 bg-black/35 px-3 py-1 text-[0.95rem] font-semibold text-fuchsia-50 backdrop-blur">
-              {currentIndex + 1}/{profiles.length}
-            </div>
+
+            {/* Here Tonight badge */}
+            {(profile as any).here_tonight && (
+              <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-2xl px-3 py-1 text-[0.82rem] font-bold text-white backdrop-blur"
+                style={{
+                  background: 'linear-gradient(135deg,rgba(240,56,104,0.75),rgba(184,32,60,0.75))',
+                  border: '1px solid rgba(240,56,104,0.5)',
+                  boxShadow: '0 2px 12px rgba(240,56,104,0.4)',
+                }}>
+                🔥 <span>Here Tonight</span>
+              </div>
+            )}
+
+            {/* Spotlight badge */}
+            {(profile as any).spotlight && (
+              <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-2xl px-3 py-1 text-[0.82rem] font-bold backdrop-blur"
+                style={{
+                  background: 'linear-gradient(135deg,rgba(251,191,36,0.22),rgba(245,158,11,0.22))',
+                  border: '1px solid rgba(251,191,36,0.5)',
+                  color: '#fde68a',
+                  boxShadow: '0 2px 12px rgba(251,191,36,0.3)',
+                  marginTop: (profile as any).here_tonight ? 34 : 0,
+                }}>
+                ✦ <span>Spotlight</span>
+              </div>
+            )}
+
+            {/* Card index — only when no here_tonight badge */}
+            {!(profile as any).here_tonight && !(profile as any).spotlight && (
+              <div className="absolute left-3 top-3 rounded-2xl border border-white/20 bg-black/35 px-3 py-1 text-[0.95rem] font-semibold text-fuchsia-50 backdrop-blur">
+                {currentIndex + 1}/{profiles.length}
+              </div>
+            )}
+
             <div className="absolute right-3 top-3 flex items-center gap-1 rounded-2xl border border-yellow-300/55 bg-[#080410aa] px-3 py-1 text-[0.95rem] font-bold text-yellow-300 backdrop-blur">
               <Star size={13} className="fill-yellow-300 text-yellow-300" />
               {safeScore}% match
@@ -323,29 +385,56 @@ export default function Discover() {
         </div>
 
         <div className="mt-4 flex items-center justify-center gap-2.5 sm:gap-3">
+          {/* Pass */}
           <button
             onClick={handlePass}
             disabled={actionLoading || pendingNext}
             className="grid h-[3.5rem] w-[3.5rem] place-items-center rounded-xl border-2 border-white/30 bg-black/35 text-fuchsia-50 shadow-xl transition hover:bg-red-500/15 disabled:opacity-50 sm:h-[4rem] sm:w-[4rem]"
+            title="Pass"
           >
             <X size={18} />
           </button>
+
+          {/* Like (main) */}
           <button
             onClick={handleLike}
             disabled={actionLoading || pendingNext}
             className="grid h-[4.6rem] w-[4.6rem] place-items-center rounded-xl border-2 border-white/20 bg-[linear-gradient(145deg,rgba(12,5,24,0.95),rgba(26,8,42,0.95))] text-fuchsia-50 shadow-[0_0_0_6px_rgba(243,87,216,0.16),0_16px_34px_rgba(7,2,20,0.45)] transition hover:scale-[1.03] disabled:opacity-50 sm:h-[5.2rem] sm:w-[5.2rem]"
+            title="Like"
           >
             <Heart size={23} className="fill-current sm:h-7 sm:w-7" />
           </button>
+
+          {/* Stitch — super-like with note */}
+          <button
+            onClick={() => !actionLoading && !pendingNext && setShowStitch(true)}
+            disabled={actionLoading || pendingNext}
+            className="grid h-[3.5rem] w-[3.5rem] place-items-center rounded-xl border-2 border-violet-400/40 bg-black/35 text-violet-200 shadow-xl transition hover:bg-violet-500/15 disabled:opacity-50 sm:h-[4rem] sm:w-[4rem]"
+            title="Send a Stitch"
+            style={{ boxShadow: '0 0 0 3px rgba(167,139,250,0.12), 0 8px 24px rgba(0,0,0,0.35)' }}
+          >
+            <Sparkles size={17} />
+          </button>
+
+          {/* Refresh */}
           <button
             onClick={() => { setPage(1); loadProfiles(1) }}
             disabled={actionLoading}
             className="grid h-[3.5rem] w-[3.5rem] place-items-center rounded-xl border-2 border-white/30 bg-black/35 text-fuchsia-50 shadow-xl transition hover:bg-fuchsia-500/15 disabled:opacity-50 sm:h-[4rem] sm:w-[4rem]"
+            title="Refresh"
           >
             <RefreshCw size={17} />
           </button>
         </div>
       </div>
+
+      {showStitch && current && (
+        <StitchModal
+          targetName={current.profile.full_name}
+          onSend={handleStitchSend}
+          onClose={() => setShowStitch(false)}
+        />
+      )}
 
       {showDetails && (
         <div className="fixed left-0 top-16 bottom-20 z-[70] w-full pointer-events-none">
@@ -397,6 +486,13 @@ export default function Discover() {
                 </div>
               </div>
             </div>
+
+            {(profile as any).voice_note_url && (
+              <div className="mb-4">
+                <p className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-fuchsia-200/60">Voice Note</p>
+                <VoiceNotePlayer url={(profile as any).voice_note_url} accent="#f43f5e" />
+              </div>
+            )}
 
             {profile.bio && (
               <div className="mb-4 rounded-xl border border-white/15 bg-white/5 p-3">

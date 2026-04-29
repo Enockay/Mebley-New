@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase-client'
 import { usePaywall } from '@/hooks/usePaywall'
 import { usePlan } from '@/hooks/usePlan'
 import PlanBadge from '@/components/UI/PlanBadge'
+import CreditsStore from '@/components/Paystack/CreditsStore'
 
 import { RELATIONSHIP_INTENTS, PROFILE_PROMPTS } from '@/types/app-constants'
 
@@ -107,8 +108,9 @@ function ProfilePageContent() {
       }
     : s.card
 
-  const [showEdit, setShowEdit]         = useState(false)
-  const [editTab, setEditTab]           = useState<'basics' | 'prompts' | 'intents' | 'interests' | 'photos' | 'videos'>('basics')
+  const [showEdit, setShowEdit]             = useState(false)
+  const [editTab, setEditTab]               = useState<'basics' | 'prompts' | 'intents' | 'interests' | 'photos' | 'videos' | 'voice'>('basics')
+  const [showCreditsStore, setShowCreditsStore] = useState(false)
   const openEdit = (tab: typeof editTab = 'basics') => {
     setEditTab(tab)
     setShowEdit(true)
@@ -183,24 +185,16 @@ function ProfilePageContent() {
     if (!user || hereTonightLoading) return
     setHereTonightLoading(true)
     try {
-      const res = await fetch('/api/credits/spend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product: 'here_tonight', type: 'moment', receiver_id: user.id }),
-      })
+      const res = await fetch('/api/presence/here-tonight', { method: 'POST' })
+      const body = await res.json().catch(() => ({}))
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        if (res.status === 402) {
-          openPaywall('general', 'credits')
-        } else {
-          alert(body?.error ?? 'Could not activate Here Tonight')
-        }
+        if (res.status === 402) { setShowCreditsStore(true) }
+        else { alert(body?.error ?? 'Could not activate Here Tonight') }
         return
       }
-      const statusRes = await fetch('/api/presence/here-tonight')
-      const statusData = await statusRes.json()
-      setHereTonightActive(!!statusData.active)
-      setHereTonightExpiry(statusData.expiresAt ?? null)
+      setHereTonightActive(!!body.active)
+      setHereTonightExpiry(body.expiresAt ?? null)
+      await refreshProfile()
     } finally {
       setHereTonightLoading(false)
     }
@@ -216,7 +210,7 @@ function ProfilePageContent() {
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        if (res.status === 402) { openPaywall('general', 'credits'); return }
+        if (res.status === 402) { setShowCreditsStore(true); return }
         alert(body?.error ?? 'Could not activate Spotlight')
         return
       }
@@ -224,6 +218,7 @@ function ProfilePageContent() {
       const statusData = await statusRes.json()
       setSpotlightActive(!!statusData.active)
       setSpotlightExpiry(statusData.expiresAt ?? null)
+      await refreshProfile()
     } finally {
       setSpotlightLoading(false)
     }
@@ -278,7 +273,7 @@ function ProfilePageContent() {
   const displayPhoto              = sortedPhotos[activePhotoIdx] ?? null
   const initials                  = profile.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() ?? '?'
   const formattedCredits          = Math.max(0, Number(creditBalance ?? 0)).toLocaleString()
-  const handleOpenCredits = () => openPaywall('general', 'credits')
+  const handleOpenCredits = () => setShowCreditsStore(true)
 
   return (
     <>
@@ -883,6 +878,11 @@ function ProfilePageContent() {
 
         </div>
       </div>
+
+      {/* Credits store modal */}
+      {showCreditsStore && (
+        <CreditsStore onClose={() => { setShowCreditsStore(false); refreshProfile() }} />
+      )}
 
       {/* Edit profile modal */}
       {showEdit && (

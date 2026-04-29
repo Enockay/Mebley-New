@@ -47,16 +47,35 @@ export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', category: '', message: '' })
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [apiError, setApiError] = useState('')
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+    setApiError('')
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.name || !form.email || !form.message) return
     setLoading(true)
-    setTimeout(() => { setLoading(false); setSent(true) }, 900)
+    setApiError('')
+    try {
+      const res = await fetch('/api/contact', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(form),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setApiError(data.error ?? 'Something went wrong. Please try again.')
+      } else {
+        setSent(true)
+      }
+    } catch {
+      setApiError('Network error — please check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const inputStyle: React.CSSProperties = {
@@ -195,6 +214,16 @@ export default function ContactPage() {
                     style={{ ...inputStyle, resize: 'vertical', minHeight: 120 }}
                   />
                 </div>
+
+                {apiError && (
+                  <div style={{
+                    padding: '12px 16px', borderRadius: 12,
+                    background: 'rgba(240,56,104,0.10)', border: '1px solid rgba(240,56,104,0.25)',
+                    color: '#ff6688', fontSize: 13, lineHeight: 1.5,
+                  }}>
+                    {apiError}
+                  </div>
+                )}
 
                 <button type="submit" disabled={loading} style={{
                   padding: '15px', borderRadius: 14, border: 'none',

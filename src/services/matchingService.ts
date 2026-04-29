@@ -38,11 +38,14 @@ export async function getDiscoverProfiles(page = 1, limit = 20): Promise<Discove
   return response.json()
 }
 
-export async function likeProfile(likeeId: string): Promise<{ isMatch: boolean; conversationId?: string | null }> {
+export async function likeProfile(
+  likeeId: string,
+  options?: { stitch?: boolean; note?: string }
+): Promise<{ isMatch: boolean; conversationId?: string | null }> {
   const response = await fetch('/api/likes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ likeeId }),
+    body: JSON.stringify({ likeeId, ...options }),
   })
 
   if (!response.ok) {

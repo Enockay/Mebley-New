@@ -1,21 +1,6 @@
-/**
- * src/app/api/auth/verify-otp/route.ts
- *
- * Verifies a submitted OTP against the stored bcrypt hash.
- * On success, signs the user in via Supabase phone auth.
- *
- * Security properties:
- *  ✅ Brute-force protection — max 5 attempts before OTP is invalidated
- *  ✅ Replay protection — OTP marked used after first successful verify
- *  ✅ Expiry enforced server-side (not just client-side)
- *  ✅ Constant-time comparison via bcrypt (no timing oracle)
- *  ✅ Rate limited per IP
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/rateLimit'
 import { verifyOtp } from '@/lib/otp-store'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 const E164_REGEX = /^\+[1-9]\d{7,14}$/
 
@@ -31,7 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request)
 
-    // ── Rate limit per IP ───────────────────────────────────────────────────
+    // ── Rate limit per IP ─────────────────────────────────────────────────────
     const ipLimit = rateLimit(`verify-otp-ip:${ip}`, 'auth')
     if (!ipLimit.success) {
       return NextResponse.json(
@@ -40,7 +25,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ── Parse body ──────────────────────────────────────────────────────────
+    // ── Parse body ────────────────────────────────────────────────────────────
     let body: unknown
     try {
       body = await request.json()
@@ -67,39 +52,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ── Verify OTP against stored hash ──────────────────────────────────────
+    // ── Verify OTP against stored hash ────────────────────────────────────────
     const result = await verifyOtp(phone, otp)
 
     if (!result.success) {
-      // Return a generic message to the client — specific error only in logs
-      console.warn('[verify-otp] Verification failed for phone (masked):', phone.slice(0, 4) + '****', result.error)
+      console.warn('[verify-otp] Failed for phone (masked):', phone.slice(0, 4) + '****', result.error)
       return NextResponse.json(
         { success: false, message: result.error ?? 'Invalid or expired code', code: 'OTP_INVALID' },
         { status: 400 }
       )
     }
 
-    // ── OTP valid — sign in via Supabase ────────────────────────────────────
-    const supabase = await createServerSupabaseClient()
-    const { data, error: signInError } = await supabase.auth.verifyOtp({
-      phone,
-      token: otp,
-      type: 'sms',
-    })
-
-    if (signInError || !data.session) {
-      console.error('[verify-otp] Supabase sign-in failed:', signInError?.message)
-      return NextResponse.json(
-        { success: false, message: 'Authentication failed. Please try again.', code: 'AUTH_FAILED' },
-        { status: 401 }
-      )
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Phone verified successfully',
-      userId: data.user?.id,
-    })
+    // OTP is valid — caller is responsible for next step (e.g. mark phone verified on profile)
+    return NextResponse.json({ success: true, message: 'Phone verified successfully' })
 
   } catch (error) {
     console.error('[verify-otp] Unexpected error:', error)

@@ -307,6 +307,7 @@ export async function GET(request: NextRequest) {
             profile_completeness: candidate.profile_completeness,
             last_active:          candidate.last_active,
             photo_verified:       (candidate as any).photo_verified ?? false,
+            voice_note_url:       (candidate as any).voice_note_url ?? null,
           },
         }
       })

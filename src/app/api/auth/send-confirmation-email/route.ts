@@ -41,11 +41,8 @@ export async function POST(req: NextRequest) {
           <p style="margin:0 0 14px;color:#4a3a41;">
             We received your ${kind === 'resend' ? 'request to resend your confirmation' : 'new account signup'}.
           </p>
-          <p style="margin:0 0 14px;color:#4a3a41;">
-            Please open the confirmation email from Supabase in your inbox and click <strong>Confirm your email</strong>.
-          </p>
           <p style="margin:0 0 20px;color:#4a3a41;">
-            If you cannot find it, check your spam or promotions folder.
+            Use the button below to return to Mebley and complete your sign-in. If you didn't request this, you can safely ignore it.
           </p>
           <a href="${appUrl}/auth"
              style="display:inline-block;padding:12px 18px;border-radius:999px;text-decoration:none;color:#fff;background:linear-gradient(90deg,#ee5d7d,#d77b5d);font-weight:700;">

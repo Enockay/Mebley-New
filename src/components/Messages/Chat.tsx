@@ -595,91 +595,28 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
   }
 
   // ── GIF helpers ────────────────────────────────────────────
-  const mapGiphy = (data: any[]) =>
-    (data ?? []).map((item: any) => ({
-      id: item.id,
-      url: item.images?.fixed_height_small?.url || item.images?.downsized_small?.url || item.images?.original?.url,
-      title: item.title ?? '',
-      provider: 'giphy',
-    }))
-
-  const mapTenor = (data: any[]) =>
-    (data ?? []).map((item: any) => {
-      const mf = item.media_formats ?? {}
-      const url =
-        mf.tinygif?.url ||
-        mf.gif?.url ||
-        mf.mediumgif?.url ||
-        mf.nanogif?.url ||
-        mf.mp4?.url ||
-        ''
-      return { id: item.id, url, title: item.content_description ?? '', provider: 'tenor' }
-    })
-
-  const tryGiphySearch = async (q: string, limit = 16) => {
-    const key  = process.env.NEXT_PUBLIC_GIPHY_API_KEY
-    if (!key) return { ok: false, gifs: [] as any[] }
-    const res  = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${key}&q=${encodeURIComponent(q)}&limit=${limit}&rating=g`)
-    if (!res.ok) return { ok: false, gifs: [] as any[] }
+  const fetchGifs = async (q?: string) => {
+    const url = q?.trim()
+      ? `/api/chat/gifs?q=${encodeURIComponent(q.trim())}`
+      : `/api/chat/gifs`
+    const res  = await fetch(url)
+    if (!res.ok) return [] as any[]
     const data = await res.json()
-    return { ok: true, gifs: mapGiphy(data.data) }
-  }
-
-  const tryGiphyTrending = async (limit = 16) => {
-    const key  = process.env.NEXT_PUBLIC_GIPHY_API_KEY
-    if (!key) return { ok: false, gifs: [] as any[] }
-    const res  = await fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${key}&limit=${limit}&rating=g`)
-    if (!res.ok) return { ok: false, gifs: [] as any[] }
-    const data = await res.json()
-    return { ok: true, gifs: mapGiphy(data.data) }
-  }
-
-  // Tenor fallback — uses public demo key for light usage
-  const TENOR_KEY_FALLBACK = 'LIVDSRZULELA'
-  const tryTenorSearch = async (q: string, limit = 16) => {
-    const key = process.env.NEXT_PUBLIC_TENOR_API_KEY || TENOR_KEY_FALLBACK
-    const res = await fetch(`https://tenor.googleapis.com/v2/search?key=${key}&q=${encodeURIComponent(q)}&limit=${limit}&media_filter=basic&client_key=crotchet`)
-    if (!res.ok) return { ok: false, gifs: [] as any[] }
-    const data = await res.json()
-    return { ok: true, gifs: mapTenor(data.results) }
-  }
-  const tryTenorTrending = async (limit = 16) => {
-    const key = process.env.NEXT_PUBLIC_TENOR_API_KEY || TENOR_KEY_FALLBACK
-    const res = await fetch(`https://tenor.googleapis.com/v2/featured?key=${key}&limit=${limit}&media_filter=basic&client_key=crotchet`)
-    if (!res.ok) return { ok: false, gifs: [] as any[] }
-    const data = await res.json()
-    return { ok: true, gifs: mapTenor(data.results) }
+    return data.gifs as any[]
   }
 
   const searchGifs = async (q: string) => {
-    const query = q.trim()
-    if (!query) return
+    if (!q.trim()) return
     setGifLoading(true)
-    try {
-      let out: any[] = []
-      const g = await tryGiphySearch(query)
-      if (g.ok && g.gifs.length > 0) out = g.gifs
-      else {
-        const t = await tryTenorSearch(query)
-        if (t.ok) out = t.gifs
-      }
-      setGifs(out)
-    } catch { setGifs([]) }
+    try { setGifs(await fetchGifs(q)) }
+    catch { setGifs([]) }
     setGifLoading(false)
   }
 
   const loadTrendingGifs = async () => {
     setGifLoading(true)
-    try {
-      let out: any[] = []
-      const g = await tryGiphyTrending()
-      if (g.ok && g.gifs.length > 0) out = g.gifs
-      else {
-        const t = await tryTenorTrending()
-        if (t.ok) out = t.gifs
-      }
-      setGifs(out)
-    } catch { setGifs([]) }
+    try { setGifs(await fetchGifs()) }
+    catch { setGifs([]) }
     setGifLoading(false)
   }
 

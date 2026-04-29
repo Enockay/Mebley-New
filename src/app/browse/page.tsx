@@ -18,6 +18,7 @@ import {
 import { RELATIONSHIP_INTENTS, INTERESTS_BY_CATEGORY } from '@/types/app-constants'
 import BlockReport from '@/components/Moderation/BlockReport'
 import StitchDivider from '@/components/UI/StitchDivider'
+import VoiceNotePlayer from '@/components/UI/VoiceNotePlayer'
 
 // ── Types ─────────────────────────────────────────────────────────
 interface PromptAnswer { id: string; question: string; answer: string }
@@ -31,6 +32,7 @@ interface BrowseProfile {
   here_tonight?: boolean
   spotlight?: boolean
   photo_verified?: boolean
+  voice_note_url?: string | null
 }
 
 interface ScoredProfile { score: number; reasons: string[]; profile: BrowseProfile }
@@ -1643,6 +1645,14 @@ function BrowsePageContent() {
                 <MapPin size={13} color="#f9a8d4" />
                 {viewProfileSp.profile.location}
               </p>
+            )}
+            {viewProfileSp.profile.voice_note_url && (
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ margin: '0 0 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>
+                  Voice Note
+                </p>
+                <VoiceNotePlayer url={viewProfileSp.profile.voice_note_url} />
+              </div>
             )}
             <div style={{ marginBottom: 12 }}>
               <button

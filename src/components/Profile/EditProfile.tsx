@@ -9,13 +9,14 @@ import { createClient } from '@/lib/supabase-client'
 import { RELATIONSHIP_INTENTS, INTERESTS_BY_CATEGORY, PROFILE_PROMPTS } from '@/types/app-constants'
 import VideoUpload from '@/components/Profile/VideoUpload'
 import PhotoUpload from '@/components/Profile/PhotoUpload'
+import VoiceNoteRecorder from '@/components/Profile/VoiceNoteRecorder'
 
 interface EditProfileProps {
   onClose:      () => void
   initialTab?:  Tab
 }
 
-type Tab = 'basics' | 'prompts' | 'intents' | 'interests' | 'photos' | 'videos'
+type Tab = 'basics' | 'prompts' | 'intents' | 'interests' | 'photos' | 'videos' | 'voice'
 
 const TABS: { id: Tab; label: string; emoji: string }[] = [
   { id: 'basics',    label: 'Basics',    emoji: '👤' },
@@ -24,6 +25,7 @@ const TABS: { id: Tab; label: string; emoji: string }[] = [
   { id: 'interests', label: 'Interests', emoji: '✨' },
   { id: 'photos',    label: 'Photos',    emoji: '📸' },
   { id: 'videos',    label: 'Videos',    emoji: '🎥' },
+  { id: 'voice',     label: 'Voice',     emoji: '🎙️' },
 ]
 
 const MAX_PROMPTS = 3
@@ -232,7 +234,7 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
     (combinedLocation                ? 15 : 0)
   )
 
-  const isAutoSaveTab = activeTab === 'photos' || activeTab === 'videos'
+  const isAutoSaveTab = activeTab === 'photos' || activeTab === 'videos' || activeTab === 'voice'
 
   // ── Currently editing prompt question label ───────────────────────────────
   const draftQuestion = PROFILE_PROMPTS.find(p => p.id === draftQuestionId)
@@ -609,6 +611,20 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
                 Your intro video is required for your profile to appear in Discover.
               </p>
               <VideoUpload onVideoUploaded={() => refreshProfile()} />
+            </div>
+          )}
+
+          {/* ── Voice Note ── */}
+          {activeTab === 'voice' && (
+            <div>
+              <p className="text-sm text-[rgba(233,213,255,0.75)] mb-4">
+                Record a 30-second voice note. People hear your personality before they swipe.
+              </p>
+              <VoiceNoteRecorder
+                existingUrl={(profile as any)?.voice_note_url ?? null}
+                onSaved={() => refreshProfile()}
+                onDeleted={() => refreshProfile()}
+              />
             </div>
           )}
         </div>

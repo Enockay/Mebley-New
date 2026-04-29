@@ -3,7 +3,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { pgQuery } from '@/lib/postgres'
-import crypto from 'crypto'
 
 // Supabase client — only for subscriptions + stripe_orders (Supabase-only tables)
 const sbAdmin = () => createClient(
@@ -223,48 +222,4 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ─── POST — Paystack webhook ──────────────────────────────────────────────
-export async function POST(req: NextRequest) {
-  try {
-    const rawBody = await req.text()
-
-    const sig  = req.headers.get('x-paystack-signature') ?? ''
-    const hash = crypto
-      .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY!)
-      .update(rawBody)
-      .digest('hex')
-
-    if (hash !== sig) {
-      console.error('[paystack webhook] bad signature')
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-    }
-
-    const event = JSON.parse(rawBody)
-    const { event: type, data } = event
-    const reference: string | null = data?.reference ?? null
-
-    if (type === 'charge.success' && reference) {
-      await fulfill(reference, data?.metadata)
-    }
-
-    if ((type === 'subscription.disable' || type === 'invoice.payment_failed') && reference) {
-      const supabase = sbAdmin()
-      const { data: sub } = await supabase
-        .from('subscriptions')
-        .select('user_id')
-        .eq('paystack_ref', reference)
-        .maybeSingle()
-
-      if (sub) {
-        await (supabase as any).from('subscriptions').update({ status: 'cancelled' }).eq('paystack_ref', reference)
-        await pgQuery(`UPDATE profiles SET plan = 'free', plan_expires = NULL WHERE id = $1`, [sub.user_id])
-      }
-    }
-
-    return NextResponse.json({ ok: true })
-
-  } catch (err) {
-    console.error('[paystack webhook POST]', err)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
-  }
-}
+// Webhook events are handled by /api/paystack/webhook — do not add a POST handler here.

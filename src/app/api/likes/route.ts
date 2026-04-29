@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Rate limit — max 100 likes per minute (prevents bot abuse)
+    // Rate limit — max 100 likes per minute
     const limit = rateLimit(user.id, 'likes')
     if (!limit.success) {
       return NextResponse.json(
@@ -30,18 +30,24 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { likeeId } = body
+    const { likeeId, stitch = false, note = '' } = body
 
     if (!likeeId || typeof likeeId !== 'string') {
       return NextResponse.json({ error: 'likeeId is required' }, { status: 400 })
     }
 
-    // Prevent self-liking
     if (likeeId === user.id) {
       return NextResponse.json({ error: 'Cannot like yourself' }, { status: 400 })
     }
 
-    // Fetch both profiles in parallel — need names, photos, tier
+    // Stitch note validation
+    const isStitch   = stitch === true
+    const stitchNote = isStitch ? String(note ?? '').slice(0, 280).trim() : null
+    if (isStitch && !stitchNote) {
+      return NextResponse.json({ error: 'A Stitch requires a personal note' }, { status: 400 })
+    }
+
+    // Fetch both profiles in parallel
     const [likerRes, likeeRes] = await Promise.all([
       withPgClient((client) =>
         client.query<BasicProfileRow>(
@@ -70,24 +76,19 @@ export async function POST(request: NextRequest) {
     const likeResult = await withPgClient(async (client) => {
       await client.query('BEGIN')
       try {
-        // Insert like — ignore duplicate unique conflict
+        // Insert like — on conflict update stitch fields if this is an upgrade to a Stitch
         await client.query(
-          `
-          INSERT INTO likes (liker_id, likee_id)
-          VALUES ($1, $2)
-          ON CONFLICT (liker_id, likee_id) DO NOTHING
-          `,
-          [user.id, likeeId]
+          `INSERT INTO likes (liker_id, likee_id, is_stitch, stitch_note)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (liker_id, likee_id) DO UPDATE
+             SET is_stitch   = EXCLUDED.is_stitch,
+                 stitch_note = EXCLUDED.stitch_note`,
+          [user.id, likeeId, isStitch, stitchNote]
         )
 
         // Check for mutual like
         const mutualRes = await client.query<{ id: string }>(
-          `
-          SELECT id
-          FROM likes
-          WHERE liker_id = $1 AND likee_id = $2
-          LIMIT 1
-          `,
+          `SELECT id FROM likes WHERE liker_id = $1 AND likee_id = $2 LIMIT 1`,
           [likeeId, user.id]
         )
 
@@ -96,25 +97,21 @@ export async function POST(request: NextRequest) {
           const [u1, u2] = user.id < likeeId ? [user.id, likeeId] : [likeeId, user.id]
 
           const matchRes = await client.query<{ id: string }>(
-            `
-            INSERT INTO matches (user1_id, user2_id)
-            VALUES ($1, $2)
-            ON CONFLICT (user1_id, user2_id)
-            DO UPDATE SET user1_id = EXCLUDED.user1_id
-            RETURNING id
-            `,
+            `INSERT INTO matches (user1_id, user2_id)
+             VALUES ($1, $2)
+             ON CONFLICT (user1_id, user2_id)
+             DO UPDATE SET user1_id = EXCLUDED.user1_id
+             RETURNING id`,
             [u1, u2]
           )
           const matchId = matchRes.rows[0]?.id
 
           if (matchId) {
             const convoRes = await client.query<{ id: string }>(
-              `
-              INSERT INTO conversations (match_id)
-              VALUES ($1)
-              ON CONFLICT (match_id) DO UPDATE SET match_id = EXCLUDED.match_id
-              RETURNING id
-              `,
+              `INSERT INTO conversations (match_id)
+               VALUES ($1)
+               ON CONFLICT (match_id) DO UPDATE SET match_id = EXCLUDED.match_id
+               RETURNING id`,
               [matchId]
             )
             conversationId = convoRes.rows[0]?.id ?? null
@@ -130,17 +127,13 @@ export async function POST(request: NextRequest) {
     })
 
     if (likeResult.isMatch) {
-
-      // Fire match notifications for both users (non-blocking)
       notifyMatch(
         user.id,
         likeeId,
         likerProfile.full_name,
         likeeProfile.full_name,
       ).catch(err => console.error('[notifyMatch] failed:', err))
-
     } else {
-      // Not a match yet — notify the likee (non-blocking)
       const likerPhotoUrl = Array.isArray(likerProfile.photos) && likerProfile.photos.length > 0
         ? (likerProfile.photos[0] as any)?.url ?? null
         : null
@@ -156,6 +149,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       isMatch,
+      isStitch,
       conversationId,
       matchedProfile: isMatch ? {
         full_name: likeeProfile.full_name,

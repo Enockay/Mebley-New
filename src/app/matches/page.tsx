@@ -12,19 +12,21 @@ import { usePaywall } from '@/hooks/usePaywall'
 import {
   Search, Pin, BellOff, Archive, Shield,
   MoreVertical, ChevronRight, MessageCircle,
-  Bell, ArchiveRestore, PinOff, Ghost, Heart, Lock,
+  Bell, ArchiveRestore, PinOff, Ghost, Heart, Lock, Sparkles,
 } from 'lucide-react'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
 interface Liker {
-  id:        string
-  full_name: string
-  age_range: string | null
-  location:  string | null
-  photos:    unknown
-  bio:       string | null
-  liked_at:  string
+  id:          string
+  full_name:   string
+  age_range:   string | null
+  location:    string | null
+  photos:      unknown
+  bio:         string | null
+  liked_at:    string
+  is_stitch:   boolean
+  stitch_note: string | null
 }
 
 interface Conversation {
@@ -508,57 +510,106 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
                     const isLiking  = likingBack === liker.id
                     return (
                       <div key={liker.id} style={{
-                        display: 'flex', alignItems: 'center', gap: 14,
-                        padding: '14px', borderRadius: 14,
-                        background: 'rgba(255,255,255,0.07)',
-                        border: '1.5px solid rgba(240,56,104,0.18)',
+                        display: 'flex', flexDirection: 'column', gap: 0,
+                        borderRadius: 14,
+                        background: liker.is_stitch
+                          ? 'linear-gradient(135deg, rgba(124,58,237,0.14), rgba(167,139,250,0.07))'
+                          : 'rgba(255,255,255,0.07)',
+                        border: liker.is_stitch
+                          ? '1.5px solid rgba(167,139,250,0.35)'
+                          : '1.5px solid rgba(240,56,104,0.18)',
                         backdropFilter: 'blur(8px)',
+                        overflow: 'hidden',
                       }}>
-                        {/* Avatar */}
-                        <div style={{ width: 56, height: 56, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'linear-gradient(135deg, #f43f5e, #ec4899)', padding: 2 }}>
-                          <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#0c0a1e' }}>
-                            {avatarUrl
-                              ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <span style={{ fontSize: 20, fontWeight: 700, color: '#f43f5e', fontFamily: "'Fraunces',serif" }}>{initials}</span>
-                                </div>
-                            }
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px' }}>
+                          {/* Avatar */}
+                          <div style={{ width: 56, height: 56, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: liker.is_stitch ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'linear-gradient(135deg, #f43f5e, #ec4899)', padding: 2 }}>
+                            <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#0c0a1e' }}>
+                              {avatarUrl
+                                ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <span style={{ fontSize: 20, fontWeight: 700, color: liker.is_stitch ? '#c4b5fd' : '#f43f5e', fontFamily: "'Fraunces',serif" }}>{initials}</span>
+                                  </div>
+                              }
+                            </div>
                           </div>
-                        </div>
-                        {/* Info */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 15, fontWeight: 700, color: '#fff5fb', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {liker.full_name}
-                          </p>
-                          <p style={{ fontSize: 12, color: 'rgba(245,220,251,0.55)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {[liker.age_range?.replace('_', '–'), liker.location].filter(Boolean).join(' · ')}
-                          </p>
-                          {liker.bio && (
-                            <p style={{ fontSize: 12, color: 'rgba(245,220,251,0.45)', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {liker.bio}
+                          {/* Info */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                              <p style={{ fontSize: 15, fontWeight: 700, color: '#fff5fb', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {liker.full_name}
+                              </p>
+                              {liker.is_stitch && (
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 3,
+                                  padding: '2px 7px', borderRadius: 100,
+                                  background: 'rgba(124,58,237,0.25)',
+                                  border: '1px solid rgba(167,139,250,0.4)',
+                                  fontSize: 10, fontWeight: 700,
+                                  color: '#c4b5fd', letterSpacing: '0.06em',
+                                  flexShrink: 0,
+                                }}>
+                                  <Sparkles size={8} />
+                                  STITCH
+                                </span>
+                              )}
+                            </div>
+                            <p style={{ fontSize: 12, color: 'rgba(245,220,251,0.55)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {[liker.age_range?.replace('_', '–'), liker.location].filter(Boolean).join(' · ')}
                             </p>
-                          )}
+                            {!liker.is_stitch && liker.bio && (
+                              <p style={{ fontSize: 12, color: 'rgba(245,220,251,0.45)', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {liker.bio}
+                              </p>
+                            )}
+                          </div>
+                          {/* Like back */}
+                          <button
+                            onClick={() => handleLikeBack(liker)}
+                            disabled={isLiking}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 6,
+                              padding: '9px 16px', borderRadius: 100, border: 'none',
+                              background: isLiking
+                                ? 'rgba(240,56,104,0.3)'
+                                : liker.is_stitch
+                                  ? 'linear-gradient(135deg, #6d28d9, #7c3aed)'
+                                  : 'linear-gradient(135deg, #e03060, #f03868)',
+                              color: '#fff', fontSize: 13, fontWeight: 700,
+                              cursor: isLiking ? 'default' : 'pointer',
+                              fontFamily: "'DM Sans', sans-serif",
+                              flexShrink: 0,
+                              boxShadow: liker.is_stitch
+                                ? '0 4px 14px rgba(124,58,237,0.35)'
+                                : '0 4px 14px rgba(240,56,104,0.3)',
+                              transition: 'opacity 0.15s',
+                              opacity: isLiking ? 0.7 : 1,
+                            }}
+                          >
+                            <Heart size={13} fill={isLiking ? 'transparent' : '#fff'} />
+                            {isLiking ? '…' : 'Like back'}
+                          </button>
                         </div>
-                        {/* Like back */}
-                        <button
-                          onClick={() => handleLikeBack(liker)}
-                          disabled={isLiking}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '9px 16px', borderRadius: 100, border: 'none',
-                            background: isLiking ? 'rgba(240,56,104,0.3)' : 'linear-gradient(135deg, #e03060, #f03868)',
-                            color: '#fff', fontSize: 13, fontWeight: 700,
-                            cursor: isLiking ? 'default' : 'pointer',
-                            fontFamily: "'DM Sans', sans-serif",
-                            flexShrink: 0,
-                            boxShadow: '0 4px 14px rgba(240,56,104,0.3)',
-                            transition: 'opacity 0.15s',
-                            opacity: isLiking ? 0.7 : 1,
-                          }}
-                        >
-                          <Heart size={13} fill={isLiking ? 'transparent' : '#fff'} />
-                          {isLiking ? '…' : 'Like back'}
-                        </button>
+
+                        {/* Stitch note */}
+                        {liker.is_stitch && liker.stitch_note && (
+                          <div style={{
+                            padding: '10px 14px 14px',
+                            borderTop: '1px solid rgba(167,139,250,0.15)',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                              <Sparkles size={13} color="#a78bfa" style={{ flexShrink: 0, marginTop: 2 }} />
+                              <p style={{
+                                fontSize: 13, color: 'rgba(221,214,254,0.85)',
+                                margin: 0, lineHeight: 1.55,
+                                fontStyle: 'italic',
+                                fontFamily: "'DM Sans', sans-serif",
+                              }}>
+                                "{liker.stitch_note}"
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   })}

@@ -6,13 +6,15 @@ import { getAuthUserFromRequest } from '@/lib/auth-server'
 import { pgQuery } from '@/lib/postgres'
 
 type LikerRow = {
-  id:        string
-  full_name: string
-  age_range: string | null
-  location:  string | null
-  photos:    unknown
-  bio:       string | null
-  liked_at:  string
+  id:          string
+  full_name:   string
+  age_range:   string | null
+  location:    string | null
+  photos:      unknown
+  bio:         string | null
+  liked_at:    string
+  is_stitch:   boolean
+  stitch_note: string | null
 }
 
 const PAID_TIERS = ['premium', 'vip']
@@ -60,7 +62,9 @@ export async function GET(req: NextRequest) {
          p.location,
          p.photos,
          p.bio,
-         l.created_at AS liked_at
+         l.created_at AS liked_at,
+         l.is_stitch,
+         l.stitch_note
        FROM likes l
        JOIN profiles p ON p.id = l.liker_id
        WHERE l.likee_id = $1

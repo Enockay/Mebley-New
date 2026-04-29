@@ -11,6 +11,7 @@ import {
   Check, ChevronRight, ChevronLeft, Heart,
   Camera, Upload, AlertTriangle, Loader2, RefreshCw, Sparkles, MapPin,
 } from 'lucide-react'
+import VoiceNoteRecorder from '@/components/Profile/VoiceNoteRecorder'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -604,6 +605,21 @@ export default function ProfileSetup() {
                   onChange={e => handleChange('nationality', e.target.value)}
                   className="w-full rounded-xl border border-white/22 bg-black/28 px-4 py-2.5 text-sm text-white placeholder:text-white/45 focus:border-[#da47f3] focus:outline-none transition-colors"
                   placeholder="e.g. British, Nigerian, Brazilian…"
+                />
+              </div>
+
+              {/* Voice Note */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-semibold uppercase tracking-[0.08em] text-white/55">Voice Note</label>
+                  <span className="text-xs text-white/35">Optional — but memorable</span>
+                </div>
+                <p className="text-xs text-white/50 mb-3 leading-relaxed">
+                  🎙️ People who add a voice note get <strong className="text-white/70">2× more replies</strong>. Your laugh speaks louder than any bio.
+                </p>
+                <VoiceNoteRecorder
+                  existingUrl={null}
+                  onSaved={() => {}}
                 />
               </div>
 
