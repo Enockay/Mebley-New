@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { pgQuery } from '@/lib/postgres'
 import crypto from 'crypto'
+import { fulfillPaystackReference } from '@/lib/paystack-fulfillment'
 
 const sbAdmin = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,12 +17,6 @@ const PLAN_CREDITS: Record<string, number> = {
   starter: 100,
   premium: 250,
   vip:     450,
-}
-
-const PLAN_DEFS: Record<string, { tier: string; billing_period: string; monthly_credits: number }> = {
-  starter_monthly: { tier: 'starter', billing_period: 'monthly', monthly_credits: 100 },
-  premium_monthly: { tier: 'premium', billing_period: 'monthly', monthly_credits: 250 },
-  vip_monthly:     { tier: 'vip',     billing_period: 'monthly', monthly_credits: 450 },
 }
 
 async function addCredits(userId: string, amount: number, refType: string, description: string) {
@@ -60,101 +55,7 @@ async function addCredits(userId: string, amount: number, refType: string, descr
 async function handleChargeSuccess(data: Record<string, any>) {
   const reference = data?.reference
   if (!reference) return
-
-  const supabase = sbAdmin()
-
-  // Idempotency: already fulfilled?
-  const { data: activeSub } = await supabase
-    .from('subscriptions')
-    .select('id, tier, weekly_credits_last_reset')
-    .eq('paystack_ref', reference)
-    .eq('status', 'active')
-    .maybeSingle()
-  if (activeSub?.weekly_credits_last_reset) return
-
-  const { data: completedOrder } = await supabase
-    .from('stripe_orders')
-    .select('id')
-    .or(`paystack_ref.eq.${reference},stripe_session_id.eq.${reference}`)
-    .eq('status', 'completed')
-    .maybeSingle()
-  if (completedOrder) return
-
-  // ── Subscription ──────────────────────────────────────────────────────────
-  const { data: sub } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('paystack_ref', reference)
-    .maybeSingle()
-
-  if (sub && !sub.weekly_credits_last_reset) {
-    const now       = new Date()
-    const periodEnd = new Date(now)
-    if (sub.billing_period === 'weekly') periodEnd.setDate(periodEnd.getDate() + 7)
-    else                                  periodEnd.setMonth(periodEnd.getMonth() + 1)
-
-    await (supabase as any).from('subscriptions').update({
-      status:                    'active',
-      current_period_start:      now.toISOString(),
-      current_period_end:        periodEnd.toISOString(),
-      weekly_credits_last_reset: now.toISOString(),
-    }).eq('id', sub.id)
-
-    await pgQuery(`UPDATE profiles SET plan = $1, plan_expires = $2 WHERE id = $3`,
-      [sub.tier, periodEnd.toISOString(), sub.user_id])
-
-    const credits = PLAN_CREDITS[sub.tier] ?? 0
-    if (credits > 0) await addCredits(sub.user_id, credits, 'subscription_grant', `${sub.tier} monthly credits`)
-    return
-  }
-
-  // ── Subscription from metadata (pre-insert failed) ────────────────────────
-  const meta = data?.metadata
-  if (meta?.type === 'subscription' && meta?.product && meta?.user_id) {
-    const planDef = PLAN_DEFS[meta.product]
-    if (planDef) {
-      const now       = new Date()
-      const periodEnd = new Date(now)
-      periodEnd.setMonth(periodEnd.getMonth() + 1)
-
-      await (supabase as any).from('subscriptions').upsert({
-        user_id:                   meta.user_id,
-        tier:                      planDef.tier,
-        billing_period:            planDef.billing_period,
-        status:                    'active',
-        paystack_ref:              reference,
-        current_period_start:      now.toISOString(),
-        current_period_end:        periodEnd.toISOString(),
-        weekly_credits_last_reset: now.toISOString(),
-        weekly_credits_allocated:  planDef.monthly_credits,
-      }, { onConflict: 'paystack_ref' })
-
-      await pgQuery(`UPDATE profiles SET plan = $1, plan_expires = $2 WHERE id = $3`,
-        [planDef.tier, periodEnd.toISOString(), meta.user_id])
-
-      const credits = PLAN_CREDITS[planDef.tier] ?? 0
-      if (credits > 0) await addCredits(meta.user_id, credits, 'subscription_grant', `${planDef.tier} monthly credits`)
-      return
-    }
-  }
-
-  // ── Credit pack ───────────────────────────────────────────────────────────
-  const { data: order } = await supabase
-    .from('stripe_orders')
-    .select('*')
-    .or(`paystack_ref.eq.${reference},stripe_session_id.eq.${reference}`)
-    .eq('status', 'pending')
-    .maybeSingle()
-
-  if (order) {
-    const total = (order.credits_purchased ?? 0) + (order.bonus_credits ?? 0)
-    await (supabase as any).from('stripe_orders').update({
-      status:       'completed',
-      completed_at: new Date().toISOString(),
-    }).eq('id', order.id)
-    await addCredits(order.user_id, total, 'credit_purchase',
-      `Purchased ${order.credits_purchased} credits (+${order.bonus_credits} bonus)`)
-  }
+  await fulfillPaystackReference(reference, data?.metadata)
 }
 
 // ── invoice.payment_success — Paystack recurring subscription renewal ──────

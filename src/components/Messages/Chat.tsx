@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useContext } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import type { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng'
 import type { Database } from '@/types/database.types'
@@ -10,8 +10,10 @@ import {
   ArrowLeft, Send, Image, Gift, Video,
   PhoneOff, MicOff, Mic, VideoOff, X, Loader2,
   CameraOff, Check, Trash2, MoreVertical, BellOff, Shield,
-  Play, Pause, Phone,
+  Play, Pause, Phone, Flag,
 } from 'lucide-react'
+import BlockReport from '@/components/Moderation/BlockReport'
+import { ChatOverlayPortalContext } from '@/contexts/ChatOverlayPortalContext'
 
 // Static waveform shape for audio messages (WhatsApp-style decorative bars)
 const WAVE_BARS = [28,45,70,52,85,62,38,78,50,90,42,65,55,80,32,60,72,45,68,36,82,54,44,72,58,34,76,48,64,42,80,50]
@@ -234,6 +236,7 @@ function formatLastSeen(lastActive?: string | null): string {
 
 export default function Chat({ conversationId, otherProfile, onBack, embedded = false }: ChatProps) {
   const { profile: currentProfile } = useAuth()
+  const chatOverlayPortal = useContext(ChatOverlayPortalContext)
   const isPendingConversation = conversationId.startsWith('pending-')
   const bottomInsetPadding = 'max(10px, env(safe-area-inset-bottom))'
   const navBarOffset = embedded ? 0 : 71
@@ -272,6 +275,8 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
 
   // Header menu
   const [showChatMenu, setShowChatMenu] = useState(false)
+  const [blockReportOpen, setBlockReportOpen] = useState(false)
+  const [userReportedPeer, setUserReportedPeer] = useState(false)
   const [menuAction, setMenuAction]     = useState<string | null>(null)
 
   // GIF panel
@@ -312,6 +317,15 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
   }, [conversationId, isPendingConversation])
 
   useEffect(() => { loadMessages() }, [loadMessages])
+  useEffect(() => {
+    const key = `moderation:reported:${otherProfile.id}`
+    try {
+      setUserReportedPeer(sessionStorage.getItem(key) === '1')
+    } catch {
+      setUserReportedPeer(false)
+    }
+  }, [otherProfile.id])
+
   useEffect(() => { currentUserIdRef.current = currentProfile?.id ?? null }, [currentProfile?.id])
 
   useEffect(() => {
@@ -794,6 +808,13 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
   }
 
   // ── Chat management (mute/block) ───────────────────────────
+  const persistReportAcknowledged = useCallback(() => {
+    setUserReportedPeer(true)
+    try {
+      sessionStorage.setItem(`moderation:reported:${otherProfile.id}`, '1')
+    } catch { /* ignore quota / private mode */ }
+  }, [otherProfile.id])
+
   const handleChatAction = async (action: string) => {
     if (isPendingConversation && action !== 'block') {
       setError('This chat is pending until they like you back')
@@ -1041,6 +1062,36 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
             <Video size={17} color="#f6e8ff" />
           </button>
 
+          {/* Report — shows check + “reported” state after you submit a report */}
+          <button
+            type="button"
+            title={userReportedPeer ? 'You reported this user' : 'Report spam or block'}
+            aria-label={userReportedPeer ? 'You reported this user' : 'Report spam or block'}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (userReportedPeer) return
+              setShowChatMenu(false)
+              setBlockReportOpen(true)
+            }}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: '50%',
+              border: userReportedPeer ? '1px solid rgba(52,211,153,0.4)' : '1px solid rgba(251,146,60,0.45)',
+              cursor: userReportedPeer ? 'default' : 'pointer',
+              background: userReportedPeer ? 'rgba(52,211,153,0.14)' : 'rgba(251,146,60,0.14)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              opacity: userReportedPeer ? 0.95 : 1,
+            }}
+          >
+            {userReportedPeer
+              ? <Check size={17} color="#6ee7b7" strokeWidth={2.5} />
+              : <Flag size={17} color="#fb923c" />}
+          </button>
+
           {/* Three dot menu */}
           <div style={{ position: 'relative' }}>
             <button
@@ -1052,7 +1103,23 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
             {showChatMenu && (
               <div
                 onClick={e => e.stopPropagation()}
-                style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 200, background: 'rgba(18,6,37,0.96)', borderRadius: 16, boxShadow: '0 18px 36px rgba(0,0,0,0.42)', border: '1px solid rgba(255,255,255,0.16)', minWidth: 190, overflow: 'hidden', animation: 'slideDown 0.15s ease' }}>
+                style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 200, background: 'rgba(18,6,37,0.96)', borderRadius: 16, boxShadow: '0 18px 36px rgba(0,0,0,0.42)', border: '1px solid rgba(255,255,255,0.16)', minWidth: 204, overflow: 'hidden', animation: 'slideDown 0.15s ease' }}>
+                {!userReportedPeer && (
+                <button
+                  type="button"
+                  className="menu-btn"
+                  onClick={() => {
+                    setShowChatMenu(false)
+                    setBlockReportOpen(true)
+                  }}
+                  style={{ width: '100%', padding: '13px 16px', background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, fontFamily: "'DM Sans',sans-serif", transition: 'background 0.15s' }}
+                >
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(249,115,22,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Flag size={15} color="#fb923c" />
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: '#fff7ed' }}>Report spam or block</span>
+                </button>
+                )}
                 {[
                   { icon: BellOff, label: 'Mute notifications', action: 'mute',  color: '#8b5cf6' },
                   { icon: Shield,  label: 'Block user',         action: 'block', color: '#ef4444' },
@@ -1108,6 +1175,48 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
                     </>
                   )}
                 </p>
+                {!isPendingConversation && (
+                  userReportedPeer ? (
+                    <div
+                      style={{
+                        marginTop: 18,
+                        padding: '12px 16px',
+                        borderRadius: 14,
+                        border: '1px solid rgba(52,211,153,0.28)',
+                        background: 'rgba(52,211,153,0.08)',
+                        maxWidth: 280,
+                        marginLeft: 'auto',
+                        marginRight: 'auto',
+                      }}
+                    >
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#a7f3d0', fontFamily: "'DM Sans', sans-serif" }}>
+                        You reported this user
+                      </p>
+                      <p style={{ margin: '8px 0 0', fontSize: 11, color: 'rgba(246,223,252,0.62)', lineHeight: 1.45 }}>
+                        We review every report.
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setBlockReportOpen(true)}
+                      style={{
+                        marginTop: 18,
+                        padding: '8px 14px',
+                        borderRadius: 999,
+                        border: '1px solid rgba(251,146,60,0.4)',
+                        background: 'rgba(251,146,60,0.1)',
+                        color: '#fdba74',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      Report spam or block
+                    </button>
+                  )
+                )}
               </div>
             </div>
           ) : (
@@ -1505,6 +1614,21 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
         )}
 
       </div>
+
+      {/* ── Report / block (same flow as Discover — feeds moderation_cases) ── */}
+      {blockReportOpen && (
+        <BlockReport
+          targetId={otherProfile.id}
+          targetName={otherProfile.full_name?.trim() || 'this person'}
+          portalRoot={embedded ? chatOverlayPortal : null}
+          onReportSubmitted={persistReportAcknowledged}
+          onClose={() => setBlockReportOpen(false)}
+          onBlocked={(targetId) => {
+            setBlockReportOpen(false)
+            if (targetId === otherProfile.id) onBack()
+          }}
+        />
+      )}
 
       {/* ── Incoming Call Modal ── */}
       {incomingCall && (

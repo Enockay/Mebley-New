@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/rateLimit'
-import { pgQuery } from '@/lib/postgres'
+import { pgQuery, withPgClient } from '@/lib/postgres'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 // ── POST /api/moderation ──────────────────────────────────────────────────────
@@ -41,30 +41,51 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Block ─────────────────────────────────────────────────────────────────
-    if (action === 'block' || action === 'block_and_report') {
-      await pgQuery(
-        `
-        INSERT INTO blocked_users (blocker_id, blocked_id, reason)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (blocker_id, blocked_id)
-        DO UPDATE SET reason = EXCLUDED.reason
-        `,
-        [user.id, targetId, reason ?? 'blocked']
-      )
-    }
+    await withPgClient(async (client) => {
+      await client.query('BEGIN')
+      try {
+        if (action === 'block' || action === 'block_and_report') {
+          await client.query(
+            `
+            INSERT INTO blocked_users (blocker_id, blocked_id, reason)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (blocker_id, blocked_id)
+            DO UPDATE SET reason = EXCLUDED.reason
+            `,
+            [user.id, targetId, reason ?? 'blocked']
+          )
+        }
 
-    // ── Report ────────────────────────────────────────────────────────────────
-    if (action === 'report' || action === 'block_and_report') {
-      await pgQuery(
-        `
-        INSERT INTO reports (reporter_id, reported_id, reason, details)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (reporter_id, reported_id, reason)
-        DO UPDATE SET details = EXCLUDED.details
-        `,
-        [user.id, targetId, reason, details ?? null]
-      )
-    }
+        if (action === 'report' || action === 'block_and_report') {
+          const reportRes = await client.query<{ id: string }>(
+            `
+            INSERT INTO reports (reporter_id, reported_id, reason, details)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (reporter_id, reported_id, reason)
+            DO UPDATE SET details = EXCLUDED.details
+            RETURNING id
+            `,
+            [user.id, targetId, reason, details ?? null]
+          )
+
+          const reportId = reportRes.rows[0]?.id
+          if (reportId) {
+            await client.query(
+              `
+              INSERT INTO moderation_cases (report_id, status)
+              VALUES ($1, 'open')
+              ON CONFLICT (report_id) DO NOTHING
+              `,
+              [reportId]
+            )
+          }
+        }
+        await client.query('COMMIT')
+      } catch (error) {
+        await client.query('ROLLBACK')
+        throw error
+      }
+    })
 
     return NextResponse.json({ success: true, action })
 
@@ -86,12 +107,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const blockedRes = await pgQuery<{ blocked_id: string }>(
-      'SELECT blocked_id FROM blocked_users WHERE blocker_id = $1',
-      [user.id]
-    )
-    const blockedIds = blockedRes.rows.map((r) => r.blocked_id)
-    return NextResponse.json({ blockedIds })
+    const type = request.nextUrl.searchParams.get('type') ?? 'blocked'
+    if (type === 'blocked') {
+      const blockedRes = await pgQuery<{ blocked_id: string }>(
+        'SELECT blocked_id FROM blocked_users WHERE blocker_id = $1',
+        [user.id]
+      )
+      const blockedIds = blockedRes.rows.map((r) => r.blocked_id)
+      return NextResponse.json({ blockedIds })
+    }
+    return NextResponse.json({ error: 'Unsupported type' }, { status: 400 })
 
   } catch (error) {
     console.error('[Moderation] GET error:', error)

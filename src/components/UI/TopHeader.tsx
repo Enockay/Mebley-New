@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { LogOut, Coins } from 'lucide-react'
+import { LogOut, Coins, Shield } from 'lucide-react'
 import { usePaywall } from '@/hooks/usePaywall'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -17,7 +17,7 @@ function getPhotoUrl(photos: unknown): string | null {
 }
 
 export default function TopHeader() {
-  const { profile, signOut, creditBalance } = useAuth()
+  const { profile, signOut, creditBalance, isAdmin } = useAuth()
   const { openPaywall, closePaywall } = usePaywall()
   const router               = useRouter()
   const pathname             = usePathname()
@@ -104,6 +104,33 @@ export default function TopHeader() {
 
         {/* Right side */}
         <div className="flex items-center gap-2 sm:gap-3" style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => router.push('/admin')}
+              title="Moderation dashboard"
+              className="inline-flex"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 10px',
+                borderRadius: '100px',
+                border: '1px solid rgba(168,85,247,0.38)',
+                background: 'rgba(168,85,247,0.12)',
+                color: '#e9d5ff',
+                fontSize: '11px',
+                fontWeight: 700,
+                fontFamily: "'DM Sans', sans-serif",
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Shield size={13} aria-hidden />
+              <span className="hidden sm:inline">Admin</span>
+            </button>
+          )}
 
           {/* Credits */}
           <button

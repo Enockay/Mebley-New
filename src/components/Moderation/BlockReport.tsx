@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, ShieldAlert, Flag, ShieldX, ChevronRight, Check, Loader2, AlertTriangle } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -9,8 +10,11 @@ interface BlockReportProps {
   targetId:   string
   targetName: string
   onClose:    () => void
-  // Called after a successful block so the parent can remove the card
   onBlocked?: (targetId: string) => void
+  /** Called after a successful submit that included filing a report (`report` or `block_and_report`). */
+  onReportSubmitted?: () => void
+  /** Host element — when set (Browse embedded chat), modal stays inside the chat column. */
+  portalRoot?: HTMLElement | null
 }
 
 type Step = 'menu' | 'report_reason' | 'report_details' | 'confirm_block' | 'done'
@@ -26,6 +30,17 @@ const REPORT_REASONS = [
   { value: 'other',           label: 'Something else', emoji: '💬' },
 ]
 
+/** Matches `globals.css` — `--grad-rose` + `--shadow-rose` */
+const SYSTEM_PRIMARY_BASE =
+  'rounded-xl text-sm font-semibold text-white transition-[filter,box-shadow] hover:brightness-105 active:brightness-95 disabled:opacity-40 disabled:hover:brightness-100'
+
+function systemPrimaryStyle() {
+  return {
+    background: 'var(--grad-rose)',
+    boxShadow: 'var(--shadow-rose)',
+  }
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function BlockReport({
@@ -33,7 +48,14 @@ export default function BlockReport({
   targetName,
   onClose,
   onBlocked,
+  onReportSubmitted,
+  portalRoot,
 }: BlockReportProps) {
+  const [mounted, setMounted] = useState(false)
+
+  useLayoutEffect(() => {
+    setMounted(true)
+  }, [])
   const [step, setStep]           = useState<Step>('menu')
   const [action, setAction]       = useState<ActionType>('report')
   const [reason, setReason]       = useState('')
@@ -64,7 +86,10 @@ export default function BlockReport({
 
       setStep('done')
 
-      // Notify parent to remove card from browse list if blocked
+      if (action === 'report' || action === 'block_and_report') {
+        onReportSubmitted?.()
+      }
+
       if ((action === 'block' || action === 'block_and_report') && onBlocked) {
         onBlocked(targetId)
       }
@@ -77,24 +102,47 @@ export default function BlockReport({
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
+  // Prefer portalRoot (Browse chat column) so the sheet stays in the chat section; else body (full viewport).
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-sm">
+  const inChatPane = Boolean(portalRoot)
+  const overlay = (
+    <div
+      className={
+        inChatPane
+          ? 'pointer-events-auto absolute inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4'
+          : 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4'
+      }
+      style={{ zIndex: inChatPane ? 2 : 10000 }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="block-report-heading"
+    >
+      <div
+        className="rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm overflow-hidden font-[family-name:var(--font-body)]"
+        style={{
+          color: '#f0e8f4',
+          background:
+            'radial-gradient(ellipse 65% 45% at 12% 88%, rgba(240,56,104,0.12) 0%, transparent 65%), radial-gradient(ellipse 45% 55% at 88% 12%, rgba(100,40,180,0.1) 0%, transparent 65%), #0c0a1e',
+          border: '1px solid rgba(255,255,255,0.12)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+        }}
+      >
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900">
-            {step === 'menu'           && `Report or block`}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+          <h2 id="block-report-heading" className="text-base font-bold text-white font-[family-name:var(--font-display)]">
+            {step === 'menu'           && `Report spam or block`}
             {step === 'report_reason'  && 'What\'s the issue?'}
             {step === 'report_details' && 'Any more details?'}
             {step === 'confirm_block'  && 'Block this person?'}
             {step === 'done'           && 'Done'}
           </h2>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-            <X size={18} className="text-gray-500" />
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+          >
+            <X size={18} className="text-[rgba(246,223,252,0.65)]" />
           </button>
         </div>
 
@@ -103,50 +151,56 @@ export default function BlockReport({
           {/* ── Step: menu ─────────────────────────────────────────────── */}
           {step === 'menu' && (
             <div className="space-y-3">
-              <p className="text-sm text-gray-500 mb-4">
-                What would you like to do about <span className="font-semibold text-gray-800">{targetName}</span>?
+              <p className="text-sm text-[rgba(246,223,252,0.72)] mb-4">
+                What would you like to do about <span className="font-semibold text-[#fff6fb]">{targetName}</span>?
               </p>
 
               {/* Report */}
               <button
+                type="button"
                 onClick={() => { setAction('report'); setStep('report_reason') }}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all text-left group">
-                <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-orange-200 transition-colors">
-                  <Flag size={18} className="text-orange-500" />
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl border border-white/14 bg-white/[0.06] hover:bg-white/[0.09] hover:border-rose-400/40 transition-all text-left group"
+              >
+                <div className="w-10 h-10 bg-rose-500/15 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-rose-500/25 transition-colors">
+                  <Flag size={18} className="text-[color:var(--rose)]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 text-sm">Report</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Let us know about harmful behaviour</p>
+                  <p className="font-semibold text-[#fff6fb] text-sm">Report</p>
+                  <p className="text-xs text-[rgba(246,223,252,0.58)] mt-0.5">Let us know about harmful behaviour</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />
+                <ChevronRight size={16} className="text-[rgba(246,223,252,0.4)] flex-shrink-0" />
               </button>
 
               {/* Block */}
               <button
+                type="button"
                 onClick={() => { setAction('block'); setStep('confirm_block') }}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all text-left group">
-                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-red-200 transition-colors">
-                  <ShieldX size={18} className="text-red-500" />
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl border border-white/14 bg-white/[0.06] hover:bg-red-500/10 hover:border-red-400/35 transition-all text-left group"
+              >
+                <div className="w-10 h-10 bg-red-500/15 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-red-500/25 transition-colors">
+                  <ShieldX size={18} className="text-red-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 text-sm">Block</p>
-                  <p className="text-xs text-gray-500 mt-0.5">They won't appear in your discover</p>
+                  <p className="font-semibold text-[#fff6fb] text-sm">Block</p>
+                  <p className="text-xs text-[rgba(246,223,252,0.58)] mt-0.5">They won't appear in your discover</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />
+                <ChevronRight size={16} className="text-[rgba(246,223,252,0.4)] flex-shrink-0" />
               </button>
 
               {/* Report + block */}
               <button
+                type="button"
                 onClick={() => { setAction('block_and_report'); setStep('report_reason') }}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl border-2 border-gray-200 hover:border-rose-300 hover:bg-rose-50 transition-all text-left group">
-                <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-rose-200 transition-colors">
-                  <ShieldAlert size={18} className="text-rose-500" />
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl border border-white/14 bg-white/[0.06] hover:bg-white/[0.09] hover:border-rose-400/40 transition-all text-left group"
+              >
+                <div className="w-10 h-10 bg-rose-500/15 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-rose-500/25 transition-colors">
+                  <ShieldAlert size={18} className="text-rose-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 text-sm">Report & Block</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Report the issue and block them</p>
+                  <p className="font-semibold text-[#fff6fb] text-sm">Report & Block</p>
+                  <p className="text-xs text-[rgba(246,223,252,0.58)] mt-0.5">Report the issue and block them</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />
+                <ChevronRight size={16} className="text-[rgba(246,223,252,0.4)] flex-shrink-0" />
               </button>
             </div>
           )}
@@ -157,21 +211,25 @@ export default function BlockReport({
               {REPORT_REASONS.map(r => (
                 <button
                   key={r.value}
+                  type="button"
                   onClick={() => { setReason(r.value); setStep('report_details') }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-left ${
                     reason === r.value
-                      ? 'border-rose-500 bg-rose-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}>
+                      ? 'border-rose-400/55 bg-rose-500/15'
+                      : 'border-white/12 hover:border-white/20 hover:bg-white/[0.05]'
+                  }`}
+                >
                   <span className="text-lg">{r.emoji}</span>
-                  <span className="text-sm text-gray-800 font-medium flex-1">{r.label}</span>
-                  {reason === r.value && <Check size={14} className="text-rose-500 flex-shrink-0" />}
+                  <span className="text-sm text-[#f0e8f4] font-medium flex-1">{r.label}</span>
+                  {reason === r.value && <Check size={14} className="text-rose-400 flex-shrink-0" />}
                 </button>
               ))}
 
               <button
+                type="button"
                 onClick={() => setStep('menu')}
-                className="w-full mt-2 py-2.5 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                className="w-full mt-2 py-2.5 text-sm text-[rgba(246,223,252,0.55)] hover:text-[rgba(246,223,252,0.88)] transition-colors"
+              >
                 ← Back
               </button>
             </div>
@@ -180,45 +238,50 @@ export default function BlockReport({
           {/* ── Step: report_details ───────────────────────────────────── */}
           {step === 'report_details' && (
             <div className="space-y-4">
-              <div className="bg-gray-50 rounded-xl px-4 py-3">
-                <p className="text-xs text-gray-500 mb-0.5">Reporting for</p>
-                <p className="text-sm font-semibold text-gray-800">
+              <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3">
+                <p className="text-xs text-[rgba(246,223,252,0.52)] mb-0.5">Reporting for</p>
+                <p className="text-sm font-semibold text-[#f0e8f4]">
                   {REPORT_REASONS.find(r => r.value === reason)?.label}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Additional details <span className="text-gray-400 font-normal">(optional)</span>
+                <label className="block text-sm font-semibold text-[rgba(246,223,252,0.88)] mb-2">
+                  Additional details <span className="text-[rgba(246,223,252,0.45)] font-normal">(optional)</span>
                 </label>
                 <textarea
                   value={details}
                   onChange={e => setDetails(e.target.value)}
                   rows={3}
                   maxLength={500}
-                  className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:border-rose-400 focus:outline-none resize-none transition-colors"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm bg-black/35 border-2 border-white/14 text-[#f0e8f4] placeholder:text-[rgba(246,223,252,0.38)] focus:border-[color:var(--rose)] focus:outline-none focus:ring-2 focus:ring-rose-500/25 resize-none transition-colors"
                   placeholder="Anything else we should know…"
                 />
-                <p className="text-xs text-gray-400 text-right mt-1">{details.length}/500</p>
+                <p className="text-xs text-[rgba(246,223,252,0.42)] text-right mt-1">{details.length}/500</p>
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 bg-red-50 border border-red-200 px-3 py-2.5 rounded-xl">
-                  <AlertTriangle size={13} className="text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-600">{error}</p>
+                <div className="flex items-start gap-2 rounded-xl border border-red-400/30 bg-red-950/40 px-3 py-2.5">
+                  <AlertTriangle size={13} className="text-red-300 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-200">{error}</p>
                 </div>
               )}
 
               <div className="flex gap-3">
                 <button
+                  type="button"
                   onClick={() => setStep('report_reason')}
-                  className="px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all">
+                  className="px-4 py-2.5 border border-white/18 text-[#f0e8f4] rounded-xl text-sm font-medium hover:bg-white/[0.08] transition-all"
+                >
                   Back
                 </button>
                 <button
+                  type="button"
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-rose-600 hover:to-pink-600 disabled:opacity-40 transition-all">
+                  style={systemPrimaryStyle()}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 ${SYSTEM_PRIMARY_BASE}`}
+                >
                   {loading
                     ? <><Loader2 size={14} className="animate-spin" /> Submitting…</>
                     : action === 'block_and_report'
@@ -233,36 +296,41 @@ export default function BlockReport({
           {/* ── Step: confirm_block ────────────────────────────────────── */}
           {step === 'confirm_block' && (
             <div className="space-y-4">
-              <div className="bg-red-50 rounded-2xl px-4 py-4 text-center">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <ShieldX size={22} className="text-red-500" />
+              <div className="rounded-2xl border border-red-400/25 bg-red-950/35 px-4 py-4 text-center">
+                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <ShieldX size={22} className="text-red-400" />
                 </div>
-                <p className="text-sm font-semibold text-gray-900 mb-1">
+                <p className="text-sm font-semibold text-[#fff6fb] mb-1">
                   Block {targetName}?
                 </p>
-                <p className="text-xs text-gray-500 leading-relaxed">
+                <p className="text-xs text-[rgba(246,223,252,0.65)] leading-relaxed">
                   They won't appear in your discover feed and won't be able to match with you.
                   You can unblock from your settings.
                 </p>
               </div>
 
               {error && (
-                <div className="flex items-start gap-2 bg-red-50 border border-red-200 px-3 py-2.5 rounded-xl">
-                  <AlertTriangle size={13} className="text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-600">{error}</p>
+                <div className="flex items-start gap-2 rounded-xl border border-red-400/30 bg-red-950/40 px-3 py-2.5">
+                  <AlertTriangle size={13} className="text-red-300 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-200">{error}</p>
                 </div>
               )}
 
               <div className="flex gap-3">
                 <button
+                  type="button"
                   onClick={() => setStep('menu')}
-                  className="px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all">
+                  className="px-4 py-2.5 border border-white/18 text-[#f0e8f4] rounded-xl text-sm font-medium hover:bg-white/[0.08] transition-all"
+                >
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 disabled:opacity-40 transition-all">
+                  style={systemPrimaryStyle()}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 ${SYSTEM_PRIMARY_BASE}`}
+                >
                   {loading
                     ? <><Loader2 size={14} className="animate-spin" /> Blocking…</>
                     : 'Yes, block them'
@@ -275,16 +343,16 @@ export default function BlockReport({
           {/* ── Step: done ─────────────────────────────────────────────── */}
           {step === 'done' && (
             <div className="text-center py-4 space-y-3">
-              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <Check size={26} className="text-green-500" />
+              <div className="w-14 h-14 bg-emerald-500/15 rounded-full flex items-center justify-center mx-auto">
+                <Check size={26} className="text-emerald-400" />
               </div>
               <div>
-                <p className="font-bold text-gray-900 mb-1">
+                <p className="font-bold text-[#fff6fb] mb-1 font-[family-name:var(--font-display)]">
                   {action === 'block'            && 'Blocked'}
                   {action === 'report'           && 'Report submitted'}
                   {action === 'block_and_report' && 'Reported & blocked'}
                 </p>
-                <p className="text-sm text-gray-500 leading-relaxed">
+                <p className="text-sm text-[rgba(246,223,252,0.72)] leading-relaxed">
                   {action === 'block' &&
                     `${targetName} won't appear in your discover feed anymore.`}
                   {action === 'report' &&
@@ -294,8 +362,11 @@ export default function BlockReport({
                 </p>
               </div>
               <button
+                type="button"
                 onClick={onClose}
-                className="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl text-sm font-semibold hover:from-rose-600 hover:to-pink-600 transition-all mt-2">
+                style={systemPrimaryStyle()}
+                className={`w-full py-3 mt-2 flex items-center justify-center ${SYSTEM_PRIMARY_BASE}`}
+              >
                 Done
               </button>
             </div>
@@ -305,4 +376,8 @@ export default function BlockReport({
       </div>
     </div>
   )
+
+  const mountNode = portalRoot ?? (mounted ? document.body : null)
+  if (!mountNode) return null
+  return createPortal(overlay, mountNode)
 }

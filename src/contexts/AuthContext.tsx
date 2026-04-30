@@ -6,7 +6,7 @@ import type { Database } from '@/types/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type AppUser = { id: string; email: string }
-type AuthResult = { error: { message: string } | null }
+type AuthResult = { error: { message: string } | null; isAdmin?: boolean }
 
 interface AuthContextType {
   user:           AppUser | null
@@ -14,6 +14,8 @@ interface AuthContextType {
   session:        { authenticated: boolean } | null
   loading:        boolean
   creditBalance:  number
+  /** Mirrors `user_roles.role = 'admin'` — same rule as admin APIs. */
+  isAdmin:        boolean
   signUp:         (email: string, password: string) => Promise<AuthResult>
   signIn:         (email: string, password: string) => Promise<AuthResult>
   signOut:        () => Promise<void>
@@ -29,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession]           = useState<{ authenticated: boolean } | null>(null)
   const [loading, setLoading]           = useState(true)
   const [creditBalance, setCreditBalance] = useState(0)
+  const [isAdmin, setIsAdmin]           = useState(false)
 
   const refreshProfile = async () => {
     const res = await fetch('/api/auth/me', { cache: 'no-store' })
@@ -37,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user ?? null)
     setProfile(data.profile ?? null)
     setCreditBalance(data.creditBalance ?? 0)
+    setIsAdmin(!!data.isAdmin)
     setSession(data.user ? { authenticated: true } : null)
   }
 
@@ -65,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const json = await res.json().catch(() => ({}))
     if (!res.ok) return { error: { message: json.error ?? 'Sign in failed' } }
     await refreshProfile()
-    return { error: null }
+    return { error: null, isAdmin: !!json.isAdmin }
   }
 
   const signOut = async () => {
@@ -74,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null)
     setProfile(null)
     setCreditBalance(0)
+    setIsAdmin(false)
   }
 
   // Link email+password to current account (e.g. Google user adding email/password)
@@ -85,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, profile, session, loading, creditBalance,
+      user, profile, session, loading, creditBalance, isAdmin,
       signUp, signIn, signOut, refreshProfile, linkEmail,
     }}>
       {children}

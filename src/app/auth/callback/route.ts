@@ -22,17 +22,40 @@ import { randomBytes } from 'crypto'
 import { createAdminSupabaseClient } from '@/lib/supabase-server'
 import { pgQuery } from '@/lib/postgres'
 import { createAuthSession, issueSessionToken, setAuthCookie, hashPassword } from '@/lib/auth-server'
+import { isAdminUser } from '@/lib/admin-auth'
+import { isSafeRedirectPath } from '@/lib/safe-redirect'
 import type { Database } from '@/types/database.types'
 
 // ── Whitelist of allowed post-auth redirect paths ────────────────────────────
 // NEVER allow redirects to external domains
-const ALLOWED_REDIRECT_PATHS = ['/browse', '/discover', '/setup', '/profile', '/matches', '/upgrade']
+const ALLOWED_REDIRECT_PATHS = ['/browse', '/discover', '/setup', '/profile', '/matches', '/upgrade', '/admin']
 
-function isSafeRedirectPath(path: string): boolean {
-  // Must be a relative path starting with /
-  if (!path.startsWith('/')) return false
-  // Must match an allowed prefix
+function isAllowedOAuthRedirectPath(path: string): boolean {
+  if (!isSafeRedirectPath(path)) return false
   return ALLOWED_REDIRECT_PATHS.some(allowed => path === allowed || path.startsWith(allowed + '/'))
+}
+
+async function resolveOAuthNextDestination(params: {
+  cookieStore: Awaited<ReturnType<typeof cookies>>
+  appUserId: string
+  fallback: string
+}): Promise<string> {
+  const raw = params.cookieStore.get('oauth_next')?.value
+  let nextPath: string | null = null
+  if (raw) {
+    try {
+      const decoded = decodeURIComponent(raw)
+      if (isAllowedOAuthRedirectPath(decoded)) nextPath = decoded
+    } catch {
+      nextPath = null
+    }
+  }
+  if (!nextPath) return params.fallback
+  if (nextPath.startsWith('/admin')) {
+    const ok = await isAdminUser(params.appUserId)
+    return ok ? nextPath : params.fallback
+  }
+  return nextPath
 }
 
 // ── Generate a unique username ────────────────────────────────────────────────
@@ -95,6 +118,7 @@ async function ensureAppAuthAndRedirect(params: {
   request: NextRequest
   appUserId: string
   destination: string
+  clearOAuthNextCookie?: boolean
 }) {
   const token = issueSessionToken()
   const { expiresAt } = await createAuthSession({
@@ -106,6 +130,9 @@ async function ensureAppAuthAndRedirect(params: {
 
   const response = NextResponse.redirect(`${params.origin}${params.destination}`)
   setAuthCookie(response, token, expiresAt)
+  if (params.clearOAuthNextCookie) {
+    response.cookies.set('oauth_next', '', { path: '/', maxAge: 0 })
+  }
   return response
 }
 
@@ -217,12 +244,20 @@ export async function GET(request: NextRequest) {
       existingProfile.interests.length > 0
     )
 
-    const destination = hasSetup ? '/browse' : '/setup'
+    const destination = hasSetup
+      ? await resolveOAuthNextDestination({
+          cookieStore,
+          appUserId,
+          fallback: '/browse',
+        })
+      : '/setup'
+
     return ensureAppAuthAndRedirect({
       origin,
       request,
       appUserId,
       destination,
+      clearOAuthNextCookie: !!cookieStore.get('oauth_next'),
     })
   }
 
@@ -267,6 +302,7 @@ export async function GET(request: NextRequest) {
       request,
       appUserId,
       destination: '/setup',
+      clearOAuthNextCookie: !!cookieStore.get('oauth_next'),
     })
   }
 
@@ -328,5 +364,6 @@ export async function GET(request: NextRequest) {
     request,
     appUserId,
     destination: '/setup',
+    clearOAuthNextCookie: !!cookieStore.get('oauth_next'),
   })
 }

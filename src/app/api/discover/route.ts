@@ -150,36 +150,38 @@ export async function GET(request: NextRequest) {
     }
 
     const where: string[] = [
-      'is_active = true',
-      'visible = true',
-      `gender = ANY(${bind(genderFilter)}::text[])`,
-      'age_range IS NOT NULL',
-      "age_range <> 'under_18'",
-      `NOT (id = ANY(${bind(Array.from(excludeIds))}::uuid[]))`,
+      'p.is_active = true',
+      'p.visible = true',
+      'au.is_active = true',
+      `p.gender = ANY(${bind(genderFilter)}::text[])`,
+      'p.age_range IS NOT NULL',
+      "p.age_range <> 'under_18'",
+      `NOT (p.id = ANY(${bind(Array.from(excludeIds))}::uuid[]))`,
     ]
 
     if (myProfile.gender) {
-      where.push(`gender_preference @> ${bind([myProfile.gender])}::text[]`)
+      where.push(`p.gender_preference @> ${bind([myProfile.gender])}::text[]`)
     }
     if (filterLocation) {
-      where.push(`location ILIKE ${bind(`%${filterLocation}%`)}`)
+      where.push(`p.location ILIKE ${bind(`%${filterLocation}%`)}`)
     }
     if (intentList.length > 0) {
-      where.push(`looking_for && ${bind(intentList)}::text[]`)
+      where.push(`p.looking_for && ${bind(intentList)}::text[]`)
     }
     if (interestList.length > 0) {
-      where.push(`interests && ${bind(interestList)}::text[]`)
+      where.push(`p.interests && ${bind(interestList)}::text[]`)
     }
     if (ageRangeList.length > 0) {
-      where.push(`age_range = ANY(${bind(ageRangeList)}::text[])`)
+      where.push(`p.age_range = ANY(${bind(ageRangeList)}::text[])`)
     }
 
     const candidatesRes = await pgQuery<DiscoverProfileRow>(
       `
-      SELECT *
-      FROM profiles
+      SELECT p.*
+      FROM profiles p
+      JOIN app_users au ON au.id = p.id
       WHERE ${where.join(' AND ')}
-      ORDER BY last_active DESC NULLS LAST
+      ORDER BY p.last_active DESC NULLS LAST
       OFFSET ${bind(offset)}
       LIMIT ${bind(pageLimit * 3)}
       `,

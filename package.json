@@ -9,7 +9,8 @@
     "prestart": "npm run migrate:sql -- --all",
     "start": "next start",
     "lint": "eslint",
-    "migrate:sql": "node scripts/run-sql-migration.mjs"
+    "migrate:sql": "node scripts/run-sql-migration.mjs",
+    "grant:admin": "node scripts/grant-admin.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-rekognition": "^3.1004.0",

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { pgQuery } from '@/lib/postgres'
 
-const SESSION_COOKIE = 'app_session'
+export const AUTH_SESSION_COOKIE_NAME = 'app_session'
 const SESSION_DAYS = 30
 
 export type AuthUser = {
@@ -21,6 +21,11 @@ export async function hashPassword(password: string): Promise<string> {
 
 export async function verifyPassword(password: string, passwordHash: string): Promise<boolean> {
   return bcrypt.compare(password, passwordHash)
+}
+
+/** SHA-256 of raw session cookie value — matches `auth_sessions.token_hash`. */
+export function hashSessionToken(token: string): string {
+  return sha256(token)
 }
 
 export function issueSessionToken(): string {
@@ -45,7 +50,7 @@ export async function createAuthSession(params: {
 }
 
 export function setAuthCookie(response: NextResponse, token: string, expiresAt: Date) {
-  response.cookies.set(SESSION_COOKIE, token, {
+  response.cookies.set(AUTH_SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -55,7 +60,7 @@ export function setAuthCookie(response: NextResponse, token: string, expiresAt: 
 }
 
 export function clearAuthCookie(response: NextResponse) {
-  response.cookies.set(SESSION_COOKIE, '', {
+  response.cookies.set(AUTH_SESSION_COOKIE_NAME, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -65,7 +70,7 @@ export function clearAuthCookie(response: NextResponse) {
 }
 
 export async function getAuthUserFromRequest(request: NextRequest): Promise<AuthUser | null> {
-  const token = request.cookies.get(SESSION_COOKIE)?.value
+  const token = request.cookies.get(AUTH_SESSION_COOKIE_NAME)?.value
   if (!token) return null
 
   const res = await pgQuery<AuthUser>(
@@ -84,7 +89,7 @@ export async function getAuthUserFromRequest(request: NextRequest): Promise<Auth
 }
 
 export async function revokeSessionFromRequest(request: NextRequest): Promise<void> {
-  const token = request.cookies.get(SESSION_COOKIE)?.value
+  const token = request.cookies.get(AUTH_SESSION_COOKIE_NAME)?.value
   if (!token) return
   await pgQuery('DELETE FROM auth_sessions WHERE token_hash = $1', [sha256(token)])
 }

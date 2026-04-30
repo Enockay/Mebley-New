@@ -13,12 +13,12 @@ import MatchesPage from '@/app/matches/page'
 import {
   Heart, X, Search, SlidersHorizontal, MapPin,
   RefreshCw, ChevronDown, Sparkles,
-  MoreVertical, LayoutGrid, Layers, ChevronUp, BadgeCheck,
+  LayoutGrid, Layers, ChevronUp, BadgeCheck,
 } from 'lucide-react'
 import { RELATIONSHIP_INTENTS, INTERESTS_BY_CATEGORY } from '@/types/app-constants'
-import BlockReport from '@/components/Moderation/BlockReport'
 import StitchDivider from '@/components/UI/StitchDivider'
 import VoiceNotePlayer from '@/components/UI/VoiceNotePlayer'
+import { ChatOverlayPortalContext } from '@/contexts/ChatOverlayPortalContext'
 
 // ── Types ─────────────────────────────────────────────────────────
 interface PromptAnswer { id: string; question: string; answer: string }
@@ -86,7 +86,7 @@ function buildDiscoverUrl(page: number, filters: Filters): string {
 // ── SwipeCard — new architecture ──────────────────────────────────
 interface SwipeCardProps {
   sp: ScoredProfile; onLike: (sp: ScoredProfile) => void
-  onPass: (id: string) => void; onReport: (id: string, name: string) => void
+  onPass: (id: string) => void
   onViewProfile: (sp: ScoredProfile) => void
   isTop: boolean; stackOffset: number
   visualOffset?: number
@@ -96,7 +96,7 @@ interface SwipeCardProps {
 }
 
 function SwipeCard({
-  sp, onLike, onPass, onReport, onViewProfile, isTop, stackOffset, visualOffset,
+  sp, onLike, onPass, onViewProfile, isTop, stackOffset, visualOffset,
   forceInteractive = false, feedMode = false, enableKeyboard = true,
 }: SwipeCardProps) {
   const supabase = createClient()
@@ -346,21 +346,6 @@ function SwipeCard({
           </div>
         )}
 
-        {/* Report button */}
-        <div style={{ position: 'absolute', top: 12, right: 12 }}>
-          <button
-            onClick={e => { e.stopPropagation(); onReport(p.id, p.full_name) }}
-            style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: 'rgba(0,0,0,0.44)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.18)', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-            <MoreVertical size={14} color="white" />
-          </button>
-        </div>
-
         {/* Vertical action rail on image */}
         <div style={{
           position: 'absolute',
@@ -572,10 +557,10 @@ function BrowsePageContent() {
   const [matchAlert, setMatchAlert]             = useState<{ name: string; photo: string | null } | null>(null)
   const [expandedCard, setExpandedCard]         = useState<string | null>(null)
   const [openMenu, setOpenMenu]                 = useState<string | null>(null)
-  const [moderationTarget, setModerationTarget] = useState<{ id: string; name: string } | null>(null)
   const [viewProfileSp, setViewProfileSp]       = useState<ScoredProfile | null>(null)
   const [drawerPhotoIdx, setDrawerPhotoIdx]     = useState<number>(0)
   const [drawerChat, setDrawerChat]             = useState<{ conversationId: string; profile: BrowseProfile } | null>(null)
+  const [chatOverlayPortalEl, setChatOverlayPortalEl] = useState<HTMLDivElement | null>(null)
   const [viewMode, setViewMode]                 = useState<ViewMode>('stack')
   const [stackStart, setStackStart]             = useState(0)
   const [stackAnimating, setStackAnimating]     = useState(false)
@@ -804,12 +789,6 @@ function BrowsePageContent() {
     }).catch(err => console.error('[Pass] failed:', err))
   }, [])
 
-  const handleBlocked = (targetId: string) => {
-    setBlockedIds(prev => new Set([...prev, targetId]))
-    setScored(prev => prev.filter(s => s.profile.id !== targetId))
-    setModerationTarget(null)
-  }
-
   const openChatWithProfile = useCallback(async (targetProfile: BrowseProfile) => {
     try {
       const res = await fetch('/api/chat/open', {
@@ -939,11 +918,6 @@ function BrowsePageContent() {
               </p>
             </div>
           </div>
-        )}
-
-        {moderationTarget && (
-          <BlockReport targetId={moderationTarget.id} targetName={moderationTarget.name}
-            onClose={() => setModerationTarget(null)} onBlocked={handleBlocked} />
         )}
 
         {/* Filter bar */}
@@ -1274,7 +1248,6 @@ function BrowsePageContent() {
                       sp={sp}
                       onLike={handleLike}
                       onPass={handlePass}
-                      onReport={(id, name) => setModerationTarget({ id, name })}
                       onViewProfile={openPersonProfile}
                       isTop={false}
                       stackOffset={0}
@@ -1312,7 +1285,6 @@ function BrowsePageContent() {
                         sp={sp}
                         onLike={handleLike}
                         onPass={handlePass}
-                        onReport={(id, name) => setModerationTarget({ id, name })}
                         onViewProfile={openPersonProfile}
                         isTop={idx === activeIndex}
                         stackOffset={baseOffset}
@@ -1512,6 +1484,7 @@ function BrowsePageContent() {
 
       {showChatPane && (
       <div style={{ position: 'fixed', left: 0, top: TOP_HEADER_HEIGHT, bottom: 72, zIndex: isMobile ? 68 : 64, width: '100%', pointerEvents: 'none' }}>
+        <ChatOverlayPortalContext.Provider value={chatOverlayPortalEl}>
         <aside style={{
           pointerEvents: 'auto',
             width: isMobile ? '100%' : '76%',
@@ -1551,6 +1524,21 @@ function BrowsePageContent() {
             </div>
           )}
         </aside>
+        <div
+          ref={setChatOverlayPortalEl}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: isMobile ? '100%' : '76%',
+            maxWidth: isMobile ? '100%' : 520,
+            zIndex: 500,
+            pointerEvents: 'none',
+          }}
+          aria-hidden
+        />
+        </ChatOverlayPortalContext.Provider>
       </div>
       )}
 

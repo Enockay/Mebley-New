@@ -13,6 +13,7 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase-client'
+import { isSafeRedirectPath } from '@/lib/safe-redirect'
 
 /* ── Design tokens (match landing page) ────────────────────────── */
 const T = {
@@ -289,6 +290,8 @@ function AuthPageInner() {
   const searchParams = useSearchParams()
   const { signIn, signUp } = useAuth()
 
+  const OAUTH_NEXT_COOKIE = 'oauth_next'
+
   const initialMode: 'landing' | 'signin' | 'signup' =
     typeof window !== 'undefined' && searchParams.get('reset') === 'true' ? 'signin' : 'landing'
 
@@ -324,6 +327,10 @@ function AuthPageInner() {
     setError('')
     setGoogleLoading(true)
     try {
+      const nextPath = searchParams.get('redirectTo')
+      if (typeof document !== 'undefined' && isSafeRedirectPath(nextPath)) {
+        document.cookie = `${OAUTH_NEXT_COOKIE}=${encodeURIComponent(nextPath)}; Path=/; Max-Age=600; SameSite=Lax`
+      }
       const supabase   = createClient()
       const redirectTo = `${window.location.origin}/auth/callback`
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -371,10 +378,15 @@ function AuthPageInner() {
     setError('')
     if (!loginEmail || !loginPass) { setError('Please fill in all fields'); return }
     setLoading(true)
-    const { error } = await signIn(loginEmail, loginPass)
+    const { error, isAdmin } = await signIn(loginEmail, loginPass)
     setLoading(false)
     if (error) { setError(error.message); return }
-    router.push('/browse')
+    const redirectTo = searchParams.get('redirectTo')
+    if (isSafeRedirectPath(redirectTo)) {
+      router.push(redirectTo)
+      return
+    }
+    router.push(isAdmin ? '/admin' : '/browse')
   }
 
   const handleForgotPassword = async () => {

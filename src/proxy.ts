@@ -6,7 +6,7 @@
  *
  * Responsibilities:
  *  1. Protect private routes — redirect unauthenticated users to /auth
- *  3. Redirect authenticated users away from /auth → /browse
+ *  3. Redirect authenticated users away from /auth — honoring safe redirectTo / oauth cookie
  *  4. Profile-setup gate — incomplete profiles go to /setup
  *  5. Protect all API routes (except public ones) — return 401 JSON
  *  6. Apply security headers on every response
@@ -15,6 +15,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 import { pgQuery } from '@/lib/postgres'
+import { isAdminUser } from '@/lib/admin-auth'
+import { isSafeRedirectPath } from '@/lib/safe-redirect'
 
 // ── Route classification ──────────────────────────────────────────────────────
 
@@ -29,6 +31,18 @@ const PUBLIC_API_PREFIXES = [
 
 /** After login, users who haven't finished setup can only visit these pages */
 const SETUP_ALLOWED_PAGES = ['/setup', '/auth']
+const ADMIN_PAGE_PREFIX = '/admin'
+const ADMIN_API_PREFIX = '/api/admin/'
+
+async function resolvePostLoginRedirect(request: NextRequest, userId: string): Promise<string> {
+  const raw = request.nextUrl.searchParams.get('redirectTo')
+  if (!isSafeRedirectPath(raw)) return '/browse'
+  if (raw.startsWith(ADMIN_PAGE_PREFIX)) {
+    const ok = await isAdminUser(userId)
+    return ok ? raw : '/browse'
+  }
+  return raw
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -96,6 +110,16 @@ export async function proxy(request: NextRequest) {
       )
     }
 
+    if (pathname.startsWith(ADMIN_API_PREFIX)) {
+      const admin = await isAdminUser(user.id)
+      if (!admin) {
+        return NextResponse.json(
+          { success: false, message: 'Admin access required', code: 'FORBIDDEN' },
+          { status: 403 }
+        )
+      }
+    }
+
     return applySecurityHeaders(authResponse, request)
   }
 
@@ -110,7 +134,8 @@ export async function proxy(request: NextRequest) {
   // ── 6. Public pages — redirect authed users away from /auth ─────────────
   if (isPublicPage(pathname)) {
     if (user && pathname === '/auth') {
-      return NextResponse.redirect(new URL('/browse', request.url))
+      const dest = await resolvePostLoginRedirect(request, user.id)
+      return NextResponse.redirect(new URL(dest, request.url))
     }
     return applySecurityHeaders(authResponse)
   }
@@ -120,6 +145,14 @@ export async function proxy(request: NextRequest) {
     const redirectUrl = new URL('/auth', request.url)
     redirectUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(redirectUrl)
+  }
+
+  if (pathname.startsWith(ADMIN_PAGE_PREFIX)) {
+    const admin = await isAdminUser(user.id)
+    if (!admin) {
+      return NextResponse.redirect(new URL('/browse', request.url))
+    }
+    return applySecurityHeaders(authResponse, request)
   }
 
   // ── 8. Session exists — enforce profile setup gate ───────────────────────

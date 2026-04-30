@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAuthSession, issueSessionToken, setAuthCookie, verifyPassword } from '@/lib/auth-server'
 import { pgQuery } from '@/lib/postgres'
+import { isAdminUser } from '@/lib/admin-auth'
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -40,7 +41,13 @@ export async function POST(request: NextRequest) {
       ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null,
     })
 
-    const response = NextResponse.json({ success: true, user: { id: user.id, email: user.email } })
+    const isAdmin = await isAdminUser(user.id)
+
+    const response = NextResponse.json({
+      success: true,
+      user: { id: user.id, email: user.email },
+      isAdmin,
+    })
     setAuthCookie(response, token, expiresAt)
     return response
   } catch (error) {

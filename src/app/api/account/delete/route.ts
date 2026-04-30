@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { S3Client, DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3'
-import { MongoClient } from 'mongodb'
+import clientPromise from '@/lib/mongodb'
 import { pgQuery } from '@/lib/postgres'
 import { getAuthUserFromRequest, clearAuthCookie } from '@/lib/auth-server'
+import { recordConsistencyIssue } from '@/lib/consistency'
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION!,
@@ -55,6 +56,12 @@ export async function DELETE(request: NextRequest) {
         // Non-fatal — log and continue
         console.error('[Delete] S3 error:', err.message)
         errors.push('Some photos could not be deleted')
+        await recordConsistencyIssue({
+          entityType: 'user_account',
+          entityId: userId,
+          source: 'account_delete:s3_photos',
+          details: { error: err.message, keyCount: s3Keys.length },
+        })
       }
     }
 
@@ -78,12 +85,17 @@ export async function DELETE(request: NextRequest) {
     } catch (err: any) {
       console.error('[Delete] Video S3 error:', err.message)
       errors.push('Some videos could not be deleted')
+      await recordConsistencyIssue({
+        entityType: 'user_account',
+        entityId: userId,
+        source: 'account_delete:s3_videos',
+        details: { error: err.message },
+      })
     }
 
     // ── 5. Delete MongoDB messages ────────────────────────────────
     try {
-      const mongoClient = new MongoClient(process.env.MONGODB_URI!)
-      await mongoClient.connect()
+      const mongoClient = await clientPromise
       const db = mongoClient.db()
 
       // Delete all messages sent or received by this user
@@ -96,10 +108,16 @@ export async function DELETE(request: NextRequest) {
         participants: userId
       })
 
-      await mongoClient.close()
     } catch (err: any) {
       console.error('[Delete] MongoDB error:', err.message)
       errors.push('Some messages could not be deleted')
+      await recordConsistencyIssue({
+        entityType: 'user_account',
+        entityId: userId,
+        source: 'account_delete:mongodb',
+        severity: 'critical',
+        details: { error: err.message },
+      })
     }
 
     // ── 6. Delete profile row (cascades to matches, likes, blocked_users) ─────
