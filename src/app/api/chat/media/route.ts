@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   // This prevents `mediaUrl: undefined` in chat messages.
   const mediaBaseUrl = cfBase
     ? cfBase
-    : `https://${bucket}.${region}.amazonaws.com`
+    : `https://${bucket}.s3.${region}.amazonaws.com`
 
   if (!bucket || !region) {
     return NextResponse.json(
