@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "eslint",
     "migrate:sql": "node scripts/run-sql-migration.mjs",
-    "grant:admin": "node scripts/grant-admin.mjs"
+    "grant:admin": "node scripts/grant-admin.mjs",
+    "set:password": "node scripts/set-password.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-rekognition": "^3.1004.0",

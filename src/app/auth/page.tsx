@@ -384,6 +384,7 @@ function AuthPageInner() {
   const [googleLoading, setGoogleLoading]   = useState(false)
   const [awaitingConfirmation, setAwaiting] = useState(false)
   const [resetSent, setResetSent]           = useState(false)
+  const [forgotLoading, setForgotLoading]   = useState(false)
 
   const [email, setEmail]             = useState('')
   const [password, setPassword]       = useState('')
@@ -500,9 +501,27 @@ function AuthPageInner() {
   }
 
   const handleForgotPassword = async () => {
-    if (!loginEmail) { setError('Enter your email address first'); return }
+    if (!loginEmail.trim()) { setError('Enter your email address first'); return }
     setResetSent(false)
-    setError('Password reset is temporarily unavailable during auth migration.')
+    setError('')
+    setForgotLoading(true)
+    try {
+      const r = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail.trim() }),
+      })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok || d.success === false) {
+        setError(typeof d.message === 'string' ? d.message : 'Could not send reset email. Try again later.')
+        return
+      }
+      setResetSent(true)
+    } catch {
+      setError('Network error — please try again')
+    } finally {
+      setForgotLoading(false)
+    }
   }
 
   const handleSendOtp = async () => {
@@ -720,8 +739,23 @@ function AuthPageInner() {
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
                         <Label>Password</Label>
-                        <button onClick={handleForgotPassword} style={{ fontSize: 12, color: T.rose, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit', padding: 0 }}>
-                          Forgot password?
+                        <button
+                          type="button"
+                          onClick={handleForgotPassword}
+                          disabled={forgotLoading}
+                          style={{
+                            fontSize: 12,
+                            color: T.rose,
+                            background: 'none',
+                            border: 'none',
+                            cursor: forgotLoading ? 'wait' : 'pointer',
+                            fontWeight: 600,
+                            fontFamily: 'inherit',
+                            padding: 0,
+                            opacity: forgotLoading ? 0.75 : 1,
+                          }}
+                        >
+                          {forgotLoading ? 'Sending reset link…' : 'Forgot password?'}
                         </button>
                       </div>
                       <RightInput show={showLP} onToggle={() => setShowLP(!showLP)} value={loginPass} onChange={e => setLP(e.target.value)} placeholder="Your password" onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && handleLogin()} autoComplete="current-password" />
