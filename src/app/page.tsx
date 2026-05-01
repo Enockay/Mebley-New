@@ -155,32 +155,44 @@ export default function LandingPage() {
         paddingBottom: 0,
         position: 'relative',
         overflow: 'hidden',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
         background: `
-          radial-gradient(ellipse 80% 70% at -5% 5%, rgba(240,56,104,0.20) 0%, transparent 52%),
-          radial-gradient(ellipse 60% 60% at 105% 5%, rgba(100,55,210,0.16) 0%, transparent 50%),
-          radial-gradient(ellipse 50% 50% at 50% 105%, rgba(160,25,80,0.12) 0%, transparent 52%),
+          radial-gradient(ellipse 90% 80% at -10% 0%, rgba(240,56,104,0.22) 0%, transparent 55%),
+          radial-gradient(ellipse 70% 70% at 110% -5%, rgba(100,55,210,0.18) 0%, transparent 52%),
+          radial-gradient(ellipse 50% 55% at 60% 110%, rgba(160,25,80,0.14) 0%, transparent 52%),
           ${T.bg}
         `,
       }}>
         {/* grid mesh */}
         <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.025,
+          position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.022,
           backgroundImage: `linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)`,
-          backgroundSize: '64px 64px',
+          backgroundSize: '72px 72px',
         }} />
 
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 24px 0', position: 'relative' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 48, alignItems: 'center' }} className="md:grid-cols-[1.15fr_0.85fr]">
+        {/* Large decorative glow behind cards */}
+        <div style={{
+          position: 'absolute', top: '10%', right: '5%',
+          width: 520, height: 520, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(214,77,232,0.1) 0%, rgba(240,56,104,0.06) 40%, transparent 70%)',
+          pointerEvents: 'none', filter: 'blur(40px)',
+        }} />
+
+        <div style={{ maxWidth: 1380, margin: '0 auto', padding: '60px 40px 0', position: 'relative', width: '100%' }}>
+          <div className="grid md:grid-cols-2" style={{ gap: 64, alignItems: 'center' }}>
 
             {/* ── Copy ── */}
-            <div style={{ maxWidth: 640 }}>
+            <div>
               <Reveal>
                 <div style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '7px 16px', borderRadius: 100,
                   border: `1px solid ${T.roseBorder}`, background: 'rgba(240,56,104,0.09)',
                   fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#ff90b4',
-                  marginBottom: 24,
+                  marginBottom: 28,
                 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.rose, display: 'inline-block', boxShadow: '0 0 6px rgba(240,56,104,0.7)' }} />
                   Intentional dating, reimagined
@@ -190,12 +202,12 @@ export default function LandingPage() {
               <Reveal delay={0.07}>
                 <h1 style={{
                   fontFamily: 'var(--font-display)',
-                  fontSize: 'clamp(2.8rem, 8vw, 5.2rem)',
+                  fontSize: 'clamp(2.4rem, 3.8vw, 4rem)',
                   fontWeight: 800,
-                  lineHeight: 1.04,
-                  letterSpacing: '-0.02em',
+                  lineHeight: 1.03,
+                  letterSpacing: '-0.03em',
                   color: '#ffffff',
-                  margin: '0 0 20px',
+                  margin: '0 0 24px',
                 }}>
                   Find your<br />
                   <span style={{
@@ -209,7 +221,7 @@ export default function LandingPage() {
               </Reveal>
 
               <Reveal delay={0.13}>
-                <p style={{ fontSize: 'clamp(15px, 2.2vw, 17px)', color: T.muted, lineHeight: 1.7, maxWidth: 480, margin: '0 0 36px' }}>
+                <p style={{ fontSize: 'clamp(15px, 1.5vw, 18px)', color: T.muted, lineHeight: 1.75, maxWidth: 500, margin: '0 0 40px' }}>
                   Thoughtful profiles, voice-first chemistry, and matches ranked by depth — not by who swiped most recently.
                 </p>
               </Reveal>
@@ -222,35 +234,35 @@ export default function LandingPage() {
               </Reveal>
 
               <Reveal delay={0.18}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 32 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 36 }}>
                   <a href="/auth" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '13px 32px', borderRadius: 100,
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '15px 36px', borderRadius: 100,
                     background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`,
-                    boxShadow: '0 14px 36px rgba(240,56,104,0.36)',
-                    fontSize: 14, fontWeight: 700, color: '#fff', textDecoration: 'none',
+                    boxShadow: '0 16px 40px rgba(240,56,104,0.38)',
+                    fontSize: 15, fontWeight: 700, color: '#fff', textDecoration: 'none',
                     transition: 'opacity 0.15s, transform 0.15s',
                   }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '0.9'; el.style.transform = 'translateY(-1px)' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '0.9'; el.style.transform = 'translateY(-2px)' }}
                     onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '1'; el.style.transform = 'translateY(0)' }}>
                     Start free →
                   </a>
                   <a href="#how" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '13px 28px', borderRadius: 100,
-                    border: `1px solid ${T.border}`, background: T.card,
-                    fontSize: 14, fontWeight: 500, color: T.muted, textDecoration: 'none',
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '15px 30px', borderRadius: 100,
+                    border: `1px solid rgba(255,255,255,0.14)`, background: 'rgba(255,255,255,0.05)',
+                    fontSize: 15, fontWeight: 500, color: T.muted, textDecoration: 'none',
                     transition: 'all 0.15s',
                   }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.roseBorder; el.style.color = T.text }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.border; el.style.color = T.muted }}>
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.14)'; el.style.color = T.muted }}>
                     How it works
                   </a>
                 </div>
               </Reveal>
 
               <Reveal delay={0.24}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 48 }}>
                   {[
                     { icon: '✓', text: 'Free to start' },
                     { icon: '🌍', text: '40+ countries' },
@@ -259,9 +271,9 @@ export default function LandingPage() {
                   ].map(({ icon, text }) => (
                     <span key={text} style={{
                       display: 'inline-flex', alignItems: 'center', gap: 6,
-                      padding: '6px 14px', borderRadius: 100, fontSize: 12, fontWeight: 500,
-                      border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.03)',
-                      color: T.faint,
+                      padding: '7px 14px', borderRadius: 100, fontSize: 12.5, fontWeight: 500,
+                      border: `1px solid rgba(255,255,255,0.09)`, background: 'rgba(255,255,255,0.04)',
+                      color: 'rgba(200,180,215,0.6)',
                     }}>
                       <span style={{ fontSize: 11 }}>{icon}</span>
                       {text}
@@ -269,12 +281,24 @@ export default function LandingPage() {
                   ))}
                 </div>
               </Reveal>
+
+              {/* Stats row */}
+              <Reveal delay={0.28}>
+                <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+                  {STATS.map(s => (
+                    <div key={s.l}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.55rem', fontWeight: 800, color: T.rose, lineHeight: 1 }}>{s.v}</div>
+                      <div style={{ fontSize: 11, color: T.faint, marginTop: 4, letterSpacing: '0.06em' }}>{s.l}</div>
+                    </div>
+                  ))}
+                </div>
+              </Reveal>
             </div>
 
-            {/* ── Desktop stacked cards ── */}
-            <Reveal delay={0.1} className="hidden md:flex" >
-              <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', height: 540 }}>
-                <DesktopCardStack />
+            {/* ── Desktop card scene ── */}
+            <Reveal delay={0.1} className="hidden md:flex">
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', minHeight: 620 }}>
+                <HeroCardScene />
               </div>
             </Reveal>
 
@@ -282,30 +306,9 @@ export default function LandingPage() {
         </div>
 
         {/* Bottom fade */}
-        <div style={{ height: 80, background: `linear-gradient(to bottom, transparent, ${T.bg})`, marginTop: -1 }} />
+        <div style={{ height: 80, background: `linear-gradient(to bottom, transparent, ${T.bg})`, marginTop: 40 }} />
       </section>
 
-      {/* ────────── STATS ────────── */}
-      <section style={{ background: T.bgDeep, borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)' }} className="md:grid-cols-4">
-            {STATS.map((s, i) => (
-              <div key={s.l} style={{
-                padding: '28px 20px', textAlign: 'center',
-                borderRight: i % 2 === 0 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-              }} className={i < 2 ? 'md:border-b-0' : ''}>
-                <div style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 'clamp(1.6rem, 4vw, 2.2rem)',
-                  fontWeight: 800, color: T.rose, lineHeight: 1,
-                }}>{s.v}</div>
-                <div style={{ marginTop: 6, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: T.faint }}>{s.l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ────────── FEATURES ────────── */}
       <section id="features" style={{ background: T.bg, padding: '80px 24px' }}>
@@ -574,16 +577,36 @@ export default function LandingPage() {
             justifyContent: 'space-between', gap: 14,
             borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 20,
           }}>
-            <p style={{ fontSize: 12, color: 'rgba(180,140,170,0.28)' }}>© 2025 Mebley Inc. All rights reserved.</p>
+            <p style={{ fontSize: 12, color: 'rgba(200,170,190,0.65)' }}>© 2025 Mebley Inc. All rights reserved.</p>
+
+            {/* Powered by — center */}
+            <a
+              href="https://www.blackie-networks.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: 12, color: 'rgba(200,170,190,0.6)',
+                textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5,
+                transition: 'color 0.15s',
+                letterSpacing: '0.03em',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,180,210,0.9)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(200,170,190,0.6)' }}
+            >
+              Powered by
+              <span style={{ fontWeight: 700, color: 'rgba(230,180,210,0.8)' }}>Blackie Networks</span>
+              <span>🩷</span>
+            </a>
+
             <div style={{ display: 'flex', gap: 8 }}>
               {['𝕏','IG','TT'].map(s => (
                 <a key={s} href="#" style={{
                   width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '1px solid rgba(255,255,255,0.09)', fontSize: 11, color: T.faint, textDecoration: 'none',
+                  border: '1px solid rgba(255,255,255,0.2)', fontSize: 11, color: 'rgba(200,170,190,0.65)', textDecoration: 'none',
                   transition: 'all 0.15s',
                 }}
                   onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.roseBorder; el.style.color = T.text }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.09)'; el.style.color = T.faint }}>
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.2)'; el.style.color = 'rgba(200,170,190,0.65)' }}>
                   {s}
                 </a>
               ))}
@@ -633,58 +656,108 @@ function MobileHeroCard() {
   )
 }
 
-/* ── Desktop stacked cards ─────────────────────────────────────────── */
-const DESKTOP_CARDS = [
-  { name: 'Amara', age: 27, loc: 'Nairobi · Kenya',  match: '94%', grad: 'linear-gradient(160deg, #c8446e 0%, #7c2050 50%, #3d0c30 100%)', prompt: 'Her green flag', ans: 'Someone who reads for fun ✨', tags: ['Art', 'Travel'] },
-  { name: 'Jin',   age: 29, loc: 'Seoul · Korea',     match: '91%', grad: 'linear-gradient(160deg, #6a4ec4 0%, #4830a0 50%, #261668 100%)', prompt: 'Ideal first date', ans: "Farmer's market then jazz 🎷", tags: ['Jazz', 'Cooking'] },
-  { name: 'Priya', age: 25, loc: 'Mumbai · India',    match: '89%', grad: 'linear-gradient(160deg, #c44858 0%, #962840 50%, #5e1228 100%)', prompt: 'Ideal Sunday', ans: 'Rooftop dinner & stargazing 🌙', tags: ['Yoga', 'Podcasts'] },
+/* ── Hero card scene (desktop) ─────────────────────────────────────── */
+const HERO_CARDS = [
+  { name: 'Amara',  age: 27, loc: 'Nairobi · Kenya',  match: '94%', grad: 'linear-gradient(160deg, #c8446e 0%, #7c2050 50%, #3d0c30 100%)', prompt: 'Her green flag',   ans: 'Someone who reads for fun ✨',       tags: ['Art', 'Travel', 'Books'] },
+  { name: 'Jin',    age: 29, loc: 'Seoul · Korea',     match: '91%', grad: 'linear-gradient(160deg, #6a4ec4 0%, #4830a0 50%, #261668 100%)', prompt: 'Ideal first date', ans: "Farmer's market then jazz 🎷",      tags: ['Jazz', 'Cooking'] },
+  { name: 'Priya',  age: 25, loc: 'Mumbai · India',    match: '89%', grad: 'linear-gradient(160deg, #c44858 0%, #962840 50%, #5e1228 100%)', prompt: 'Ideal Sunday',     ans: 'Rooftop dinner & stargazing 🌙',    tags: ['Yoga', 'Podcasts'] },
 ]
 
-function DesktopCard({ p, style = {} }: { p: typeof DESKTOP_CARDS[0]; style?: React.CSSProperties }) {
+function HeroCard({ p, style = {} }: { p: typeof HERO_CARDS[0]; style?: React.CSSProperties }) {
   return (
     <div style={{
-      width: 248, borderRadius: 22, overflow: 'hidden',
-      boxShadow: '0 28px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.09)',
+      width: 300, borderRadius: 26, overflow: 'hidden',
+      boxShadow: '0 40px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.1)',
       ...style,
     }}>
-      <div style={{ height: 210, background: p.grad, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: '5rem', fontWeight: 800, color: 'rgba(255,255,255,0.1)', lineHeight: 1 }}>{p.name[0]}</span>
-        <div style={{ position: 'absolute', top: 12, right: 12, padding: '4px 10px', borderRadius: 100, background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(10px)', fontSize: 11, fontWeight: 700, color: '#fff' }}>{p.match} match</div>
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,6,24,0.92) 0%, transparent 60%)' }} />
-        <div style={{ position: 'absolute', bottom: 12, left: 14 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{p.name}, {p.age}</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.48)', marginTop: 2 }}>{p.loc}</div>
+      {/* Photo area */}
+      <div style={{ height: 260, background: p.grad, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: '8rem', fontWeight: 800, color: 'rgba(255,255,255,0.08)', lineHeight: 1, userSelect: 'none' }}>{p.name[0]}</span>
+        {/* Match badge */}
+        <div style={{ position: 'absolute', top: 14, left: 14, padding: '5px 12px', borderRadius: 100, background: 'rgba(255,255,255,0.16)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', fontSize: 11.5, fontWeight: 700, color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
+          ⚡ {p.match} match
+        </div>
+        {/* Gradient overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,4,22,0.95) 0%, rgba(8,4,22,0.2) 55%, transparent 100%)' }} />
+        {/* Name / loc */}
+        <div style={{ position: 'absolute', bottom: 16, left: 16, right: 16 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-display)' }}>{p.name}, {p.age}</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>📍 {p.loc}</div>
         </div>
       </div>
-      <div style={{ background: '#110420', padding: '12px 14px 14px' }}>
-        <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 11, padding: '9px 11px', marginBottom: 10 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,130,170,0.9)', marginBottom: 3 }}>{p.prompt}</div>
-          <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.58)', lineHeight: 1.5 }}>{p.ans}</div>
+
+      {/* Body */}
+      <div style={{ background: 'rgba(12,6,28,0.98)', padding: '16px 18px 18px', backdropFilter: 'blur(20px)' }}>
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '11px 13px', marginBottom: 12 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,130,170,0.85)', marginBottom: 4 }}>{p.prompt}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.55 }}>{p.ans}</div>
         </div>
-        <div style={{ display: 'flex', gap: 5, marginBottom: 10, flexWrap: 'wrap' }}>
-          {p.tags.map(t => <span key={t} style={{ padding: '3px 9px', borderRadius: 100, fontSize: 10, border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.04)' }}>{t}</span>)}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+          {p.tags.map(t => <span key={t} style={{ padding: '4px 11px', borderRadius: 100, fontSize: 11, border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.48)', background: 'rgba(255,255,255,0.05)' }}>{t}</span>)}
         </div>
-        <div style={{ display: 'flex', gap: 7 }}>
-          <button style={{ flex: 1, height: 36, borderRadius: 100, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: 'rgba(255,255,255,0.28)', fontSize: 15, cursor: 'pointer' }}>✕</button>
-          <button style={{ flex: 1, height: 36, borderRadius: 100, border: 'none', background: 'linear-gradient(135deg, #f03868, #ff7a50)', color: '#fff', fontSize: 15, cursor: 'pointer' }}>♡</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={{ flex: 1, height: 42, borderRadius: 100, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: 'rgba(255,255,255,0.3)', fontSize: 17, cursor: 'pointer' }}>✕</button>
+          <button style={{ flex: 2, height: 42, borderRadius: 100, border: 'none', background: 'linear-gradient(135deg, #f03868, #ff7a50)', color: '#fff', fontSize: 17, cursor: 'pointer', fontWeight: 700, boxShadow: '0 8px 24px rgba(240,56,104,0.38)' }}>♡ Like</button>
         </div>
       </div>
     </div>
   )
 }
 
-function DesktopCardStack() {
+function HeroCardScene() {
   return (
-    <div style={{ position: 'relative', width: 248, height: 540 }}>
-      <div style={{ position: 'absolute', top: 28, zIndex: 1, opacity: 0.46, transform: 'rotate(7deg) translateX(28px)' }}>
-        <DesktopCard p={DESKTOP_CARDS[2]} />
+    <div style={{ position: 'relative', width: 520, height: 620 }}>
+      {/* Back card — right */}
+      <div style={{ position: 'absolute', top: 60, right: -10, zIndex: 1, opacity: 0.45, transform: 'rotate(8deg) scale(0.88)', transformOrigin: 'bottom center' }}>
+        <HeroCard p={HERO_CARDS[2]} />
       </div>
-      <div style={{ position: 'absolute', top: 14, zIndex: 2, opacity: 0.74, transform: 'rotate(-4deg) translateX(-24px)' }}>
-        <DesktopCard p={DESKTOP_CARDS[1]} />
+      {/* Middle card — left */}
+      <div style={{ position: 'absolute', top: 36, left: -10, zIndex: 2, opacity: 0.7, transform: 'rotate(-6deg) scale(0.92)', transformOrigin: 'bottom center' }}>
+        <HeroCard p={HERO_CARDS[1]} />
       </div>
-      <div style={{ position: 'absolute', top: 0, zIndex: 3 }}>
-        <DesktopCard p={DESKTOP_CARDS[0]} />
+      {/* Front card — center */}
+      <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 3 }}>
+        <HeroCard p={HERO_CARDS[0]} />
       </div>
+
+      {/* Floating "Match" toast */}
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ delay: 1.1, duration: 0.55, ease: [0.16,1,0.3,1] }}
+        style={{
+          position: 'absolute', bottom: 24, right: 20, zIndex: 10,
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '12px 18px', borderRadius: 16,
+          background: 'rgba(14,10,32,0.95)', backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(240,56,104,0.3)',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+        }}
+      >
+        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #f03868, #ff7a50)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🎉</div>
+        <div>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', lineHeight: 1 }}>It's a match!</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>Amara liked you back</div>
+        </div>
+      </motion.div>
+
+      {/* Floating "Stitch" badge */}
+      <motion.div
+        initial={{ opacity: 0, x: -12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 1.5, duration: 0.5, ease: [0.16,1,0.3,1] }}
+        style={{
+          position: 'absolute', top: 10, left: 10, zIndex: 10,
+          padding: '8px 14px', borderRadius: 12,
+          background: 'rgba(100,55,210,0.85)', backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(140,90,250,0.4)',
+          fontSize: 11.5, fontWeight: 700, color: '#e9d5ff',
+          boxShadow: '0 8px 24px rgba(100,55,210,0.4)',
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}
+      >
+        🧵 Stitch sent
+      </motion.div>
     </div>
   )
 }

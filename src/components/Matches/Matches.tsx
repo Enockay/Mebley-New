@@ -5,7 +5,6 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase-client'
 import type { Database } from '@/types/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -22,7 +21,6 @@ interface MatchesProps {
 }
 
 export default function Matches({ onOpenChat }: MatchesProps) {
-  const supabase = createClient()
   const { profile: currentProfile } = useAuth();
   const [matches, setMatches] = useState<MatchWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,43 +32,20 @@ export default function Matches({ onOpenChat }: MatchesProps) {
   const loadMatches = async () => {
     if (!currentProfile) return;
     setLoading(true);
-
-    const { data: matchesData } = await supabase
-      .from('matches')
-      .select('id, user1_id, user2_id, created_at')
-      .or(`user1_id.eq.${currentProfile.id},user2_id.eq.${currentProfile.id}`)
-      .order('created_at', { ascending: false });
-
-    if (matchesData) {
-      const matchesWithProfiles: MatchWithProfile[] = [];
-
-      for (const match of matchesData) {
-        const otherUserId = match.user1_id === currentProfile.id
-          ? match.user2_id
-          : match.user1_id;
-
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', otherUserId)
-          .single();
-
-        const { data: conversationData } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('match_id', match.id)
-          .single();
-
-        if (profileData && conversationData) {
-          matchesWithProfiles.push({
-            matchId:        match.id,
-            conversationId: conversationData.id,
-            profile:        profileData,
-            createdAt:      match.created_at ?? '',
-          });
-        }
+    try {
+      const res  = await fetch('/api/chat/conversations')
+      const json = await res.json()
+      if (json.conversations) {
+        const mapped: MatchWithProfile[] = (json.conversations as any[]).map(c => ({
+          matchId:        c.match_id ?? '',
+          conversationId: c.conversation_id,
+          profile:        { id: c.other_id, ...c } as any,
+          createdAt:      c.updated_at ?? '',
+        }))
+        setMatches(mapped)
       }
-      setMatches(matchesWithProfiles);
+    } catch {
+      // silently fail
     }
     setLoading(false);
   };

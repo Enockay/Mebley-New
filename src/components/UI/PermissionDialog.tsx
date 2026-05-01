@@ -133,7 +133,7 @@ export function PermissionDialog({ type, onGranted, onCancel, onDenied }: Permis
   // ---------------------------------------------------------------------------
 
   const overlay: React.CSSProperties = {
-    position: 'fixed',
+    position: 'absolute',
     inset: 0,
     zIndex: 500,
     display: 'flex',

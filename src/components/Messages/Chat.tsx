@@ -1538,6 +1538,66 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
           </form>
         </div>
 
+        {/* ── Incoming Call Modal (contained in chat pane) ── */}
+        {incomingCall && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 400, background: 'rgba(8,4,18,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0 0 48px' }}>
+            <div style={{ background: 'rgba(16,12,34,0.98)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '28px 28px 20px 20px', padding: '28px 28px 24px', maxWidth: 340, width: '100%', textAlign: 'center', animation: 'slideUp 0.25s ease', boxShadow: '0 -12px 60px rgba(0,0,0,0.6)' }}>
+              {/* Pulsing avatar */}
+              <div style={{ position: 'relative', width: 88, height: 88, margin: '0 auto 16px' }}>
+                <div style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: '2px solid rgba(240,56,104,0.35)', animation: 'pulse-dot 1.8s ease-in-out infinite' }} />
+                <div style={{ width: 88, height: 88, borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #b8203c, #e03060)', padding: 2 }}>
+                  <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#120326' }}>
+                    {avatarUrl
+                      ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: 28, fontWeight: 700, color: '#f43f5e', fontFamily: "'Fraunces',serif" }}>{initials}</span>
+                        </div>
+                    }
+                  </div>
+                </div>
+              </div>
+              <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(240,56,104,0.9)', textTransform: 'uppercase' }}>Incoming video call</p>
+              <h3 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 700, color: '#f0e8f4', fontFamily: "'Fraunces',serif" }}>{incomingCall.callerName}</h3>
+              <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+                <button onClick={declineCall} style={{ width: 64, height: 64, borderRadius: '50%', border: '1.5px solid rgba(239,68,68,0.35)', cursor: 'pointer', background: 'linear-gradient(135deg, rgba(239,68,68,0.22), rgba(220,38,38,0.22))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6 }}>
+                  <PhoneOff size={24} color="#ef4444" />
+                  <span style={{ fontSize: 10, color: '#ef4444', fontWeight: 600 }}>Decline</span>
+                </button>
+                <button onClick={() => setCallPermNeeded('accept')} style={{ width: 64, height: 64, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #059669, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6, boxShadow: '0 4px 24px rgba(16,185,129,0.4)' }}>
+                  <Phone size={24} color="white" fill="white" />
+                  <span style={{ fontSize: 10, color: 'white', fontWeight: 600 }}>Accept</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Camera + mic permission dialog — contained in chat pane */}
+        {callPermNeeded !== null && (
+          <PermissionDialog
+            type="camera-mic"
+            onGranted={() => {
+              const action = callPermNeeded
+              setCallPermNeeded(null)
+              if (action === 'start') startCall()
+              else acceptCall()
+            }}
+            onCancel={() => setCallPermNeeded(null)}
+          />
+        )}
+
+        {/* Mic-only permission dialog — contained in chat pane */}
+        {showVoicePermDialog && (
+          <PermissionDialog
+            type="mic-only"
+            onGranted={() => {
+              setShowVoicePermDialog(false)
+              startVoiceRecording()
+            }}
+            onCancel={() => setShowVoicePermDialog(false)}
+          />
+        )}
+
         {/* ── In-Chat Video Call (WhatsApp-style, contained in the chat pane) ── */}
         {inCall && (
           <div style={{
@@ -1658,65 +1718,6 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
         />
       )}
 
-      {/* ── Incoming Call Modal ── */}
-      {incomingCall && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 400, background: 'rgba(8,4,18,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0 0 48px' }}>
-          <div style={{ background: 'rgba(16,12,34,0.98)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '28px 28px 20px 20px', padding: '28px 28px 24px', maxWidth: 340, width: '100%', textAlign: 'center', animation: 'slideUp 0.25s ease', boxShadow: '0 -12px 60px rgba(0,0,0,0.6)' }}>
-            {/* Pulsing avatar */}
-            <div style={{ position: 'relative', width: 88, height: 88, margin: '0 auto 16px' }}>
-              <div style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: '2px solid rgba(240,56,104,0.35)', animation: 'pulse-dot 1.8s ease-in-out infinite' }} />
-              <div style={{ width: 88, height: 88, borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #b8203c, #e03060)', padding: 2 }}>
-                <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#120326' }}>
-                  {avatarUrl
-                    ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 28, fontWeight: 700, color: '#f43f5e', fontFamily: "'Fraunces',serif" }}>{initials}</span>
-                      </div>
-                  }
-                </div>
-              </div>
-            </div>
-            <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: 'rgba(240,56,104,0.9)', textTransform: 'uppercase' }}>Incoming video call</p>
-            <h3 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 700, color: '#f0e8f4', fontFamily: "'Fraunces',serif" }}>{incomingCall.callerName}</h3>
-            <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-              <button onClick={declineCall} style={{ width: 64, height: 64, borderRadius: '50%', border: '1.5px solid rgba(239,68,68,0.35)', cursor: 'pointer', background: 'linear-gradient(135deg, rgba(239,68,68,0.22), rgba(220,38,38,0.22))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6 }}>
-                <PhoneOff size={24} color="#ef4444" />
-                <span style={{ fontSize: 10, color: '#ef4444', fontWeight: 600 }}>Decline</span>
-              </button>
-              <button onClick={() => setCallPermNeeded('accept')} style={{ width: 64, height: 64, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #059669, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6, boxShadow: '0 4px 24px rgba(16,185,129,0.4)' }}>
-                <Phone size={24} color="white" fill="white" />
-                <span style={{ fontSize: 10, color: 'white', fontWeight: 600 }}>Accept</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Camera + mic permission dialog — for video calls */}
-      {callPermNeeded !== null && (
-        <PermissionDialog
-          type="camera-mic"
-          onGranted={() => {
-            const action = callPermNeeded
-            setCallPermNeeded(null)
-            if (action === 'start') startCall()
-            else acceptCall()
-          }}
-          onCancel={() => setCallPermNeeded(null)}
-        />
-      )}
-
-      {/* Mic-only permission dialog — for voice note recording */}
-      {showVoicePermDialog && (
-        <PermissionDialog
-          type="mic-only"
-          onGranted={() => {
-            setShowVoicePermDialog(false)
-            startVoiceRecording()
-          }}
-          onCancel={() => setShowVoicePermDialog(false)}
-        />
-      )}
     </>
   )
 }

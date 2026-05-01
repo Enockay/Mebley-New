@@ -1,21 +1,13 @@
 'use client'
 
-/**
- * src/app/auth/reset-password/page.tsx
- *
- * This page handles the link Supabase sends in the password reset email.
- * Supabase redirects here with a token in the URL hash — this page lets
- * the user set a new password.
- */
-
-import { useState, useEffect, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase-client'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Lock, Loader2, Check } from 'lucide-react'
 
 function ResetPasswordContent() {
-  const router   = useRouter()
-  const supabase = createClient()
+  const router       = useRouter()
+  const searchParams = useSearchParams()
+  const token        = searchParams.get('token') ?? ''
 
   const [password, setPassword]       = useState('')
   const [confirmPassword, setConfirm] = useState('')
@@ -23,7 +15,6 @@ function ResetPasswordContent() {
   const [error, setError]             = useState('')
   const [loading, setLoading]         = useState(false)
   const [success, setSuccess]         = useState(false)
-  const [sessionReady, setSessionReady] = useState(false)
 
   const rules = [
     { label: 'At least 8 characters',       pass: password.length >= 8 },
@@ -32,16 +23,21 @@ function ResetPasswordContent() {
     { label: 'Contains a special character', pass: /[^A-Za-z0-9]/.test(password) },
   ]
 
-  useEffect(() => {
-    // Supabase puts the recovery token in the URL hash on the client side
-    // onAuthStateChange fires with event 'PASSWORD_RECOVERY' when it detects it
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setSessionReady(true)
-      }
-    })
-    return () => subscription.unsubscribe()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 p-4">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 text-center">
+          <div className="text-5xl mb-4">🔗</div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Invalid reset link</h2>
+          <p className="text-gray-500 text-sm mb-6">This link is missing a token. Please request a new password reset.</p>
+          <button onClick={() => router.push('/auth')}
+            className="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-semibold">
+            Back to Sign In
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const handleReset = async () => {
     setError('')
@@ -50,41 +46,30 @@ function ResetPasswordContent() {
     if (rules.some(r => !r.pass))      { setError('Please meet all password requirements'); return }
 
     setLoading(true)
-    const { error } = await supabase.auth.updateUser({ password })
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    })
+    const data = await res.json()
     setLoading(false)
 
-    if (error) {
-      setError(error.message)
+    if (!res.ok || !data.success) {
+      setError(data.message ?? 'Something went wrong. Please try again.')
     } else {
       setSuccess(true)
-      // Redirect to login after 3 seconds
       setTimeout(() => router.push('/auth'), 3000)
     }
   }
 
-  // Success screen
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 p-4">
         <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 text-center">
           <div className="text-6xl mb-4">✅</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Password updated!</h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Your password has been changed. Redirecting you to sign in…
-          </p>
+          <p className="text-gray-500 text-sm mb-6">Your password has been changed. Redirecting you to sign in…</p>
           <Loader2 className="w-6 h-6 text-pink-500 animate-spin mx-auto" />
-        </div>
-      </div>
-    )
-  }
-
-  // Waiting for the token to be picked up from URL hash
-  if (!sessionReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 text-pink-500 animate-spin mx-auto mb-3" />
-          <p className="text-gray-400 text-sm">Verifying your reset link…</p>
         </div>
       </div>
     )

@@ -12,7 +12,6 @@ import {
 } from 'lucide-react'
 import EditProfile from '@/components/Profile/EditProfile'
 import DeleteAccount from '@/components/Profile/DeleteAccount'
-import { createClient } from '@/lib/supabase-client'
 import { usePaywall } from '@/hooks/usePaywall'
 import { usePlan } from '@/hooks/usePlan'
 import PlanBadge from '@/components/UI/PlanBadge'
@@ -74,7 +73,6 @@ const s = {
 }
 
 function ProfilePageContent() {
-  const supabase = createClient()
   const { user, profile, loading, refreshProfile, creditBalance } = useAuth()
   const { openPaywall } = usePaywall()
   const { tier } = usePlan()
@@ -135,15 +133,10 @@ function ProfilePageContent() {
 
   useEffect(() => {
     if (!user) return
-    ;(supabase as any)
-      .from('profile_videos')
-      .select('slot, cloudfront_url, duration_seconds')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .order('slot')
-      .then(({ data }: { data: ProfileVideo[] | null }) => {
-        if (data) setVideos(data)
-      })
+    fetch('/api/videos/list')
+      .then(r => r.json())
+      .then(json => { if (json.videos) setVideos(json.videos) })
+      .catch(() => {})
   }, [user, profile])
 
   const handleToggleVisibility = async () => {
@@ -892,14 +885,9 @@ function ProfilePageContent() {
             setShowEdit(false)
             setActivePhotoIdx(0)
             if (user) {
-              ;(supabase as any)
-                .from('profile_videos')
-                .select('slot, cloudfront_url, duration_seconds')
-                .eq('user_id', user.id)
-                .eq('status', 'active')
-                .order('slot')
-                .then(({ data }: { data: ProfileVideo[] | null }) => {
-                  if (data) setVideos(data)
+              fetch('/api/videos/list')
+                .then(r => r.json())
+                .then(json => { if (json.videos) setVideos(json.videos)
                 })
             }
           }}

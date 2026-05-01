@@ -5,7 +5,6 @@
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase-client'
 import Image from 'next/image'
 import Chat from '@/components/Messages/Chat'
 import MatchesPage from '@/app/matches/page'
@@ -65,13 +64,14 @@ function getPhotoUrl(photos: unknown): string | null {
 function getInitials(name: string): string {
   return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
 }
-async function captureAndSaveCoordinates(userId: string) {
+async function captureAndSaveCoordinates(_userId: string) {
   if (!navigator.geolocation) return
   navigator.geolocation.getCurrentPosition(async (pos) => {
-    await (supabase as any).from('profiles').update({
-      latitude: pos.coords.latitude, longitude: pos.coords.longitude,
-      updated_at: new Date().toISOString(),
-    }).eq('id', userId)
+    await fetch('/api/profile/location', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+    }).catch(() => {})
   }, () => {}, { timeout: 8000, maximumAge: 300_000 })
 }
 function buildDiscoverUrl(page: number, filters: Filters): string {
@@ -101,7 +101,6 @@ function SwipeCard({
   sp, onLike, onPass, onViewProfile, isTop, stackOffset, visualOffset,
   forceInteractive = false, feedMode = false, enableKeyboard = true,
 }: SwipeCardProps) {
-  const supabase = createClient()
   const p = sp.profile
   const ageLabel = AGE_RANGE_LABELS[p.age_range] ?? ''
   const initials = getInitials(p.full_name)
@@ -536,11 +535,8 @@ function SwipeCard({
   )
 }
 
-const supabase = createClient()
-
 // ── Browse Page ───────────────────────────────────────────────────
 function BrowsePageContent() {
-  const supabase = createClient()
   const { user, profile, loading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -594,8 +590,10 @@ function BrowsePageContent() {
   useEffect(() => { if (user) captureAndSaveCoordinates(user.id) }, [user])
   useEffect(() => {
     if (!user) return
-    supabase.from('likes').select('likee_id').eq('liker_id', user.id)
-      .then(({ data }) => { if (data) setLikedIds(new Set(data.map(r => r.likee_id))) })
+    fetch('/api/likes')
+      .then(r => r.json())
+      .then(json => { if (json.likedIds) setLikedIds(new Set(json.likedIds)) })
+      .catch(() => {})
   }, [user])
   useEffect(() => {
     if (!user) return

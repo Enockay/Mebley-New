@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { getAdminUserFromRequest } from '@/lib/admin-auth'
 import { pgQuery } from '@/lib/postgres'
 
@@ -39,33 +38,24 @@ export async function GET(request: NextRequest) {
       total_usd: number
       order_count: number
       by_day: DayBucket[]
-      source: 'supabase'
     } | null = null
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (url && key) {
-      const sb = createClient(url, key)
-      const { data, error } = await sb
-        .from('stripe_orders')
-        .select('amount_usd, completed_at, status')
-        .eq('status', 'completed')
-        .gte('completed_at', since)
-        .order('completed_at', { ascending: false })
-        .limit(8000)
-
-      if (!error && data && Array.isArray(data)) {
-        const rows = data as { amount_usd: number; completed_at: string | null }[]
-        const total_usd = rows.reduce((s, r) => s + (Number(r.amount_usd) || 0), 0)
-        stripeSummary = {
-          total_usd: Math.round((total_usd + Number.EPSILON) * 100) / 100,
-          order_count: rows.length,
-          by_day: bucketOrders(rows),
-          source: 'supabase',
-        }
-      } else if (error) {
-        console.warn('[admin/revenue] stripe_orders read:', error.message)
+    try {
+      const ordersRes = await pgQuery<{ amount_usd: number; completed_at: string | null }>(
+        `SELECT amount_usd, completed_at FROM stripe_orders
+         WHERE status = 'completed' AND completed_at >= $1
+         ORDER BY completed_at DESC LIMIT 8000`,
+        [since]
+      )
+      const rows = ordersRes.rows
+      const total_usd = rows.reduce((s, r) => s + (Number(r.amount_usd) || 0), 0)
+      stripeSummary = {
+        total_usd:   Math.round((total_usd + Number.EPSILON) * 100) / 100,
+        order_count: rows.length,
+        by_day:      bucketOrders(rows),
       }
+    } catch (err) {
+      console.warn('[admin/revenue] stripe_orders read:', err)
     }
 
     const movementRes = await pgQuery<{ type: string; tx_count: string; credits_sum: string }>(
@@ -105,10 +95,7 @@ export async function GET(request: NextRequest) {
       stripe_orders: stripeSummary,
       credit_transactions_by_type: movement,
       credits_granted_from_credit_purchase: credits_from_purchases,
-      note:
-        stripeSummary == null
-          ? 'Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY for USD revenue from stripe_orders.'
-          : undefined,
+      note: stripeSummary == null ? 'Could not read stripe_orders from database.' : undefined,
     })
   } catch (error) {
     console.error('[admin/revenue]', error)

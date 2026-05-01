@@ -2,127 +2,133 @@
 /**
  * src/app/auth/callback/route.ts
  *
- * OAuth callback handler — called by Supabase after Google OAuth completes.
+ * Direct Google OAuth callback — no Supabase involved.
  *
- * Security fixes vs original:
- *  ✅ CSRF protection — validates `state` parameter against cookie
- *  ✅ Open redirect prevention — validates redirect targets against whitelist
- *  ✅ Admin client creation centralised via helper (not inline)
- *  ✅ No raw error details exposed to client in redirect params
- *  ✅ Username generation uses crypto.randomBytes (not Math.random)
- *  ✅ Unique username check before insert
- *  ✅ pending_profiles cleanup wrapped in try/catch — profile creation not blocked by it
- *  ✅ Provider detection handles all providers, not just google/email
+ * Flow:
+ *  1. Validate CSRF state cookie
+ *  2. Exchange Google auth code for tokens (direct Google API call)
+ *  3. Fetch user info from Google
+ *  4. Resolve or create app_user + profile in PostgreSQL
+ *  5. Issue our own session (createAuthSession / setAuthCookie)
+ *  6. Redirect to appropriate page
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { randomBytes } from 'crypto'
-import { createAdminSupabaseClient } from '@/lib/supabase-server'
 import { pgQuery } from '@/lib/postgres'
 import { createAuthSession, issueSessionToken, setAuthCookie, hashPassword } from '@/lib/auth-server'
 import { isAdminUser } from '@/lib/admin-auth'
 import { isSafeRedirectPath } from '@/lib/safe-redirect'
-import type { Database } from '@/types/database.types'
 
-// ── Whitelist of allowed post-auth redirect paths ────────────────────────────
-// NEVER allow redirects to external domains
+// ── Whitelist of allowed post-auth redirect paths ─────────────────────────────
 const ALLOWED_REDIRECT_PATHS = ['/browse', '/discover', '/setup', '/profile', '/matches', '/upgrade', '/admin']
 
-function isAllowedOAuthRedirectPath(path: string): boolean {
+function isAllowedRedirectPath(path: string): boolean {
   if (!isSafeRedirectPath(path)) return false
-  return ALLOWED_REDIRECT_PATHS.some(allowed => path === allowed || path.startsWith(allowed + '/'))
+  return ALLOWED_REDIRECT_PATHS.some(a => path === a || path.startsWith(a + '/'))
 }
 
-async function resolveOAuthNextDestination(params: {
+// ── Resolve post-login destination from oauth_next cookie ─────────────────────
+async function resolveDestination(params: {
   cookieStore: Awaited<ReturnType<typeof cookies>>
-  appUserId: string
-  fallback: string
+  appUserId:   string
+  fallback:    string
 }): Promise<string> {
   const raw = params.cookieStore.get('oauth_next')?.value
-  let nextPath: string | null = null
   if (raw) {
     try {
       const decoded = decodeURIComponent(raw)
-      if (isAllowedOAuthRedirectPath(decoded)) nextPath = decoded
-    } catch {
-      nextPath = null
-    }
+      if (isAllowedRedirectPath(decoded)) {
+        if (decoded.startsWith('/admin')) {
+          const ok = await isAdminUser(params.appUserId)
+          return ok ? decoded : params.fallback
+        }
+        return decoded
+      }
+    } catch { /* ignore */ }
   }
-  if (!nextPath) return params.fallback
-  if (nextPath.startsWith('/admin')) {
-    const ok = await isAdminUser(params.appUserId)
-    return ok ? nextPath : params.fallback
-  }
-  return nextPath
+  return params.fallback
 }
 
-// ── Generate a unique username ────────────────────────────────────────────────
+// ── Generate a unique username ─────────────────────────────────────────────────
 async function generateUniqueUsername(baseName: string): Promise<string> {
-  const admin = createAdminSupabaseClient()
   const cleaned = baseName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || 'user'
 
-  // Try up to 5 times to find a unique username
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const suffix = randomBytes(3).toString('hex') // 6 hex chars — more entropy than Math.random
-    const candidate = `${cleaned}${suffix}`
-
-    const { data } = await admin
-      .from('profiles')
-      .select('username')
-      .eq('username', candidate)
-      .maybeSingle()
-
-    if (!data) return candidate // Unique — use it
+  for (let i = 0; i < 5; i++) {
+    const candidate = `${cleaned}${randomBytes(3).toString('hex')}`
+    const res = await pgQuery<{ username: string }>(
+      `SELECT username FROM profiles WHERE username = $1 LIMIT 1`,
+      [candidate]
+    )
+    if (!res.rows[0]) return candidate
   }
-
-  // Fallback — timestamp-based (extremely unlikely to collide)
   return `${cleaned}${Date.now().toString(36)}`
 }
 
-async function resolveOrCreateAppUserId(oauthUserId: string, email: string): Promise<string> {
+// ── Resolve or create app_user row ────────────────────────────────────────────
+async function resolveOrCreateAppUser(googleId: string, email: string): Promise<string> {
   const safeEmail = email.trim().toLowerCase()
 
+  // Check by google sub (stored as id)
   const byId = await pgQuery<{ id: string }>(
-    `SELECT id FROM app_users WHERE id = $1 LIMIT 1`,
-    [oauthUserId]
+    `SELECT id FROM app_users WHERE id = $1 LIMIT 1`, [googleId]
   )
   if (byId.rows[0]?.id) {
     await pgQuery(
       `UPDATE app_users SET email = $2, email_verified = true, is_active = true WHERE id = $1`,
-      [oauthUserId, safeEmail]
+      [googleId, safeEmail]
     )
-    return oauthUserId
+    return googleId
   }
 
-  // If email already exists (from password signup), reuse that account id.
-  const randomPassword = randomBytes(24).toString('hex')
+  // If email exists from password signup, reuse that account
+  const randomPassword  = randomBytes(24).toString('hex')
   const placeholderHash = await hashPassword(randomPassword)
   const upsert = await pgQuery<{ id: string }>(
-    `
-    INSERT INTO app_users (id, email, password_hash, email_verified, is_active)
-    VALUES ($1, $2, $3, true, true)
-    ON CONFLICT (email) DO UPDATE
-      SET email_verified = true,
-          is_active = true
-    RETURNING id
-    `,
-    [oauthUserId, safeEmail, placeholderHash]
+    `INSERT INTO app_users (id, email, password_hash, email_verified, is_active)
+     VALUES ($1, $2, $3, true, true)
+     ON CONFLICT (email) DO UPDATE
+       SET email_verified = true, is_active = true
+     RETURNING id`,
+    [googleId, safeEmail, placeholderHash]
   )
   return upsert.rows[0].id
 }
 
-async function ensureAppAuthAndRedirect(params: {
-  origin: string
-  request: NextRequest
-  appUserId: string
-  destination: string
-  clearOAuthNextCookie?: boolean
+// ── Grant starter credits (idempotent) ────────────────────────────────────────
+async function grantStarterCredits(userId: string) {
+  try {
+    const inserted = await pgQuery<{ id: string }>(
+      `INSERT INTO credit_wallets (user_id, balance, lifetime_earned, lifetime_spent)
+       VALUES ($1, 25, 25, 0)
+       ON CONFLICT (user_id) DO NOTHING
+       RETURNING id`,
+      [userId]
+    )
+    if ((inserted.rowCount ?? 0) > 0) {
+      await pgQuery(
+        `INSERT INTO credit_transactions (user_id, amount, balance_after, type, reference_type, description)
+         VALUES ($1, 25, 25, 'starter_grant', 'signup', 'Welcome bonus: 25 free credits')`,
+        [userId]
+      )
+    }
+  } catch (err: any) {
+    if (err?.code !== '42P01') console.error('[callback] starter credits failed:', err)
+  }
+}
+
+// ── Issue session and redirect ────────────────────────────────────────────────
+async function redirectWithSession(params: {
+  origin:               string
+  request:              NextRequest
+  appUserId:            string
+  destination:          string
+  clearOAuthNextCookie: boolean
 }) {
   const token = issueSessionToken()
   const { expiresAt } = await createAuthSession({
-    userId: params.appUserId,
+    userId:    params.appUserId,
     token,
     userAgent: params.request.headers.get('user-agent'),
     ipAddress: params.request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null,
@@ -133,113 +139,86 @@ async function ensureAppAuthAndRedirect(params: {
   if (params.clearOAuthNextCookie) {
     response.cookies.set('oauth_next', '', { path: '/', maxAge: 0 })
   }
+  response.cookies.set('google_oauth_state', '', { path: '/', maxAge: 0 })
   return response
 }
 
-async function grantStarterCreditsIfMissing(userId: string) {
-  try {
-    const walletInsert = await pgQuery<{ id: string }>(
-      `
-      INSERT INTO credit_wallets (user_id, balance, lifetime_earned, lifetime_spent)
-      VALUES ($1, 25, 25, 0)
-      ON CONFLICT (user_id) DO NOTHING
-      RETURNING id
-      `,
-      [userId]
-    )
-    if ((walletInsert.rowCount ?? 0) > 0) {
-      await pgQuery(
-        `
-        INSERT INTO credit_transactions (user_id, amount, balance_after, type, reference_type, description)
-        VALUES ($1, 25, 25, 'starter_grant', 'signup', 'Welcome bonus: 25 free credits')
-        `,
-        [userId]
-      )
-    }
-  } catch (err: any) {
-    // Non-fatal for OAuth completion if optional wallet tables are not present yet.
-    if (err?.code !== '42P01') {
-      console.error('[auth/callback] starter credits grant failed:', err)
-    }
-  }
-}
-
+// ── Main handler ──────────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
-  const code             = searchParams.get('code')
-  const oauthError       = searchParams.get('error')
-  const returnedState    = searchParams.get('state')
+  const code          = searchParams.get('code')
+  const returnedState = searchParams.get('state')
+  const oauthError    = searchParams.get('error')
 
-  // ── 1. Handle OAuth provider errors ──────────────────────────────────────
   if (oauthError) {
-    console.error('[auth/callback] OAuth provider error:', oauthError)
-    // Don't forward raw error to client — could leak provider internals
+    console.error('[callback] Google OAuth error:', oauthError)
     return NextResponse.redirect(`${origin}/auth?error=oauth_denied`)
   }
-
   if (!code) {
     return NextResponse.redirect(`${origin}/auth?error=missing_code`)
   }
 
   const cookieStore = await cookies()
 
-  // ── 2. CSRF: validate state parameter ────────────────────────────────────
-  //    Supabase SSR generates a state cookie on the /auth page before
-  //    redirecting to Google. We verify it matches what came back.
-  const storedState = cookieStore.get('sb-oauth-state')?.value
-
+  // ── 1. CSRF validation ──────────────────────────────────────────────────────
+  const storedState = cookieStore.get('google_oauth_state')?.value
   if (storedState && returnedState && storedState !== returnedState) {
-    console.error('[auth/callback] CSRF state mismatch — possible attack')
+    console.error('[callback] CSRF state mismatch')
     return NextResponse.redirect(`${origin}/auth?error=invalid_state`)
   }
 
-  // ── 3. Build auth client with cookie support ──────────────────────────────
-  // Uses getAll/setAll (required by @supabase/ssr ≥0.5) so the PKCE code
-  // verifier cookie set by the browser client is discoverable server-side.
-  const authClient = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // ignore — read-only context
-          }
-        },
-      },
+  // ── 2. Exchange code for tokens directly with Google ───────────────────────
+  let googleUser: { sub: string; email: string; name: string; email_verified: boolean }
+  try {
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id:     process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri:  `${origin}/auth/callback`,
+        grant_type:    'authorization_code',
+      }),
+    })
+
+    if (!tokenRes.ok) {
+      const err = await tokenRes.text()
+      console.error('[callback] Google token exchange failed:', err)
+      return NextResponse.redirect(`${origin}/auth?error=auth_failed`)
     }
-  )
 
-  // ── 4. Exchange code for session ──────────────────────────────────────────
-  const { data, error: exchangeError } = await authClient.auth.exchangeCodeForSession(code)
+    const tokens = await tokenRes.json()
 
-  if (exchangeError || !data?.user) {
-    console.error('[auth/callback] Code exchange failed:', exchangeError?.message)
+    // Fetch user info using the access token
+    const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    })
+
+    if (!userRes.ok) {
+      console.error('[callback] Google userinfo fetch failed')
+      return NextResponse.redirect(`${origin}/auth?error=auth_failed`)
+    }
+
+    googleUser = await userRes.json()
+  } catch (err) {
+    console.error('[callback] Google exchange error:', err)
     return NextResponse.redirect(`${origin}/auth?error=auth_failed`)
   }
 
-  const user     = data.user
-  const provider = user.app_metadata?.provider ?? 'email'
-  const admin    = createAdminSupabaseClient()
-  const authEmail = user.email ?? ''
-  if (!authEmail) {
+  if (!googleUser.email) {
     return NextResponse.redirect(`${origin}/auth?error=oauth_missing_email`)
   }
-  const appUserId = await resolveOrCreateAppUserId(user.id, authEmail)
 
-  // ── 5. Check if profile already exists ───────────────────────────────────
-  const { data: existingProfile } = await admin
-    .from('profiles')
-    .select('id, full_name, username, interests')
-    .eq('id', appUserId)
-    .maybeSingle()
+  // ── 3. Resolve or create user in our database ──────────────────────────────
+  const appUserId = await resolveOrCreateAppUser(googleUser.sub, googleUser.email)
+
+  // ── 4. Check if profile already set up ────────────────────────────────────
+  const profileRes = await pgQuery<{ id: string; full_name: string; username: string; interests: unknown[] | null }>(
+    `SELECT id, full_name, username, interests FROM profiles WHERE id = $1 LIMIT 1`,
+    [appUserId]
+  )
+  const existingProfile = profileRes.rows[0] ?? null
 
   if (existingProfile) {
     const hasSetup = !!(
@@ -248,127 +227,41 @@ export async function GET(request: NextRequest) {
       Array.isArray(existingProfile.interests) &&
       existingProfile.interests.length > 0
     )
-
     const destination = hasSetup
-      ? await resolveOAuthNextDestination({
-          cookieStore,
-          appUserId,
-          fallback: '/browse',
-        })
+      ? await resolveDestination({ cookieStore, appUserId, fallback: '/browse' })
       : '/setup'
 
-    return ensureAppAuthAndRedirect({
-      origin,
-      request,
-      appUserId,
-      destination,
+    return redirectWithSession({
+      origin, request, appUserId, destination,
       clearOAuthNextCookie: !!cookieStore.get('oauth_next'),
     })
   }
 
-  // ── 6. Shared minimal profile defaults ───────────────────────────────────
-  const minimalProfile = {
-    gender:               '',
-    photos:               [] as any[],
-    tier:                 'free',
-    plan:                 'free',
-    looking_for:          [] as string[],
-    interests:            [] as string[],
-    gender_preference:    [] as string[],
-    verified_email:       provider === 'google', // Google verifies email for us
-    is_active:            true,
-    visible:              true,               // discoverable by default
-    distance_max:         500,
-    profile_completeness: 10,
+  // ── 5. New user — create minimal profile ──────────────────────────────────
+  const firstName = (googleUser.name ?? '').split(' ')[0] || 'user'
+  const username  = await generateUniqueUsername(firstName)
+
+  try {
+    await pgQuery(
+      `INSERT INTO profiles
+         (id, full_name, username, gender, photos, tier, plan,
+          looking_for, interests, gender_preference,
+          verified_email, is_active, visible, distance_max, profile_completeness)
+       VALUES ($1,$2,$3,'','{}','free','free','{}','{}','{}', $4, true, true, 500, 10)
+       ON CONFLICT (id) DO UPDATE
+         SET full_name      = EXCLUDED.full_name,
+             username       = COALESCE(NULLIF(profiles.username,''), EXCLUDED.username),
+             verified_email = EXCLUDED.verified_email`,
+      [appUserId, googleUser.name ?? '', username, googleUser.email_verified ?? true]
+    )
+  } catch (err: any) {
+    console.error('[callback] profile upsert error:', err.message)
   }
 
-  // ── 7. New Google user ────────────────────────────────────────────────────
-  if (provider === 'google') {
-    const googleName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? ''
-    const firstName  = googleName.split(' ')[0] || 'user'
-    const username   = await generateUniqueUsername(firstName)
+  await grantStarterCredits(appUserId)
 
-    const { error: upsertErr } = await admin.from('profiles').upsert({
-      ...minimalProfile,
-      id:        appUserId,
-      full_name: googleName,
-      username,
-    })
-
-    if (upsertErr) {
-      console.error('[auth/callback] Google profile upsert error:', upsertErr.message)
-      // Don't block login — user can still proceed, profile will be created at setup
-    }
-
-    await grantStarterCreditsIfMissing(appUserId)
-
-    return ensureAppAuthAndRedirect({
-      origin,
-      request,
-      appUserId,
-      destination: '/setup',
-      clearOAuthNextCookie: !!cookieStore.get('oauth_next'),
-    })
-  }
-
-  // ── 8. New email user — check pending_profiles ───────────────────────────
-  const { data: pending } = await admin
-    .from('pending_profiles')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (pending) {
-    const { error: upsertErr } = await admin.from('profiles').upsert({
-      ...minimalProfile,
-      id:                   appUserId,
-      full_name:            pending.full_name ?? '',
-      username:             pending.username,
-      age_range:            pending.age_range ?? null,
-      gender:               pending.gender ?? '',
-      gender_preference:    pending.gender_preference ?? [],
-      location:             pending.location ?? '',
-      nationality:          pending.nationality ?? '',
-      latitude:             pending.latitude  ?? null,
-      longitude:            pending.longitude ?? null,
-      profile_completeness: 30,
-    })
-
-    if (upsertErr) {
-      console.error('[auth/callback] Email profile upsert error:', upsertErr.message)
-    }
-
-    // Clean up pending data — wrapped separately so failure doesn't block the user
-    try {
-      await admin.from('pending_profiles').delete().eq('user_id', user.id)
-    } catch (cleanupErr) {
-      console.error('[auth/callback] pending_profiles cleanup failed (non-fatal):', cleanupErr)
-    }
-
-  } else {
-    // Fallback — signup without pending profile (e.g. magic link)
-    const emailBase = user.email?.split('@')[0] ?? 'user'
-    const username  = await generateUniqueUsername(emailBase)
-
-    const { error: upsertErr } = await admin.from('profiles').upsert({
-      ...minimalProfile,
-      id:        appUserId,
-      full_name: '',
-      username,
-    })
-
-    if (upsertErr) {
-      console.error('[auth/callback] Fallback profile upsert error:', upsertErr.message)
-    }
-  }
-
-  await grantStarterCreditsIfMissing(appUserId)
-
-  return ensureAppAuthAndRedirect({
-    origin,
-    request,
-    appUserId,
-    destination: '/setup',
+  return redirectWithSession({
+    origin, request, appUserId, destination: '/setup',
     clearOAuthNextCookie: !!cookieStore.get('oauth_next'),
   })
 }

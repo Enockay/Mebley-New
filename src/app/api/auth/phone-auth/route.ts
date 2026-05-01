@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminSupabaseClient } from '@/lib/supabase-server'
 import {
   hashPassword, issueSessionToken,
   createAuthSession, setAuthCookie,
@@ -15,18 +14,15 @@ function getIp(req: NextRequest) {
 }
 
 async function consumeVerifiedOtp(phone: string): Promise<boolean> {
-  const admin = createAdminSupabaseClient()
-  const { data } = await (admin as any)
-    .from('otp_verifications')
-    .select('id')
-    .eq('phone', phone)
-    .eq('verified', true)
-    .gt('expires_at', new Date().toISOString())
-    .limit(1)
-    .maybeSingle()
-
-  if (!data) return false
-  await (admin as any).from('otp_verifications').delete().eq('id', data.id)
+  const res = await pgQuery<{ id: string }>(
+    `SELECT id FROM otp_verifications
+     WHERE phone = $1 AND verified = true AND expires_at > NOW()
+     LIMIT 1`,
+    [phone]
+  )
+  const record = res.rows[0]
+  if (!record) return false
+  await pgQuery(`DELETE FROM otp_verifications WHERE id = $1`, [record.id])
   return true
 }
 

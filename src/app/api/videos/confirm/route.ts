@@ -1,13 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 import { pgQuery } from '@/lib/postgres'
-
-const sbAdmin = () => createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,37 +17,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Video must be between 30 and 120 seconds' }, { status: 400 })
     }
 
-    // profile_videos lives in Supabase
-    const supabase = sbAdmin()
-    const upsertPayload: Record<string, unknown> = {
-      user_id:          user.id,
-      slot,
-      s3_key:           s3Key,
-      cloudfront_url:   cloudfrontUrl,
-      duration_seconds: durationSeconds,
-      status:           'active',
-      updated_at:       new Date().toISOString(),
-    }
-    if (thumbnailUrl) upsertPayload.thumbnail_url = thumbnailUrl
+    const res = await pgQuery<Record<string, any>>(
+      `INSERT INTO profile_videos
+         (user_id, slot, s3_key, cloudfront_url, duration_seconds, thumbnail_url, status, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW())
+       ON CONFLICT (user_id, slot) DO UPDATE
+         SET s3_key           = EXCLUDED.s3_key,
+             cloudfront_url   = EXCLUDED.cloudfront_url,
+             duration_seconds = EXCLUDED.duration_seconds,
+             thumbnail_url    = COALESCE(EXCLUDED.thumbnail_url, profile_videos.thumbnail_url),
+             status           = 'active',
+             updated_at       = NOW()
+       RETURNING *`,
+      [user.id, slot, s3Key, cloudfrontUrl, durationSeconds, thumbnailUrl ?? null]
+    )
 
-    const { data, error } = await (supabase as any)
-      .from('profile_videos')
-      .upsert(upsertPayload, { onConflict: 'user_id,slot' })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('[videos/confirm]', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    const video = res.rows[0]
+    if (!video) {
+      return NextResponse.json({ error: 'Failed to save video record' }, { status: 500 })
     }
 
-    // profiles lives in primary Postgres
     if (slot === 0) {
       await pgQuery('UPDATE profiles SET visible = TRUE WHERE id = $1', [user.id])
     }
 
-    return NextResponse.json({ video: data })
-
+    return NextResponse.json({ video })
   } catch (error) {
     console.error('[videos/confirm]', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

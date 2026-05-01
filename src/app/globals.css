@@ -67,17 +67,6 @@ body {
 }
 
 /* ── Mesh Background ───────────────────────────────────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(244, 63, 94, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 80% at 80% 90%, rgba(236, 72, 153, 0.05) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(252, 231, 243, 0.3) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
 
 /* ── Typography ────────────────────────────────────────────────── */
 .font-display {

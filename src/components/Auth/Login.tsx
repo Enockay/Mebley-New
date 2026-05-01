@@ -3,15 +3,12 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClient } from '@/lib/supabase-client'
-
 interface LoginProps {
   onToggle: () => void
   onBack: () => void
 }
 
 export default function Login({ onToggle, onBack }: LoginProps) {
-  const supabase = createClient()
   const { signIn } = useAuth()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -31,8 +28,10 @@ export default function Login({ onToggle, onBack }: LoginProps) {
   const handleForgotPassword = async () => {
     if (!email) { setError('Enter your email address first'); return }
     setLoading(true)
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth?reset=true`,
+    await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
     })
     setResetSent(true)
     setLoading(false)

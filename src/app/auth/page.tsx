@@ -12,7 +12,6 @@ import {
 } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { createClient } from '@/lib/supabase-client'
 import { isSafeRedirectPath } from '@/lib/safe-redirect'
 
 /* ── Design tokens (match landing page) ────────────────────────── */
@@ -427,7 +426,7 @@ function AuthPageInner() {
   const strengthColor = ['', '#ef4444', '#f97316', '#84cc16', '#22c55e'][passwordStrength]
   const canSignUp     = !!(email && password.length >= 8 && password === confirmPass)
 
-  const handleGoogle = async () => {
+  const handleGoogle = () => {
     setError('')
     setGoogleLoading(true)
     try {
@@ -435,18 +434,25 @@ function AuthPageInner() {
       if (typeof document !== 'undefined' && isSafeRedirectPath(nextPath)) {
         document.cookie = `${OAUTH_NEXT_COOKIE}=${encodeURIComponent(nextPath)}; Path=/; Max-Age=600; SameSite=Lax`
       }
-      const supabase   = createClient()
-      const redirectTo = `${window.location.origin}/auth/callback`
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo, queryParams: { access_type: 'offline', prompt: 'consent' } },
+      // Generate CSRF state token and store in cookie
+      const state = crypto.randomUUID()
+      document.cookie = `google_oauth_state=${state}; Path=/; Max-Age=600; SameSite=Lax; Secure`
+
+      const redirectUri = `${window.location.origin}/auth/callback`
+      const params = new URLSearchParams({
+        client_id:     process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '',
+        redirect_uri:  redirectUri,
+        response_type: 'code',
+        scope:         'openid email profile',
+        access_type:   'offline',
+        prompt:        'consent',
+        state,
       })
-      if (error) { setError(error.message || 'Google sign in failed'); setGoogleLoading(false); return }
-      if (data?.url) { window.location.assign(data.url); return }
-      setError('Could not start Google sign in. Please try again.')
+      window.location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${params}`)
     } catch (e: any) {
       setError(e?.message || 'Google sign in failed')
-    } finally { setGoogleLoading(false) }
+      setGoogleLoading(false)
+    }
   }
 
   const handleSignUp = async () => {

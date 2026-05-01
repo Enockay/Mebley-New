@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createClient } from '@supabase/supabase-js'
 import { pgQuery } from '@/lib/postgres'
 
 type FulfillmentResult =
@@ -10,20 +9,13 @@ type FulfillmentResult =
 const SUBSCRIPTION_PLAN_DEFS: Record<string, { tier: string; billing_period: string; monthly_credits: number }> = {
   starter_monthly: { tier: 'starter', billing_period: 'monthly', monthly_credits: 100 },
   premium_monthly: { tier: 'premium', billing_period: 'monthly', monthly_credits: 250 },
-  vip_monthly: { tier: 'vip', billing_period: 'monthly', monthly_credits: 450 },
+  vip_monthly:     { tier: 'vip',     billing_period: 'monthly', monthly_credits: 450 },
 }
 
 const PLAN_CREDITS: Record<string, number> = {
   starter: 100,
   premium: 250,
-  vip: 450,
-}
-
-function sbAdmin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  vip:     450,
 }
 
 async function addCredits(
@@ -36,7 +28,7 @@ async function addCredits(
     'SELECT id, balance, lifetime_earned FROM credit_wallets WHERE user_id = $1 LIMIT 1',
     [userId]
   )
-  const wallet = walletRes.rows[0] ?? null
+  const wallet     = walletRes.rows[0] ?? null
   const newBalance = (wallet?.balance ?? 0) + amount
 
   if (wallet) {
@@ -51,9 +43,9 @@ async function addCredits(
       `INSERT INTO credit_wallets (user_id, balance, lifetime_earned, lifetime_spent)
        VALUES ($1, $2, $3, 0)
        ON CONFLICT (user_id) DO UPDATE
-         SET balance = credit_wallets.balance + EXCLUDED.balance,
+         SET balance         = credit_wallets.balance         + EXCLUDED.balance,
              lifetime_earned = credit_wallets.lifetime_earned + EXCLUDED.lifetime_earned,
-             updated_at = NOW()`,
+             updated_at      = NOW()`,
       [userId, amount, amount]
     )
   }
@@ -68,46 +60,32 @@ async function addCredits(
 
 async function markProcessing(reference: string): Promise<'acquired' | 'completed'> {
   const upsert = await pgQuery<{ status: string }>(
-    `
-    INSERT INTO paystack_fulfillments (reference, status, attempts, updated_at)
-    VALUES ($1, 'processing', 1, NOW())
-    ON CONFLICT (reference) DO UPDATE
-      SET attempts = paystack_fulfillments.attempts + 1,
-          updated_at = NOW()
-    RETURNING status
-    `,
+    `INSERT INTO paystack_fulfillments (reference, status, attempts, updated_at)
+     VALUES ($1, 'processing', 1, NOW())
+     ON CONFLICT (reference) DO UPDATE
+       SET attempts   = paystack_fulfillments.attempts + 1,
+           updated_at = NOW()
+     RETURNING status`,
     [reference]
   )
-
-  const row = upsert.rows[0]
-  if (row?.status === 'completed') return 'completed'
-  return 'acquired'
+  return upsert.rows[0]?.status === 'completed' ? 'completed' : 'acquired'
 }
 
 async function markCompleted(reference: string, type: string) {
   await pgQuery(
-    `
-    UPDATE paystack_fulfillments
-    SET status = 'completed',
-        fulfillment_type = $2,
-        last_error = NULL,
-        fulfilled_at = NOW(),
-        updated_at = NOW()
-    WHERE reference = $1
-    `,
+    `UPDATE paystack_fulfillments
+     SET status = 'completed', fulfillment_type = $2, last_error = NULL,
+         fulfilled_at = NOW(), updated_at = NOW()
+     WHERE reference = $1`,
     [reference, type]
   )
 }
 
 async function markFailed(reference: string, reason: string) {
   await pgQuery(
-    `
-    UPDATE paystack_fulfillments
-    SET status = 'failed',
-        last_error = $2,
-        updated_at = NOW()
-    WHERE reference = $1
-    `,
+    `UPDATE paystack_fulfillments
+     SET status = 'failed', last_error = $2, updated_at = NOW()
+     WHERE reference = $1`,
     [reference, reason.slice(0, 400)]
   )
 }
@@ -121,27 +99,27 @@ export async function fulfillPaystackReference(
     return { ok: true, type: 'credits', credits: 0, alreadyFulfilled: true }
   }
 
-  const supabase = sbAdmin()
-
   try {
-    const { data: existingActiveSub } = await supabase
-      .from('subscriptions')
-      .select('id, tier, weekly_credits_last_reset')
-      .eq('paystack_ref', reference)
-      .eq('status', 'active')
-      .maybeSingle()
+    // Check for active subscription with this ref
+    const activeSubRes = await pgQuery<{ id: string; tier: string; weekly_credits_last_reset: string | null }>(
+      `SELECT id, tier, weekly_credits_last_reset FROM subscriptions
+       WHERE paystack_ref = $1 AND status = 'active' LIMIT 1`,
+      [reference]
+    )
+    const existingActiveSub = activeSubRes.rows[0] ?? null
 
     if (existingActiveSub?.weekly_credits_last_reset) {
       await markCompleted(reference, 'subscription')
       return { ok: true, type: 'subscription', tier: existingActiveSub.tier, alreadyFulfilled: true }
     }
 
-    const { data: existingCompletedOrder } = await supabase
-      .from('stripe_orders')
-      .select('id, credits_purchased, bonus_credits')
-      .or(`paystack_ref.eq.${reference},stripe_session_id.eq.${reference}`)
-      .eq('status', 'completed')
-      .maybeSingle()
+    // Check for completed order
+    const completedOrderRes = await pgQuery<{ id: string; credits_purchased: number; bonus_credits: number }>(
+      `SELECT id, credits_purchased, bonus_credits FROM stripe_orders
+       WHERE (paystack_ref = $1 OR stripe_session_id = $1) AND status = 'completed' LIMIT 1`,
+      [reference]
+    )
+    const existingCompletedOrder = completedOrderRes.rows[0] ?? null
 
     if (existingCompletedOrder) {
       const total = (existingCompletedOrder.credits_purchased ?? 0) + (existingCompletedOrder.bonus_credits ?? 0)
@@ -149,11 +127,12 @@ export async function fulfillPaystackReference(
       return { ok: true, type: 'credits', credits: total, alreadyFulfilled: true }
     }
 
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('paystack_ref', reference)
-      .maybeSingle()
+    // Look for any subscription with this ref
+    const subRes = await pgQuery<any>(
+      `SELECT * FROM subscriptions WHERE paystack_ref = $1 LIMIT 1`,
+      [reference]
+    )
+    const sub = subRes.rows[0] ?? null
 
     if (sub) {
       if (sub.weekly_credits_last_reset) {
@@ -161,17 +140,18 @@ export async function fulfillPaystackReference(
         return { ok: true, type: 'subscription', tier: sub.tier, alreadyFulfilled: true }
       }
 
-      const now = new Date()
+      const now       = new Date()
       const periodEnd = new Date(now)
       if (sub.billing_period === 'weekly') periodEnd.setDate(periodEnd.getDate() + 7)
-      else periodEnd.setMonth(periodEnd.getMonth() + 1)
+      else                                  periodEnd.setMonth(periodEnd.getMonth() + 1)
 
-      await (supabase as any).from('subscriptions').update({
-        status: 'active',
-        current_period_start: now.toISOString(),
-        current_period_end: periodEnd.toISOString(),
-        weekly_credits_last_reset: now.toISOString(),
-      }).eq('id', sub.id)
+      await pgQuery(
+        `UPDATE subscriptions
+         SET status = 'active', current_period_start = $1,
+             current_period_end = $2, weekly_credits_last_reset = $1
+         WHERE id = $3`,
+        [now.toISOString(), periodEnd.toISOString(), sub.id]
+      )
 
       await pgQuery(
         `UPDATE profiles SET plan = $1, plan_expires = $2 WHERE id = $3`,
@@ -189,23 +169,24 @@ export async function fulfillPaystackReference(
 
     if (paystackMeta?.type === 'subscription') {
       const planDef = SUBSCRIPTION_PLAN_DEFS[paystackMeta.product as string]
-      const userId = paystackMeta.user_id as string
+      const userId  = paystackMeta.user_id as string
       if (planDef && userId) {
-        const now = new Date()
+        const now       = new Date()
         const periodEnd = new Date(now)
         periodEnd.setMonth(periodEnd.getMonth() + 1)
 
-        await (supabase as any).from('subscriptions').upsert({
-          user_id: userId,
-          tier: planDef.tier,
-          billing_period: planDef.billing_period,
-          status: 'active',
-          paystack_ref: reference,
-          current_period_start: now.toISOString(),
-          current_period_end: periodEnd.toISOString(),
-          weekly_credits_last_reset: now.toISOString(),
-          weekly_credits_allocated: planDef.monthly_credits,
-        }, { onConflict: 'paystack_ref' })
+        await pgQuery(
+          `INSERT INTO subscriptions
+             (user_id, tier, billing_period, status, paystack_ref,
+              current_period_start, current_period_end, weekly_credits_last_reset, weekly_credits_allocated)
+           VALUES ($1,$2,$3,'active',$4,$5,$6,$5,$7)
+           ON CONFLICT (paystack_ref) DO UPDATE
+             SET status = 'active', current_period_start = EXCLUDED.current_period_start,
+                 current_period_end = EXCLUDED.current_period_end,
+                 weekly_credits_last_reset = EXCLUDED.weekly_credits_last_reset`,
+          [userId, planDef.tier, planDef.billing_period, reference,
+           now.toISOString(), periodEnd.toISOString(), planDef.monthly_credits]
+        )
 
         await pgQuery(
           `UPDATE profiles SET plan = $1, plan_expires = $2 WHERE id = $3`,
@@ -222,27 +203,26 @@ export async function fulfillPaystackReference(
       }
     }
 
-    const { data: order } = await supabase
-      .from('stripe_orders')
-      .select('*')
-      .or(`paystack_ref.eq.${reference},stripe_session_id.eq.${reference}`)
-      .eq('status', 'pending')
-      .maybeSingle()
+    // Check for pending credit order
+    const orderRes = await pgQuery<any>(
+      `SELECT * FROM stripe_orders
+       WHERE (paystack_ref = $1 OR stripe_session_id = $1) AND status = 'pending' LIMIT 1`,
+      [reference]
+    )
+    const order = orderRes.rows[0] ?? null
 
     if (order) {
       const totalCredits = (order.credits_purchased ?? 0) + (order.bonus_credits ?? 0)
-      await (supabase as any).from('stripe_orders').update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-      }).eq('id', order.id)
-
+      await pgQuery(
+        `UPDATE stripe_orders SET status = 'completed', completed_at = NOW() WHERE id = $1`,
+        [order.id]
+      )
       await addCredits(
         order.user_id,
         totalCredits,
         'credit_purchase',
         `Purchased ${order.credits_purchased} credits (+${order.bonus_credits} bonus)`
       )
-
       await markCompleted(reference, 'credits')
       return { ok: true, type: 'credits', credits: totalCredits }
     }
@@ -255,4 +235,3 @@ export async function fulfillPaystackReference(
     throw error
   }
 }
-

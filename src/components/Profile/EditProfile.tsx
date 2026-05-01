@@ -5,7 +5,6 @@
 import { useState, useEffect, useTransition } from 'react'
 import { X, Check, Sparkles, Save, Plus, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClient } from '@/lib/supabase-client'
 import { RELATIONSHIP_INTENTS, INTERESTS_BY_CATEGORY, PROFILE_PROMPTS } from '@/types/app-constants'
 import VideoUpload from '@/components/Profile/VideoUpload'
 import PhotoUpload from '@/components/Profile/PhotoUpload'
@@ -48,7 +47,6 @@ function splitLocation(location: string): { city: string; country: string } {
 }
 
 export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
-  const supabase = createClient()
   const { profile, refreshProfile } = useAuth()
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState('')
@@ -199,25 +197,24 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
       (combinedLocation                ? 15 : 0)
     )
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
+    const res = await fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         full_name:            formData.full_name.trim(),
         bio:                  formData.bio.trim(),
         location:             combinedLocation,
         nationality:          formData.nationality.trim(),
         looking_for:          formData.looking_for,
         interests:            formData.interests,
-        // ── Prompts saved alongside other profile fields ──────────────────────
-        // Cast required — prompts not in generated types yet
-        prompts:              prompts,
+        prompts,
         profile_completeness: completeness,
-        updated_at:           new Date().toISOString(),
-      } as any)
-      .eq('id', profile.id)
+      }),
+    })
 
-    if (error) {
-      setError(error.message)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error ?? 'Failed to save profile')
       setLoading(false)
     } else {
       await refreshProfile()

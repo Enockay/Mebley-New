@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/paystack/initialise/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { pgQuery } from '@/lib/postgres'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 
@@ -56,12 +55,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Supabase client — only for subscriptions (Supabase-only table)
-    const sbAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
     const body: Body = await req.json()
     const { type, product } = body
     const reference  = `cro_${type}_${product}_${paymentUserId.slice(0, 8)}_${Date.now()}`
@@ -75,22 +68,15 @@ export async function POST(req: NextRequest) {
       amountCents = Math.round(plan.usd * 100)
       label       = plan.label
 
-      // Pre-insert in Supabase (non-blocking — verify will create on-the-fly if this fails)
-      const { error: subInsertError } = await sbAdmin.from('subscriptions').insert({
-        user_id:                  paymentUserId,
-        tier:                     plan.tier,
-        billing_period:           plan.billing_period,
-        status:                   'active',
-        paystack_ref:             reference,
-        current_period_start:     new Date().toISOString(),
-        current_period_end:       new Date().toISOString(),
-        weekly_credits_allocated: plan.monthly_credits,
-      })
-
-      if (subInsertError) {
-        console.warn('[paystack/initialize] pre-insert subscription failed (will create on verify):',
-          subInsertError.code, subInsertError.message)
-      }
+      // Pre-insert subscription row (non-blocking — fulfillment will upsert on verify)
+      pgQuery(
+        `INSERT INTO subscriptions
+           (user_id, tier, billing_period, status, paystack_ref,
+            current_period_start, current_period_end, weekly_credits_allocated)
+         VALUES ($1, $2, $3, 'active', $4, NOW(), NOW(), $5)
+         ON CONFLICT (paystack_ref) DO NOTHING`,
+        [paymentUserId, plan.tier, plan.billing_period, reference, plan.monthly_credits]
+      ).catch(err => console.warn('[paystack/initialize] pre-insert subscription failed:', err))
 
     } else if (type === 'credits') {
       const pack = CREDIT_PACKS[product as CreditPackKey]
@@ -98,19 +84,15 @@ export async function POST(req: NextRequest) {
       amountCents = Math.round(pack.usd * 100)
       label       = pack.label
 
-      // stripe_orders lives in Supabase
-      const { error: orderInsertError } = await (sbAdmin as any).from('stripe_orders').insert({
-        user_id:           paymentUserId,
-        paystack_ref:      reference,
-        stripe_session_id: reference,   // NOT NULL column; reuse Paystack ref
-        status:            'pending',
-        credits_purchased: pack.credits,
-        bonus_credits:     pack.bonus,
-        amount_usd:        pack.usd,
-      })
-
-      if (orderInsertError) {
-        console.error('[paystack/initialize] failed to create credit order:', orderInsertError)
+      try {
+        await pgQuery(
+          `INSERT INTO stripe_orders
+             (user_id, paystack_ref, stripe_session_id, status, credits_purchased, bonus_credits, amount_usd)
+           VALUES ($1, $2, $2, 'pending', $3, $4, $5)`,
+          [paymentUserId, reference, pack.credits, pack.bonus, pack.usd]
+        )
+      } catch (err) {
+        console.error('[paystack/initialize] failed to create credit order:', err)
         return NextResponse.json({ error: 'Could not create credit order' }, { status: 500 })
       }
     } else {

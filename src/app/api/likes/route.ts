@@ -3,8 +3,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/rateLimit'
 import { notifyMatch, notifyLike } from '@/lib/notifications'
-import { withPgClient } from '@/lib/postgres'
+import { withPgClient, pgQuery } from '@/lib/postgres'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
+
+// ── GET — return all user IDs that the current user has already liked ─────────
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getAuthUserFromRequest(request)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const res = await pgQuery<{ likee_id: string }>(
+      `SELECT likee_id FROM likes WHERE liker_id = $1`,
+      [user.id]
+    )
+    return NextResponse.json({ likedIds: res.rows.map(r => r.likee_id) })
+  } catch (err) {
+    console.error('GET /api/likes error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
 
 type BasicProfileRow = {
   full_name: string
