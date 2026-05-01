@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactCompiler: true,
 
+  // Browsers request /favicon.ico implicitly; serve Mebley icon.svg so tabs don't fall back to framework defaults.
+  async rewrites() {
+    return [{ source: '/favicon.ico', destination: '/icon.svg' }]
+  },
+
   // ─── Security Headers ───────────────────────────────────────────────────────
   async headers() {
     return [

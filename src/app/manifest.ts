@@ -19,12 +19,7 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/icon.svg',
         sizes: 'any',
         type: 'image/svg+xml',
-        purpose: 'maskable',
-      },
-      {
-        src: '/favicon.ico',
-        sizes: '48x48',
-        type: 'image/x-icon',
+        purpose: 'any maskable',
       },
     ],
     screenshots: [

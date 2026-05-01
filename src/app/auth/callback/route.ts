@@ -20,6 +20,7 @@ import { pgQuery } from '@/lib/postgres'
 import { createAuthSession, issueSessionToken, setAuthCookie, hashPassword } from '@/lib/auth-server'
 import { isAdminUser } from '@/lib/admin-auth'
 import { isSafeRedirectPath } from '@/lib/safe-redirect'
+import { getPublicOrigin } from '@/lib/request-origin'
 
 // ── Whitelist of allowed post-auth redirect paths ─────────────────────────────
 const ALLOWED_REDIRECT_PATHS = ['/browse', '/discover', '/setup', '/profile', '/matches', '/upgrade', '/admin']
@@ -147,7 +148,8 @@ async function redirectWithSession(params: {
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
+  const origin = getPublicOrigin(request)
   const code          = searchParams.get('code')
   const returnedState = searchParams.get('state')
   const oauthError    = searchParams.get('error')
