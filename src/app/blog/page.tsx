@@ -1,3 +1,5 @@
+'use client'
+
 import MarketingLayout from '@/components/UI/MarketingLayout'
 import Link from 'next/link'
 
