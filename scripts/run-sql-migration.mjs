@@ -63,9 +63,25 @@ async function runAllMigrations(pool) {
   }
 }
 
+function normalizeMigrateArg(raw) {
+  if (raw === '--al') {
+    console.warn('migrate:sql: "--al" is incomplete — running all pending migrations (--all).')
+    return '--all'
+  }
+  return raw
+}
+
 async function main() {
-  const fileArg = process.argv[2]
+  const rawArg = process.argv[2]
+  const fileArg = normalizeMigrateArg(rawArg)
   const runAll = fileArg === '--all' || !fileArg
+
+  if (!runAll && typeof fileArg === 'string' && fileArg.startsWith('-')) {
+    console.error(
+      `Unknown option "${rawArg}". Use:\n  npm run migrate:sql -- --all\n  npm run migrate:sql -- migrations/example.sql`
+    )
+    process.exit(1)
+  }
 
   const connectionString = process.env.DATABASE_URL
   if (!connectionString) {
