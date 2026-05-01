@@ -745,7 +745,7 @@ function BrowsePageContent() {
 
   const activePanel = searchParams.get('panel')
   const showChatPane = !isMobile || activePanel === 'chats'
-  const rightPanelOpen = !isMobile && (showSelfSettings || (!!viewProfileSp && !showSelfSettings))
+  const rightPanelOpen = !isMobile
   const openPersonProfile = useCallback((spSel: ScoredProfile) => {
     setViewProfileSp(spSel)
     setDrawerPhotoIdx(0)
@@ -1556,15 +1556,15 @@ function BrowsePageContent() {
       </div>
       )}
 
-      {showSelfSettings && (
+      {/* ── Right panel — always visible on desktop ── */}
+      {!isMobile && (
         <div style={{
           position: 'fixed',
           right: 0,
-          left: isMobile ? 0 : 'auto',
           top: TOP_HEADER_HEIGHT,
           bottom: 72,
-          zIndex: 65,
-          width: isMobile ? '100%' : DESK_RIGHT_W,
+          zIndex: showSelfSettings ? 65 : 180,
+          width: DESK_RIGHT_W,
           pointerEvents: 'none',
           transition: 'width 0.25s ease',
         }}>
@@ -1572,173 +1572,233 @@ function BrowsePageContent() {
             pointerEvents: 'auto',
             width: '100%',
             height: '100%',
-            overflow: 'hidden',
+            overflowY: showSelfSettings ? 'hidden' : 'auto',
             borderLeft: '1px solid rgba(255,255,255,0.15)',
             background: 'rgba(12,10,30,0.99)',
-            padding: 0,
+            padding: showSelfSettings ? 0 : 16,
             boxShadow: '-4px 0 24px rgba(8,2,20,0.35)',
           }}>
-            <iframe
-              src="/profile?embedded=1"
-              style={{
-                width: '100%',
+
+            {/* Self settings iframe */}
+            {showSelfSettings && (
+              <iframe
+                src="/profile?embedded=1"
+                style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }}
+              />
+            )}
+
+            {/* Selected person profile */}
+            {viewProfileSp && !showSelfSettings && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <h3 style={{ margin: 0, fontFamily: "'Fraunces', Georgia, serif", fontSize: 22, color: 'white' }}>Profile</h3>
+                  <button
+                    onClick={() => setViewProfileSp(null)}
+                    style={{
+                      width: 36, height: 36, borderRadius: '50%',
+                      border: '1px solid rgba(255,255,255,0.24)',
+                      background: 'rgba(255,255,255,0.08)',
+                      color: '#f8e9ff',
+                      cursor: 'pointer',
+                      display: 'grid',
+                      placeItems: 'center',
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div style={{ borderRadius: 5, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.14)', marginBottom: 12 }}>
+                  <img
+                    src={(viewProfileSp.profile.photos?.[drawerPhotoIdx] as any)?.url ?? getPhotoUrl(viewProfileSp.profile.photos) ?? ''}
+                    alt={viewProfileSp.profile.full_name}
+                    style={{ width: '100%', height: 400, objectFit: 'cover', objectPosition: 'top' }}
+                  />
+                </div>
+                {Array.isArray(viewProfileSp.profile.photos) && viewProfileSp.profile.photos.length > 1 && (
+                  <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, marginBottom: 10 }}>
+                    {viewProfileSp.profile.photos.map((photo: any, i: number) => (
+                      <button
+                        key={`thumb-${i}`}
+                        onClick={() => setDrawerPhotoIdx(i)}
+                        style={{
+                          width: 66, height: 66, borderRadius: 12, overflow: 'hidden', flexShrink: 0, cursor: 'pointer',
+                          border: i === drawerPhotoIdx ? '2px solid rgba(236,72,153,0.6)' : '1px solid rgba(255,255,255,0.2)',
+                          padding: 0, background: 'transparent',
+                        }}
+                      >
+                        <img src={photo?.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p style={{ margin: '0 0 6px', fontFamily: "'Fraunces', Georgia, serif", fontSize: 28, color: 'white', lineHeight: 1.1 }}>
+                  {viewProfileSp.profile.full_name}
+                </p>
+                {viewProfileSp.profile.location && (
+                  <p style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(245,225,251,0.9)', fontSize: 13, fontFamily: "Georgia, serif" }}>
+                    <MapPin size={13} color="#f9a8d4" />
+                    {viewProfileSp.profile.location}
+                  </p>
+                )}
+                {viewProfileSp.profile.voice_note_url && (
+                  <div style={{ marginBottom: 12 }}>
+                    <p style={{ margin: '0 0 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>
+                      Voice Note
+                    </p>
+                    <VoiceNotePlayer url={viewProfileSp.profile.voice_note_url} />
+                  </div>
+                )}
+                <div style={{ marginBottom: 12 }}>
+                  <button
+                    onClick={() => openChatWithProfile(viewProfileSp.profile)}
+                    style={{
+                      width: '100%', borderRadius: 12, border: 'none',
+                      background: 'linear-gradient(135deg, #f43f5e, #ec4899)', color: 'white',
+                      fontFamily: "Georgia, serif",
+                      fontWeight: 700, fontSize: 13, padding: '10px 12px',
+                      cursor: 'pointer', boxShadow: '0 3px 10px rgba(244,63,94,0.2)',
+                    }}
+                  >
+                    Message
+                  </button>
+                </div>
+                {viewProfileSp.profile.bio && (
+                  <div style={{ marginBottom: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', padding: 12 }}>
+                    <p style={{ margin: '0 0 5px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>
+                      About
+                    </p>
+                    <p style={{ margin: 0, fontSize: 13, color: '#f8e9ff', lineHeight: 1.6 }}>{viewProfileSp.profile.bio}</p>
+                  </div>
+                )}
+                <div style={{ marginBottom: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', padding: 12 }}>
+                  <p style={{ margin: '0 0 8px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>
+                    Activities & Interests
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {viewProfileSp.profile.looking_for.slice(0, 1).map((intent, i) => (
+                      <span key={`${intent}-${i}`} style={{
+                        padding: '4px 11px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+                        border: '1px solid rgba(236,72,153,0.5)', background: 'rgba(236,72,153,0.2)', color: '#ffe3f3',
+                      }}>
+                        {intent}
+                      </span>
+                    ))}
+                    {viewProfileSp.profile.interests.slice(0, 10).map((interest, i) => (
+                      <span key={`${interest}-${i}`} style={{
+                        padding: '4px 11px', borderRadius: 999, fontSize: 11,
+                        border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.1)', color: '#f0e7fb',
+                      }}>
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {viewProfileSp.reasons.length > 0 && (
+                  <div style={{ borderRadius: 14, border: '1px solid rgba(255,255,255,0.16)', background: 'rgba(255,255,255,0.06)', padding: 12 }}>
+                    <p style={{ margin: '0 0 8px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>
+                      Why you match
+                    </p>
+                    {viewProfileSp.reasons.slice(0, 5).map((reason, i) => (
+                      <p key={i} style={{ margin: '0 0 6px', color: '#f8e9ff', fontSize: 13 }}>
+                        • {reason}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Empty state — no profile selected, no settings open */}
+            {!viewProfileSp && !showSelfSettings && (
+              <div style={{
                 height: '100%',
-                border: 'none',
-                background: 'transparent',
-              }}
-            />
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 14,
+                padding: '32px 24px',
+                textAlign: 'center',
+              }}>
+                <div style={{
+                  width: 72, height: 72, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, rgba(240,56,104,0.16), rgba(255,122,80,0.10))',
+                  border: '1px solid rgba(240,56,104,0.22)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 0 28px rgba(240,56,104,0.14)',
+                }}>
+                  <Heart size={28} color="rgba(240,56,104,0.7)" />
+                </div>
+                <p style={{
+                  margin: 0,
+                  fontFamily: "'Fraunces', Georgia, serif",
+                  fontSize: 18, fontWeight: 700,
+                  color: 'rgba(240,232,244,0.55)',
+                  lineHeight: 1.3,
+                }}>
+                  Tap a profile to view details
+                </p>
+                <p style={{
+                  margin: 0,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
+                  color: 'rgba(240,232,244,0.32)',
+                  lineHeight: 1.6,
+                }}>
+                  Click any card in the feed to see someone&apos;s full profile here.
+                </p>
+              </div>
+            )}
+
           </aside>
         </div>
       )}
 
-      {viewProfileSp && !showSelfSettings && (
+      {/* Mobile overlays */}
+      {isMobile && showSelfSettings && (
         <div style={{
-          position: 'fixed',
-          right: 0,
-          left: isMobile ? 0 : 'auto',
-          top: TOP_HEADER_HEIGHT,
-          bottom: 72,
-          zIndex: 180,
-          width: isMobile ? '100%' : DESK_RIGHT_W,
+          position: 'fixed', inset: 0, zIndex: 65,
+          width: '100%',
           pointerEvents: 'none',
-          transition: 'width 0.25s ease',
         }}>
           <aside style={{
-            pointerEvents: 'auto',
-            width: '100%',
-            height: '100%',
-            overflowY: 'auto',
-            borderLeft: isMobile ? 'none' : '1px solid rgba(255,255,255,0.15)',
-            background: 'rgba(12,10,30,0.99)',
-            padding: 16,
-            boxShadow: isMobile ? 'none' : '-4px 0 24px rgba(8,2,20,0.35)',
+            pointerEvents: 'auto', width: '100%', height: '100%',
+            overflow: 'hidden', background: 'rgba(12,10,30,0.99)', padding: 0,
           }}>
-            <>
+            <iframe src="/profile?embedded=1" style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }} />
+          </aside>
+        </div>
+      )}
+      {isMobile && viewProfileSp && !showSelfSettings && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 180,
+          width: '100%',
+          pointerEvents: 'none',
+        }}>
+          <aside style={{
+            pointerEvents: 'auto', width: '100%', height: '100%',
+            overflowY: 'auto', background: 'rgba(12,10,30,0.99)', padding: 16,
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <h3 style={{ margin: 0, fontFamily: "'Fraunces', Georgia, serif", fontSize: 22, color: 'white' }}>Profile</h3>
-              <button
-                onClick={() => setViewProfileSp(null)}
-                style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  border: '1px solid rgba(255,255,255,0.24)',
-                  background: 'rgba(255,255,255,0.08)',
-                  color: '#f8e9ff',
-                  cursor: 'pointer',
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
+              <button onClick={() => setViewProfileSp(null)} style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)', background: 'rgba(255,255,255,0.08)', color: '#f8e9ff', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
                 <X size={16} />
               </button>
             </div>
             <div style={{ borderRadius: 5, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.14)', marginBottom: 12 }}>
-              <img
-                src={(viewProfileSp.profile.photos?.[drawerPhotoIdx] as any)?.url ?? getPhotoUrl(viewProfileSp.profile.photos) ?? ''}
-                alt={viewProfileSp.profile.full_name}
-                style={{ width: '100%', height: 400, objectFit: 'cover', objectPosition: 'top' }}
-              />
+              <img src={(viewProfileSp.profile.photos?.[drawerPhotoIdx] as any)?.url ?? getPhotoUrl(viewProfileSp.profile.photos) ?? ''} alt={viewProfileSp.profile.full_name} style={{ width: '100%', height: 400, objectFit: 'cover', objectPosition: 'top' }} />
             </div>
-            {Array.isArray(viewProfileSp.profile.photos) && viewProfileSp.profile.photos.length > 1 && (
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6, marginBottom: 10 }}>
-                {viewProfileSp.profile.photos.map((photo: any, i: number) => (
-                  <button
-                    key={`thumb-${i}`}
-                    onClick={() => setDrawerPhotoIdx(i)}
-                    style={{
-                      width: 66, height: 66, borderRadius: 12, overflow: 'hidden', flexShrink: 0, cursor: 'pointer',
-                      border: i === drawerPhotoIdx ? '2px solid rgba(236,72,153,0.6)' : '1px solid rgba(255,255,255,0.2)',
-                      padding: 0, background: 'transparent',
-                    }}
-                  >
-                    <img src={photo?.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </button>
-                ))}
-              </div>
-            )}
-            <p style={{ margin: '0 0 6px', fontFamily: "'Fraunces', Georgia, serif", fontSize: 28, color: 'white', lineHeight: 1.1 }}>
-              {viewProfileSp.profile.full_name}
-            </p>
+            <p style={{ margin: '0 0 6px', fontFamily: "'Fraunces', Georgia, serif", fontSize: 28, color: 'white', lineHeight: 1.1 }}>{viewProfileSp.profile.full_name}</p>
             {viewProfileSp.profile.location && (
-              <p style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(245,225,251,0.9)', fontSize: 13, fontFamily: "Georgia, serif" }}>
-                <MapPin size={13} color="#f9a8d4" />
-                {viewProfileSp.profile.location}
+              <p style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(245,225,251,0.9)', fontSize: 13 }}>
+                <MapPin size={13} color="#f9a8d4" />{viewProfileSp.profile.location}
               </p>
             )}
-            {viewProfileSp.profile.voice_note_url && (
-              <div style={{ marginBottom: 12 }}>
-                <p style={{ margin: '0 0 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>
-                  Voice Note
-                </p>
-                <VoiceNotePlayer url={viewProfileSp.profile.voice_note_url} />
-              </div>
-            )}
             <div style={{ marginBottom: 12 }}>
-              <button
-                onClick={() => openChatWithProfile(viewProfileSp.profile)}
-                style={{
-                  width: '100%', borderRadius: 12, border: 'none',
-                  background: 'linear-gradient(135deg, #f43f5e, #ec4899)', color: 'white',
-                  fontFamily: "Georgia, serif",
-                  fontWeight: 700, fontSize: 13, padding: '10px 12px',
-                  cursor: 'pointer', boxShadow: '0 3px 10px rgba(244,63,94,0.2)',
-                }}
-              >
+              <button onClick={() => openChatWithProfile(viewProfileSp.profile)} style={{ width: '100%', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #f43f5e, #ec4899)', color: 'white', fontWeight: 700, fontSize: 13, padding: '10px 12px', cursor: 'pointer' }}>
                 Message
               </button>
             </div>
-            {viewProfileSp.profile.bio && (
-              <div style={{ marginBottom: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', padding: 12 }}>
-                <p style={{ margin: '0 0 5px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>
-                  About
-                </p>
-                <p style={{ margin: 0, fontSize: 13, color: '#f8e9ff', lineHeight: 1.6 }}>{viewProfileSp.profile.bio}</p>
-              </div>
-            )}
-            <div style={{ marginBottom: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', padding: 12 }}>
-              <p style={{ margin: '0 0 8px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>
-                Activities & Interests
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {viewProfileSp.profile.looking_for.slice(0, 1).map((intent, i) => (
-                  <span key={`${intent}-${i}`} style={{
-                    padding: '4px 11px',
-                    borderRadius: 999,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    border: '1px solid rgba(236,72,153,0.5)',
-                    background: 'rgba(236,72,153,0.2)',
-                    color: '#ffe3f3',
-                  }}>
-                    {intent}
-                  </span>
-                ))}
-                {viewProfileSp.profile.interests.slice(0, 10).map((interest, i) => (
-                  <span key={`${interest}-${i}`} style={{
-                    padding: '4px 11px',
-                    borderRadius: 999,
-                    fontSize: 11,
-                    border: '1px solid rgba(255,255,255,0.22)',
-                    background: 'rgba(255,255,255,0.1)',
-                    color: '#f0e7fb',
-                  }}>
-                    {interest}
-                  </span>
-                ))}
-              </div>
-            </div>
-            {viewProfileSp.reasons.length > 0 && (
-              <div style={{ borderRadius: 14, border: '1px solid rgba(255,255,255,0.16)', background: 'rgba(255,255,255,0.06)', padding: 12 }}>
-                <p style={{ margin: '0 0 8px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>
-                  Why you match
-                </p>
-                {viewProfileSp.reasons.slice(0, 5).map((reason, i) => (
-                  <p key={i} style={{ margin: '0 0 6px', color: '#f8e9ff', fontSize: 13 }}>
-                    • {reason}
-                  </p>
-                ))}
-              </div>
-            )}
-            </>
           </aside>
         </div>
       )}

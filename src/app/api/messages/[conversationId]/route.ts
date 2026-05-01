@@ -57,8 +57,13 @@ export async function GET(
 
     // Opening a conversation marks incoming messages as read for this user.
     await markMessagesAsRead(conversationId, user.id)
-    const messages = await getMessages(conversationId, 1, 50)
-    return NextResponse.json({ messages: messages.reverse(), page: 1, limit: 50 })
+    const raw = await getMessages(conversationId, 1, 50)
+    const messages = raw.reverse().map(m => ({
+      ...m,
+      id:  m._id?.toString(),   // client expects "id", not "_id"
+      _id: undefined,
+    }))
+    return NextResponse.json({ messages, page: 1, limit: 50 })
 
   } catch (error) {
     console.error('GET messages error:', error)

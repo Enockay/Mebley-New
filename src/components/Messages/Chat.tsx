@@ -736,6 +736,20 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
         const m = Math.floor(durationSecs / 60); const s = durationSecs % 60
         const durationLabel = `${m}:${String(s).padStart(2, '0')}`
         const msgId = `msg-${Date.now()}`
+        const optimisticId = `tmp-audio-${msgId}`
+
+        // Show placeholder immediately — no mediaUrl means the bubble shows "Sending…"
+        if (currentProfile) {
+          const optimistic: MongoMessage = {
+            id: optimisticId, conversationId,
+            senderId: currentProfile.id, receiverId: otherProfile.id,
+            content: `🎤 Voice note · ${durationLabel}`,
+            messageType: 'audio', isRead: false,
+            createdAt: new Date().toISOString(),
+          }
+          setMessages(p => [...p, optimistic])
+        }
+
         try {
           const presignRes = await fetch('/api/chat/media', {
             method: 'POST',
@@ -750,8 +764,15 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
           fd.append('file', blob, `${msgId}.webm`)
           const uploadRes = await fetch(url, { method: 'POST', body: fd })
           if (!uploadRes.ok) throw new Error('Upload to storage failed')
-          await sendMediaMessage('audio', `🎤 Voice note · ${durationLabel}`, { mediaUrl: cloudfrontUrl })
+          const sent = await sendMediaMessage('audio', `🎤 Voice note · ${durationLabel}`, { mediaUrl: cloudfrontUrl })
+          // Replace the placeholder with the real saved message
+          if (sent) {
+            setMessages(p => p.map(msg => msg.id === optimisticId ? { ...sent } : msg))
+          } else {
+            setMessages(p => p.filter(msg => msg.id !== optimisticId))
+          }
         } catch {
+          setMessages(p => p.filter(msg => msg.id !== optimisticId))
           setError('Failed to send voice note')
         }
       }
@@ -1315,8 +1336,10 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {/* Deduplicate by id before rendering to guard against any stale state */}
-              {messages.filter((msg, i, arr) => arr.findIndex(m => m.id === msg.id) === i).map((msg, i) => {
+              {/* Deduplicate by id — only dedup when both messages have a real id */}
+              {messages.filter((msg, i, arr) =>
+                !msg.id || arr.findIndex(m => m.id === msg.id) === i
+              ).map((msg, i) => {
                 const own    = msg.senderId === currentProfile?.id
                 const isTemp = msg.id?.startsWith('tmp-')
                 const isDeleted = msg.isDeleted
@@ -1402,8 +1425,15 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
                       {!isDeleted && msg.messageType === 'image' && hasImageCaption && (
                         <p style={{ margin: 0, padding: '8px 10px 0', fontSize: 13, lineHeight: 1.4, wordBreak: 'break-word' }}>{imageCaption}</p>
                       )}
-                      {!isDeleted && msg.messageType === 'audio' && msg.mediaUrl && (
-                        <AudioPlayer src={msg.mediaUrl} ownMessage={own} label={msg.content} />
+                      {!isDeleted && msg.messageType === 'audio' && (
+                        msg.mediaUrl
+                          ? <AudioPlayer src={msg.mediaUrl} ownMessage={own} label={msg.content} />
+                          : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', minWidth: 180 }}>
+                              <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${own ? 'rgba(255,255,255,0.6)' : '#f03868'}`, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                              <span style={{ fontSize: 12, color: own ? 'rgba(255,255,255,0.7)' : 'rgba(246,223,252,0.7)' }}>Sending voice note…</span>
+                            </div>
+                          )
                       )}
 
                       {/* Text */}
