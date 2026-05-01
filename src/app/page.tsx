@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Script from 'next/script'
 
 /* ── Data ──────────────────────────────────────────────────────────── */
 const STATS = [
@@ -106,9 +107,128 @@ function GCard({ children, className = '' }: { children: React.ReactNode; classN
 /* ══════════════════════════════════════════════════════════════════
    PAGE
 ══════════════════════════════════════════════════════════════════ */
+const JSON_LD = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': 'https://mebley.com/#organization',
+      name: 'Mebley',
+      url: 'https://mebley.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://mebley.com/icon.svg',
+        width: 200,
+        height: 200,
+      },
+      sameAs: [
+        'https://twitter.com/mebley',
+        'https://instagram.com/mebleyapp',
+      ],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        url: 'https://mebley.com/contact',
+        availableLanguage: 'English',
+      },
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://mebley.com/#website',
+      url: 'https://mebley.com',
+      name: 'Mebley',
+      description: 'Voice-first dating app for intentional connections across 40+ countries.',
+      publisher: { '@id': 'https://mebley.com/#organization' },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: { '@type': 'EntryPoint', urlTemplate: 'https://mebley.com/browse?q={search_term_string}' },
+        'query-input': 'required name=search_term_string',
+      },
+    },
+    {
+      '@type': 'MobileApplication',
+      name: 'Mebley',
+      operatingSystem: 'WEB',
+      applicationCategory: 'LifestyleApplication',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+        description: 'Free to join, premium features available',
+      },
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: '4.8',
+        reviewCount: '1200',
+        bestRating: '5',
+        worstRating: '1',
+      },
+      featureList: [
+        'Voice notes on profiles',
+        'Intentional matching by values',
+        'Video calls',
+        'Global dating across 40+ countries',
+        'The Stitch — super-like with a personal note',
+        'Here Tonight live presence',
+      ],
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'What is Mebley?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Mebley is a voice-first dating app designed for intentional connections. Members record a 30-second voice note for their profile so you can hear their energy before you meet. Available across 40+ countries.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Is Mebley free?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes, Mebley is free to join and use. Premium features like Spotlight boosts, the Stitch super-like, and seeing who liked you are available through credits and subscription plans.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'How does Mebley matching work?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Mebley uses an Intent Score to rank profiles by shared values, relationship goals, interests, and compatibility — not just by who paid to be seen. This gives you a quality-over-quantity feed.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What is The Stitch?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'The Stitch is Mebley\'s signature super-like feature. When you send a Stitch, you attach a personal note explaining why you think you\'d connect. It rises above ordinary likes and shows real intention.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Which countries is Mebley available in?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Mebley is available globally across 40+ countries, with active communities in Nairobi, London, Mumbai, Tokyo, Dubai, Paris, New York, Lagos, and more.',
+          },
+        },
+      ],
+    },
+  ],
+}
+
 export default function LandingPage() {
   return (
     <div className="landing-page overflow-x-hidden" style={{ background: T.bg, color: T.text, fontFamily: "'DM Sans', sans-serif" }}>
+      <Script
+        id="ld-json"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        strategy="afterInteractive"
+      />
 
       {/* ────────── NAV ────────── */}
       <nav style={{

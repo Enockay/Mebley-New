@@ -1,5 +1,18 @@
+import type { Metadata } from 'next'
 import MarketingLayout from '@/components/UI/MarketingLayout'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'About Us',
+  description:
+    'Learn about Mebley — the team building voice-first, intentional dating for people who want something real. Our mission, values, and story.',
+  alternates: { canonical: 'https://mebley.com/about' },
+  openGraph: {
+    title: 'About Mebley — Our Story & Mission',
+    description: 'We\'re building dating that respects your time, your values, and your desire for something real. Meet the team behind Mebley.',
+    url: 'https://mebley.com/about',
+  },
+}
 
 const T = {
   bg:    '#0c0a1e',

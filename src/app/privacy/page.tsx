@@ -1,3 +1,13 @@
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description:
+    'Mebley\'s Privacy Policy — how we collect, use, and protect your personal data. Your privacy is central to how we operate.',
+  alternates: { canonical: 'https://mebley.com/privacy' },
+  robots: { index: true, follow: false },
+}
+
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
@@ -6,7 +16,7 @@ export default function PrivacyPage() {
           <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center">
             <span className="text-white text-lg">♥</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Crotchet</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Mebley</h1>
         </div>
 
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h2>
@@ -16,12 +26,12 @@ export default function PrivacyPage() {
 
           <section>
             <h3 className="text-lg font-bold text-gray-900 mb-3">1. Who We Are</h3>
-            <p>Crotchet is a global dating app designed to help people make meaningful connections. We are committed to protecting your privacy and handling your personal data responsibly and transparently.</p>
+            <p>Mebley is a global dating app designed to help people make meaningful connections. We are committed to protecting your privacy and handling your personal data responsibly and transparently.</p>
           </section>
 
           <section>
             <h3 className="text-lg font-bold text-gray-900 mb-3">2. Data We Collect</h3>
-            <p>We collect the following categories of data when you use Crotchet:</p>
+            <p>We collect the following categories of data when you use Mebley:</p>
             <ul className="list-disc pl-6 mt-2 space-y-1.5">
               <li><strong>Account data:</strong> Email address, phone number, and password (encrypted)</li>
               <li><strong>Profile data:</strong> Name, age range, gender, location, nationality, bio, interests, relationship intent, and photos/videos you upload</li>
@@ -85,7 +95,7 @@ export default function PrivacyPage() {
 
           <section>
             <h3 className="text-lg font-bold text-gray-900 mb-3">9. Children's Privacy</h3>
-            <p>Crotchet is strictly for users aged 18 and over. We do not knowingly collect data from anyone under 18. If we discover an account belongs to a minor, we will delete it immediately. If you believe a minor has created an account, please contact us.</p>
+            <p>Mebley is strictly for users aged 18 and over. We do not knowingly collect data from anyone under 18. If we discover an account belongs to a minor, we will delete it immediately. If you believe a minor has created an account, please contact us.</p>
           </section>
 
           <section>
@@ -95,7 +105,7 @@ export default function PrivacyPage() {
 
           <section>
             <h3 className="text-lg font-bold text-gray-900 mb-3">11. International Transfers</h3>
-            <p>Crotchet is a global app. Your data may be processed in countries outside your own, including the United States and the European Union. We ensure all transfers are protected by appropriate safeguards in accordance with applicable data protection law.</p>
+            <p>Mebley is a global app. Your data may be processed in countries outside your own, including the United States and the European Union. We ensure all transfers are protected by appropriate safeguards in accordance with applicable data protection law.</p>
           </section>
 
           <section>

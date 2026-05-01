@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
               // OneSignal SDK needs to load from their CDN
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.onesignal.com https://onesignal.com https://api.onesignal.com https://*.onesignal.com",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' blob: data: https: https://d31vt9enmz8sz2.cloudfront.net",
+              "img-src 'self' blob: data: https:",
               "font-src 'self' https://cdn.onesignal.com",
               // blob: needed for camera preview, CloudFront for video playback
               "media-src 'self' blob: https://d31vt9enmz8sz2.cloudfront.net",
@@ -67,7 +67,7 @@ const nextConfig: NextConfig = {
       {
         source: '/:path*',
         has: [{ type: 'header', key: 'x-forwarded-proto', value: 'http' }],
-        destination: 'https://yourdomain.com/:path*',
+        destination: 'https://mebley.com/:path*',
         permanent: true,
       },
     ]

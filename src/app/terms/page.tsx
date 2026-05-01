@@ -1,4 +1,13 @@
+import type { Metadata } from 'next'
 import { Heart } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Terms of Service',
+  description:
+    'Mebley\'s Terms of Service — the rules and guidelines for using our dating platform. Read before creating your account.',
+  alternates: { canonical: 'https://mebley.com/terms' },
+  robots: { index: true, follow: false },
+}
 
 export default function TermsPage() {
   return (
@@ -13,7 +22,7 @@ export default function TermsPage() {
             <div style={{ width:44,height:44,background:'rgba(255,255,255,0.2)',borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center' }}>
               <span style={{ fontSize:22 }}>♥</span>
             </div>
-            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:700, color:'white' }}>Crotchet</span>
+            <span style={{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:700, color:'white' }}>Mebley</span>
           </div>
           <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:36, fontWeight:700, color:'white', margin:'0 0 8px', lineHeight:1.2 }}>Terms of Service</h1>
           <p style={{ color:'rgba(255,255,255,0.8)', fontSize:14, margin:0 }}>Last updated: March 2026 · Version 1.0</p>
@@ -25,30 +34,30 @@ export default function TermsPage() {
           {/* Intro */}
           <div style={{ background:'#fff7f7', border:'1px solid #fecdd3', borderRadius:16, padding:'20px 24px', marginBottom:40 }}>
             <p style={{ margin:0, fontSize:14, color:'#be123c', lineHeight:1.7 }}>
-              <strong>Welcome to Crotchet.</strong> Please read these Terms of Service carefully before using our platform.
-              By creating an account or using Crotchet, you agree to be legally bound by these terms.
+              <strong>Welcome to Mebley.</strong> Please read these Terms of Service carefully before using our platform.
+              By creating an account or using Mebley, you agree to be legally bound by these terms.
               If you do not agree, please do not use our services.
             </p>
           </div>
 
           <Section n="1" title="Who We Are">
-            <p>Crotchet ("the Platform", "we", "us", or "our") is a global online dating and social connection service that enables adults to create profiles, discover compatible people, and build meaningful relationships. Crotchet operates as a technology platform connecting users worldwide.</p>
+            <p>Mebley ("the Platform", "we", "us", or "our") is a global online dating and social connection service that enables adults to create profiles, discover compatible people, and build meaningful relationships. Mebley operates as a technology platform connecting users worldwide.</p>
             <p>For questions or support, contact us at <a href="mailto:crotchet.support@gmail.com" style={{ color:'#f43f5e', textDecoration:'none', fontWeight:600 }}>crotchet.support@gmail.com</a>.</p>
           </Section>
 
           <Section n="2" title="Eligibility & Age Requirement">
-            <p>To use Crotchet you must:</p>
+            <p>To use Mebley you must:</p>
             <ul>
               <li>Be at least <strong>18 years of age</strong></li>
               <li>Have the legal capacity to enter into a binding agreement</li>
               <li>Not be prohibited from using the services under applicable laws of your country</li>
-              <li>Not be a previously banned Crotchet user</li>
+              <li>Not be a previously banned Mebley user</li>
             </ul>
             <p>By creating an account, you represent and warrant that all of the above is true. We take the safety of minors extremely seriously. Accounts found to belong to users under 18 will be permanently terminated without notice, and we reserve the right to report such activity to relevant authorities.</p>
           </Section>
 
           <Section n="3" title="Your Account">
-            <p>When you create a Crotchet account, you agree to:</p>
+            <p>When you create a Mebley account, you agree to:</p>
             <ul>
               <li>Provide accurate, current, and complete information during registration</li>
               <li>Maintain and update your information to keep it accurate and complete</li>
@@ -60,7 +69,7 @@ export default function TermsPage() {
           </Section>
 
           <Section n="4" title="Acceptable Use">
-            <p>Crotchet is designed to help people make genuine connections. You agree not to use Crotchet to:</p>
+            <p>Mebley is designed to help people make genuine connections. You agree not to use Mebley to:</p>
             <ul>
               <li>Harass, abuse, stalk, threaten, bully, or intimidate any user</li>
               <li>Post false, misleading, defamatory, or fraudulent information</li>
@@ -80,7 +89,7 @@ export default function TermsPage() {
           </Section>
 
           <Section n="5" title="Content You Post">
-            <p>You retain full ownership of all content you post on Crotchet, including photos, videos, messages, and profile information ("User Content"). By posting User Content, you grant Crotchet a limited, non-exclusive, worldwide, royalty-free licence to:</p>
+            <p>You retain full ownership of all content you post on Mebley, including photos, videos, messages, and profile information ("User Content"). By posting User Content, you grant Mebley a limited, non-exclusive, worldwide, royalty-free licence to:</p>
             <ul>
               <li>Display your content to other users as part of normal platform operation</li>
               <li>Store your content on our secure servers and CDN infrastructure</li>
@@ -96,24 +105,24 @@ export default function TermsPage() {
           </Section>
 
           <Section n="6" title="Matching, Discovery & Algorithm">
-            <p>Crotchet uses a proprietary algorithmic matching system that considers profile completeness, stated preferences, location, shared interests, relationship intent, and platform activity to suggest compatible users.</p>
+            <p>Mebley uses a proprietary algorithmic matching system that considers profile completeness, stated preferences, location, shared interests, relationship intent, and platform activity to suggest compatible users.</p>
             <p>We do not guarantee:</p>
             <ul>
               <li>That you will find a match or romantic partner</li>
               <li>The accuracy, completeness, or suitability of any match suggestion</li>
               <li>The conduct or intentions of any user you encounter on the platform</li>
             </ul>
-            <p>Crotchet is a platform for meeting people. We are not responsible for what happens between users on or off the platform. Always exercise personal safety and good judgment when meeting people online or in person.</p>
+            <p>Mebley is a platform for meeting people. We are not responsible for what happens between users on or off the platform. Always exercise personal safety and good judgment when meeting people online or in person.</p>
           </Section>
 
           <Section n="7" title="Safety & Reporting">
-            <p>Your safety is our priority. Crotchet provides tools to report, block, and flag users. We review all reports and take appropriate action, which may include warnings, temporary suspension, or permanent termination.</p>
+            <p>Your safety is our priority. Mebley provides tools to report, block, and flag users. We review all reports and take appropriate action, which may include warnings, temporary suspension, or permanent termination.</p>
             <p>If you experience harassment, threats, or illegal conduct from another user, please report it in-app and, where necessary, to your local law enforcement. In cases involving immediate danger, always contact emergency services first.</p>
-            <p>Crotchet cooperates fully with law enforcement investigations as required by applicable law.</p>
+            <p>Mebley cooperates fully with law enforcement investigations as required by applicable law.</p>
           </Section>
 
           <Section n="8" title="Premium Features & Monetisation">
-            <p>Crotchet may offer paid features including but not limited to profile boosts, virtual gifts, and premium subscriptions ("Premium Features"). By purchasing Premium Features, you agree that:</p>
+            <p>Mebley may offer paid features including but not limited to profile boosts, virtual gifts, and premium subscriptions ("Premium Features"). By purchasing Premium Features, you agree that:</p>
             <ul>
               <li>All purchases are final unless required by applicable consumer protection law</li>
               <li>Virtual items and credits have no monetary value and cannot be transferred or exchanged for real currency</li>
@@ -136,7 +145,7 @@ export default function TermsPage() {
           </Section>
 
           <Section n="10" title="Intellectual Property">
-            <p>All content, design, code, trademarks, and branding of Crotchet are owned by or licensed to us and are protected by applicable intellectual property laws. You may not copy, reproduce, modify, or distribute any part of the platform without our prior written consent.</p>
+            <p>All content, design, code, trademarks, and branding of Mebley are owned by or licensed to us and are protected by applicable intellectual property laws. You may not copy, reproduce, modify, or distribute any part of the platform without our prior written consent.</p>
           </Section>
 
           <Section n="11" title="Account Suspension & Termination">
@@ -151,7 +160,7 @@ export default function TermsPage() {
           </Section>
 
           <Section n="12" title="Disclaimer of Warranties">
-            <p>Crotchet is provided "as is" and "as available" without warranties of any kind, express or implied. To the fullest extent permitted by applicable law, we disclaim all warranties including but not limited to:</p>
+            <p>Mebley is provided "as is" and "as available" without warranties of any kind, express or implied. To the fullest extent permitted by applicable law, we disclaim all warranties including but not limited to:</p>
             <ul>
               <li>Merchantability and fitness for a particular purpose</li>
               <li>Uninterrupted, error-free, or secure operation of the platform</li>
@@ -160,7 +169,7 @@ export default function TermsPage() {
           </Section>
 
           <Section n="13" title="Limitation of Liability">
-            <p>To the maximum extent permitted by applicable law, Crotchet and its operators shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the platform, including but not limited to:</p>
+            <p>To the maximum extent permitted by applicable law, Mebley and its operators shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the platform, including but not limited to:</p>
             <ul>
               <li>Personal injury or property damage</li>
               <li>Emotional distress or loss of enjoyment</li>
@@ -183,13 +192,13 @@ export default function TermsPage() {
               <li>Notify you via email or in-app notification</li>
               <li>Give you a reasonable period to review changes before they take effect</li>
             </ul>
-            <p>Continued use of Crotchet after changes take effect constitutes your acceptance of the updated Terms.</p>
+            <p>Continued use of Mebley after changes take effect constitutes your acceptance of the updated Terms.</p>
           </Section>
 
           <Section n="16" title="Contact Us">
             <p>If you have any questions about these Terms of Service, please contact our support team:</p>
             <div style={{ background:'#fff7f7', border:'1px solid #fecdd3', borderRadius:14, padding:'18px 22px', marginTop:12 }}>
-              <p style={{ margin:'0 0 4px', fontWeight:600, color:'#be123c' }}>Crotchet Support</p>
+              <p style={{ margin:'0 0 4px', fontWeight:600, color:'#be123c' }}>Mebley Support</p>
               <p style={{ margin:0, fontSize:14, color:'#374151' }}>
                 <a href="mailto:crotchet.support@gmail.com" style={{ color:'#f43f5e', textDecoration:'none', fontWeight:600 }}>crotchet.support@gmail.com</a>
               </p>
@@ -200,7 +209,7 @@ export default function TermsPage() {
 
         {/* Footer */}
         <div style={{ background:'#fafafa', borderTop:'1px solid #f1f5f9', padding:'24px 48px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
-          <p style={{ fontSize:12, color:'#94a3b8', margin:0 }}>© 2026 Crotchet. All rights reserved.</p>
+          <p style={{ fontSize:12, color:'#94a3b8', margin:0 }}>© 2026 Mebley. All rights reserved.</p>
           <div style={{ display:'flex', gap:20 }}>
             <a href="/privacy" style={{ fontSize:12, color:'#f43f5e', textDecoration:'none', fontWeight:600 }}>Privacy Policy</a>
             <a href="/auth" style={{ fontSize:12, color:'#94a3b8', textDecoration:'none' }}>Back to App</a>
