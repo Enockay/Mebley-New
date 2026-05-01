@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         p.photo_verified,
         p.verification_submitted_at,
         p.verification_notes,
-        COALESCE(p.photos, '[]'::jsonb) AS photos,
+        COALESCE(to_jsonb(p.photos), '[]'::jsonb) AS photos,
         u.created_at
       FROM profiles p
       JOIN app_users u ON u.id = p.id

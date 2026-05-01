@@ -14,6 +14,29 @@ const rekognition = new RekognitionClient({
   },
 })
 
+function normalizeCfHost(raw: string): string {
+  return raw.replace(/^https?:\/\//i, '').split('/')[0].trim().toLowerCase()
+}
+
+/** Prefer explicit s3Key; otherwise derive from CloudFront URL (matches /api/photos/upload URLs). */
+function resolveSlot0S3Key(photo: { url?: string; s3Key?: string } | null | undefined): string | null {
+  if (!photo) return null
+  const direct = typeof photo.s3Key === 'string' ? photo.s3Key.trim() : ''
+  if (direct) return direct
+  const urlStr = typeof photo.url === 'string' ? photo.url.trim() : ''
+  const cfRaw = process.env.CLOUDFRONT_DOMAIN?.trim()
+  if (!urlStr || !cfRaw) return null
+  const expectedHost = normalizeCfHost(cfRaw)
+  try {
+    const u = new URL(urlStr)
+    if (u.hostname.toLowerCase() !== expectedHost) return null
+    const key = decodeURIComponent(u.pathname.replace(/^\/+/, ''))
+    return key || null
+  } catch {
+    return null
+  }
+}
+
 // GET — return current verification status
 export async function GET(request: NextRequest) {
   try {
@@ -61,10 +84,14 @@ export async function POST(request: NextRequest) {
     const profile = profileRes.rows[0]
     const photos = (profile?.photos as any[] ?? []).filter(Boolean)
     const primaryPhoto = photos.find((p: any) => p.slot === 0)
+    const targetKey    = resolveSlot0S3Key(primaryPhoto)
 
-    if (!primaryPhoto?.s3Key) {
+    if (!targetKey) {
       return NextResponse.json(
-        { error: 'Please upload a profile photo (slot 0) before verifying.' },
+        {
+          error:
+            'Your main photo must be stored in Mebley (S3) to verify. Re-upload your profile picture from Edit profile → Photos, then try again.',
+        },
         { status: 400 }
       )
     }
@@ -84,7 +111,7 @@ export async function POST(request: NextRequest) {
       TargetImage: {
         S3Object: {
           Bucket: process.env.AWS_S3_BUCKET!,
-          Name:   primaryPhoto.s3Key,
+          Name:   targetKey,
         },
       },
       SimilarityThreshold: 70,

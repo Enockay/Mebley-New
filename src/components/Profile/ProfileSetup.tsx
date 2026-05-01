@@ -75,6 +75,7 @@ export default function ProfileSetup() {
   const [photoFile, setPhotoFile]           = useState<File | null>(null)
   const [photoPreview, setPhotoPreview]     = useState<string | null>(null)
   const [photoUrl, setPhotoUrl]             = useState<string | null>(null)
+  const [photoS3Key, setPhotoS3Key]         = useState<string | null>(null)
   const [photoUploading, setPhotoUploading] = useState(false)
   const [photoError, setPhotoError]         = useState('')
 
@@ -129,7 +130,7 @@ export default function ProfileSetup() {
       formData.looking_for.length > 0 &&
       formData.interests.length >= 3
     )
-    return !!photoUrl
+    return !!(photoUrl && photoS3Key)
   }
 
   // ── Photo handlers ────────────────────────────────────────────────────────
@@ -147,6 +148,7 @@ export default function ProfileSetup() {
     setPhotoPreview(URL.createObjectURL(file))
     setPhotoError('')
     setPhotoUrl(null)
+    setPhotoS3Key(null)
     if (uploadInputRef.current) uploadInputRef.current.value = ''
     if (cameraInputRef.current) cameraInputRef.current.value = ''
   }
@@ -185,6 +187,7 @@ export default function ProfileSetup() {
         return
       }
       setPhotoUrl(cloudfrontUrl)
+      setPhotoS3Key(s3Key)
     } catch (err: any) {
       setPhotoError(err.message ?? 'Upload failed. Please try again.')
     }
@@ -193,6 +196,7 @@ export default function ProfileSetup() {
 
   const resetPhoto = () => {
     setPhotoUrl(null)
+    setPhotoS3Key(null)
     setPhotoPreview(null)
     setPhotoFile(null)
     setPhotoError('')
@@ -209,7 +213,8 @@ export default function ProfileSetup() {
         ? formData.looking_for
         : formData.looking_for ? [formData.looking_for as string] : []
 
-      const photos     = photoUrl ? [{ url: photoUrl, slot: 0, s3Key: '' }] : []
+      const photos =
+        photoUrl && photoS3Key ? [{ url: photoUrl, slot: 0, s3Key: photoS3Key }] : []
       const username   = generateUsername(formData.full_name)
 
       const completeness = Math.min(100,
