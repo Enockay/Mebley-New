@@ -35,62 +35,123 @@ function RecordingWaveform() {
 }
 
 function AudioPlayer({ src, ownMessage, label }: { src: string; ownMessage: boolean; label: string }) {
-  const audioRef = React.useRef<HTMLAudioElement>(null)
-  const [playing, setPlaying] = React.useState(false)
+  const audioRef    = React.useRef<HTMLAudioElement>(null)
+  const trackRef    = React.useRef<HTMLDivElement>(null)
+  const [playing, setPlaying]   = React.useState(false)
   const [progress, setProgress] = React.useState(0)
   const [duration, setDuration] = React.useState(0)
+  const [errored, setErrored]   = React.useState(false)
+  const [loading, setLoading]   = React.useState(false)
 
   const durationStr = label.match(/·\s*([\d:]+)/)?.[1] ?? ''
 
-  const toggle = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!audioRef.current) return
-    if (playing) { audioRef.current.pause() } else { audioRef.current.play() }
-    setPlaying(p => !p)
-  }
-
   const fmt = (s: number) => {
-    if (!isFinite(s) || isNaN(s)) return durationStr || '0:00'
+    if (!isFinite(s) || isNaN(s) || s <= 0) return durationStr || '0:00'
     const m = Math.floor(s / 60); const sec = Math.floor(s % 60)
     return `${m}:${String(sec).padStart(2, '0')}`
   }
 
-  const accent = ownMessage ? 'rgba(255,255,255,0.92)' : '#f03868'
-  const dim    = ownMessage ? 'rgba(255,255,255,0.32)' : 'rgba(240,232,244,0.28)'
-  const timeColor = ownMessage ? 'rgba(255,255,255,0.7)' : 'rgba(240,232,244,0.6)'
+  const toggle = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const el = audioRef.current
+    if (!el || errored) return
+    if (playing) {
+      el.pause()
+      setPlaying(false)
+    } else {
+      setLoading(true)
+      try {
+        await el.play()
+        setPlaying(true)
+      } catch {
+        setErrored(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
+  // Seek by clicking on the waveform track
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation()
+    const el = audioRef.current
+    if (!el || errored || !el.duration) return
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    el.currentTime = ratio * el.duration
+    setProgress(ratio)
+  }
+
+  // colours
+  const btnBg    = ownMessage ? 'rgba(255,255,255,0.25)' : 'rgba(240,56,104,0.22)'
+  const iconCol  = ownMessage ? '#fff' : '#f03868'
+  const filled   = ownMessage ? 'rgba(255,255,255,0.9)' : '#f03868'
+  const unfilled = ownMessage ? 'rgba(255,255,255,0.28)' : 'rgba(240,56,104,0.22)'
+  const timeCol  = ownMessage ? 'rgba(255,255,255,0.65)' : 'rgba(220,180,210,0.7)'
+  const errCol   = ownMessage ? 'rgba(255,255,255,0.5)' : 'rgba(220,100,120,0.8)'
+
+  const currentTime = playing && duration > 0 ? fmt(duration * progress) : fmt(duration)
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', minWidth: 220, maxWidth: 280 }}>
-      <button onClick={toggle} style={{
-        width: 36, height: 36, borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
-        border: 'none',
-        background: ownMessage ? 'rgba(255,255,255,0.22)' : 'rgba(240,56,104,0.18)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {playing
-          ? <Pause size={15} color={ownMessage ? 'white' : '#f03868'} fill={ownMessage ? 'white' : '#f03868'} />
-          : <Play  size={15} color={ownMessage ? 'white' : '#f03868'} fill={ownMessage ? 'white' : '#f03868'} style={{ marginLeft: 2 }} />
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '6px 8px', minWidth: 200, maxWidth: 260,
+    }}>
+      {/* Play / Pause / Spinner button */}
+      <button
+        onClick={toggle}
+        disabled={errored}
+        style={{
+          width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+          cursor: errored ? 'default' : 'pointer', border: 'none',
+          background: errored ? 'rgba(255,80,80,0.15)' : btnBg,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'background 0.18s',
+        }}
+      >
+        {loading
+          ? <div style={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${iconCol}`, borderTopColor: 'transparent', animation: 'spin 0.7s linear infinite' }} />
+          : errored
+            ? <span style={{ fontSize: 14 }}>⚠</span>
+            : playing
+              ? <Pause size={14} color={iconCol} fill={iconCol} />
+              : <Play  size={14} color={iconCol} fill={iconCol} style={{ marginLeft: 2 }} />
         }
       </button>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 26 }}>
-          {WAVE_BARS.map((h, i) => {
-            const barPos = i / WAVE_BARS.length
-            const active = barPos <= progress
-            return (
-              <div key={i} style={{
-                width: 3, borderRadius: 2,
-                height: `${h * 0.28}px`,
-                background: active ? accent : dim,
-                transition: 'background 0.12s',
-                flexShrink: 0,
-              }} />
-            )
-          })}
-        </div>
-        <span style={{ fontSize: 10, color: timeColor }}>
-          {playing && duration > 0 ? fmt(duration * progress) : fmt(duration || 0)}
+      {/* Right side: waveform + time */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+
+        {errored ? (
+          <span style={{ fontSize: 10, color: errCol, lineHeight: 1.4 }}>
+            Not supported in this browser
+          </span>
+        ) : (
+          /* Clickable waveform track */
+          <div
+            ref={trackRef}
+            onClick={handleSeek}
+            style={{ display: 'flex', alignItems: 'center', gap: 1.5, height: 24, cursor: 'pointer' }}
+          >
+            {WAVE_BARS.map((h, i) => {
+              const barPos = i / WAVE_BARS.length
+              const active = barPos <= progress
+              return (
+                <div key={i} style={{
+                  width: 2.5, borderRadius: 2,
+                  height: `${Math.max(3, h * 0.24)}px`,
+                  background: active ? filled : unfilled,
+                  transition: 'background 0.08s',
+                  flexShrink: 0,
+                }} />
+              )
+            })}
+          </div>
+        )}
+
+        {/* Timestamp */}
+        <span style={{ fontSize: 9, color: timeCol, fontVariantNumeric: 'tabular-nums' }}>
+          {errored ? 'Playback error' : currentTime}
         </span>
       </div>
 
@@ -99,13 +160,17 @@ function AudioPlayer({ src, ownMessage, label }: { src: string; ownMessage: bool
         src={src}
         preload="metadata"
         onTimeUpdate={() => {
-          if (audioRef.current && audioRef.current.duration > 0) {
-            setProgress(audioRef.current.currentTime / audioRef.current.duration)
-            setDuration(audioRef.current.duration)
+          const el = audioRef.current
+          if (el && el.duration > 0) {
+            setProgress(el.currentTime / el.duration)
+            setDuration(el.duration)
           }
         }}
         onLoadedMetadata={() => { if (audioRef.current) setDuration(audioRef.current.duration) }}
         onEnded={() => { setPlaying(false); setProgress(0) }}
+        onError={() => { setErrored(true); setPlaying(false); setLoading(false) }}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
       />
     </div>
   )
@@ -533,7 +598,8 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
         throw new Error(body?.error ?? 'Failed to send')
       }
       const { message } = await res.json()
-      setMessages(p => [...p, { ...message }])
+      // Dedup: SSE may have already delivered this message before we got here
+      setMessages(p => p.some(m => m.id === message.id) ? p : [...p, { ...message }])
       return message as MongoMessage
     } catch (err: any) {
       setError(err?.message ?? 'Failed to send')
@@ -1249,7 +1315,8 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {messages.map((msg, i) => {
+              {/* Deduplicate by id before rendering to guard against any stale state */}
+              {messages.filter((msg, i, arr) => arr.findIndex(m => m.id === msg.id) === i).map((msg, i) => {
                 const own    = msg.senderId === currentProfile?.id
                 const isTemp = msg.id?.startsWith('tmp-')
                 const isDeleted = msg.isDeleted

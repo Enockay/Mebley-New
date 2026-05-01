@@ -77,11 +77,15 @@ function applySecurityHeaders(response: NextResponse, request?: NextRequest): Ne
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.onesignal.com https://onesignal.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.onesignal.com https://onesignal.com https://*.onesignal.com https://api.onesignal.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
+      "font-src 'self' https://fonts.gstatic.com https://cdn.onesignal.com",
       "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://*.amazonaws.com https://*.cloudfront.net https://*.giphy.com https://*.giphyusercontent.com https://media.tenor.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.twilio.com https://onesignal.com https://*.amazonaws.com https://*.cloudfront.net https://api.giphy.com https://tenor.googleapis.com",
+      // blob: needed for camera preview; CloudFront for audio/video playback
+      "media-src 'self' blob: https://*.cloudfront.net https://*.amazonaws.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://onesignal.com https://*.onesignal.com https://api.onesignal.com https://*.amazonaws.com https://*.cloudfront.net https://api.giphy.com https://tenor.googleapis.com https://*.agora.io wss://*.agora.io https://*.edge.agora.io wss://*.edge.agora.io https://oauth2.googleapis.com https://www.googleapis.com",
+      "worker-src 'self' blob: https://cdn.onesignal.com",
+      "frame-src 'self' https://onesignal.com",
       "frame-ancestors 'self'",
     ].join('; ')
   )

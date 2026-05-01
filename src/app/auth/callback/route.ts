@@ -67,31 +67,33 @@ async function generateUniqueUsername(baseName: string): Promise<string> {
 }
 
 // ── Resolve or create app_user row ────────────────────────────────────────────
-async function resolveOrCreateAppUser(googleId: string, email: string): Promise<string> {
+// Google's sub is a numeric string (e.g. "109534428939097838400") — not a UUID.
+// We look up users by email and generate a proper UUID for new accounts.
+async function resolveOrCreateAppUser(_googleId: string, email: string): Promise<string> {
   const safeEmail = email.trim().toLowerCase()
 
-  // Check by google sub (stored as id)
-  const byId = await pgQuery<{ id: string }>(
-    `SELECT id FROM app_users WHERE id = $1 LIMIT 1`, [googleId]
+  // Look up existing user by email (covers both Google and password sign-ups)
+  const byEmail = await pgQuery<{ id: string }>(
+    `SELECT id FROM app_users WHERE email = $1 LIMIT 1`, [safeEmail]
   )
-  if (byId.rows[0]?.id) {
+  if (byEmail.rows[0]?.id) {
     await pgQuery(
-      `UPDATE app_users SET email = $2, email_verified = true, is_active = true WHERE id = $1`,
-      [googleId, safeEmail]
+      `UPDATE app_users SET email_verified = true, is_active = true WHERE id = $1`,
+      [byEmail.rows[0].id]
     )
-    return googleId
+    return byEmail.rows[0].id
   }
 
-  // If email exists from password signup, reuse that account
+  // New user — generate a proper UUID, not Google's numeric sub
   const randomPassword  = randomBytes(24).toString('hex')
   const placeholderHash = await hashPassword(randomPassword)
   const upsert = await pgQuery<{ id: string }>(
     `INSERT INTO app_users (id, email, password_hash, email_verified, is_active)
-     VALUES ($1, $2, $3, true, true)
+     VALUES (gen_random_uuid(), $1, $2, true, true)
      ON CONFLICT (email) DO UPDATE
        SET email_verified = true, is_active = true
      RETURNING id`,
-    [googleId, safeEmail, placeholderHash]
+    [safeEmail, placeholderHash]
   )
   return upsert.rows[0].id
 }

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         SELECT
           n.id, n.type, n.title, n.body, n.data, n.actor_id, n.read_at, n.created_at,
           p.username  AS actor_username,
-          (p.photos->0->>'url') AS actor_photo
+          (p.photos[1]->>'url') AS actor_photo
         FROM user_notifications n
         LEFT JOIN profiles p ON p.id = n.actor_id
         WHERE n.user_id = $1

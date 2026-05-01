@@ -57,9 +57,23 @@ export default function TopHeader() {
       borderBottom: '1px solid rgba(255,255,255,0.06)',
       boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 4px 32px rgba(0,0,0,0.55)',
       display: 'flex', alignItems: 'center',
-      paddingLeft: 'max(20px, env(safe-area-inset-left))',
-      paddingRight: 'max(20px, env(safe-area-inset-right))',
+      paddingLeft: 'max(12px, env(safe-area-inset-left))',
+      paddingRight: 'max(12px, env(safe-area-inset-right))',
+      overflow: 'hidden',
     }}>
+      <style>{`
+        @media (max-width: 520px) {
+          .hdr-credits-lbl { display: none !important; }
+          .hdr-divider     { display: none !important; }
+          .hdr-name        { display: none !important; }
+          .hdr-chevron     { display: none !important; }
+          .hdr-gap         { gap: 6px !important; }
+          .hdr-credits     { padding: 7px 9px !important; }
+        }
+        @media (max-width: 360px) {
+          .hdr-bell        { display: none !important; }
+        }
+      `}</style>
 
       {/* Subtle accent line at top */}
       <div style={{
@@ -67,7 +81,7 @@ export default function TopHeader() {
         background: 'linear-gradient(90deg, transparent 0%, rgba(214,77,232,0.45) 30%, rgba(238,92,166,0.45) 70%, transparent 100%)',
       }} />
 
-      <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="hdr-gap" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12 }}>
 
         {/* Logo */}
         <button
@@ -96,7 +110,7 @@ export default function TopHeader() {
               priority
             />
           </div>
-          <span className="logo-text" style={{
+          <span className="logo-text hdr-logo-text" style={{
             fontFamily: "'Fraunces', Georgia, serif",
             fontSize: '18px', fontWeight: 700,
             color: '#fff',
@@ -108,7 +122,7 @@ export default function TopHeader() {
         <div style={{ flex: 1 }} />
 
         {/* Right actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="hdr-gap" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 
           {isAdmin && (
             <button
@@ -142,7 +156,7 @@ export default function TopHeader() {
           )}
 
           {/* Notification Bell */}
-          <div style={{
+          <div className="hdr-bell" style={{
             width: 36, height: 36, borderRadius: '10px',
             border: '1px solid rgba(255,255,255,0.08)',
             background: 'rgba(255,255,255,0.04)',
@@ -153,6 +167,7 @@ export default function TopHeader() {
 
           {/* Credits pill */}
           <button
+            className="hdr-credits"
             onClick={() => openPaywall('general', 'credits')}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -177,12 +192,12 @@ export default function TopHeader() {
             <Coins size={13} />
             <span>
               {Math.max(0, Number(creditBalance ?? 0)).toLocaleString()}
-              <span className="credits-label"> Credits</span>
+              <span className="credits-label hdr-credits-lbl"> Credits</span>
             </span>
           </button>
 
           {/* Vertical divider */}
-          <div style={{
+          <div className="hdr-divider" style={{
             width: '1px', height: '28px',
             background: 'rgba(255,255,255,0.08)',
             margin: '0 4px',
@@ -240,7 +255,7 @@ export default function TopHeader() {
             </div>
 
             {/* Name */}
-            <span className="hidden sm:block" style={{
+            <span className="hidden sm:block hdr-name" style={{
               fontSize: '13px', fontFamily: "'DM Sans', sans-serif",
               fontWeight: 500, color: 'rgba(255,255,255,0.82)',
               maxWidth: '110px', overflow: 'hidden',
@@ -249,7 +264,7 @@ export default function TopHeader() {
               {profile?.full_name}
             </span>
 
-            <ChevronDown size={13} color="rgba(255,255,255,0.35)" className="hidden sm:block" />
+            <ChevronDown size={13} color="rgba(255,255,255,0.35)" className="hidden sm:block hdr-chevron" />
           </button>
 
           {/* Sign out */}
