@@ -1,22 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
-import {
-  RekognitionClient,
-  DetectFacesCommand,
-  Attribute,
-} from '@aws-sdk/client-rekognition'
+import { DetectFacesCommand, Attribute } from '@aws-sdk/client-rekognition'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 import { pgQuery } from '@/lib/postgres'
+import { getRekognitionClient, rekognitionNetworkHint } from '@/lib/rekognition-client'
 
 const s3 = new S3Client({
-  region: process.env.AWS_REGION!,
-  credentials: {
-    accessKeyId:     process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-})
-
-const rekognition = new RekognitionClient({
   region: process.env.AWS_REGION!,
   credentials: {
     accessKeyId:     process.env.AWS_ACCESS_KEY_ID!,
@@ -39,7 +28,7 @@ async function checkFacePresent(s3Key: string): Promise<{ valid: boolean; reason
       Attributes: [Attribute.DEFAULT],
     })
 
-    const result = await rekognition.send(command)
+    const result = await getRekognitionClient().send(command)
     const faces  = result.FaceDetails ?? []
 
     if (faces.length === 0) {
@@ -60,10 +49,11 @@ async function checkFacePresent(s3Key: string): Promise<{ valid: boolean; reason
     return { valid: true }
 
   } catch (err: any) {
-    // If Rekognition fails (e.g. unsupported format like HEIC), allow through
-    // rather than blocking the user — log the error for monitoring
-    console.error('[Rekognition] DetectFaces error:', err.message)
-    return { valid: true }  // fail open — better UX than hard blocking
+    // Rekognition unreachable (Docker DNS, firewall...) — don't hard-block uploads; selfie verification will surface infra errors.
+    console.error('[Rekognition] DetectFaces error:', err?.message ?? err)
+    const hint = rekognitionNetworkHint(err)
+    if (hint) console.warn('[Rekognition]', hint)
+    return { valid: true }
   }
 }
 

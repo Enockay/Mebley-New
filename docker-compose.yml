@@ -12,6 +12,10 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
+    # Rekognition/S3 need working DNS inside the container (fixes ENOTFOUND *.amazonaws.com on some hosts)
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 20s

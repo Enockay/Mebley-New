@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import {
-  RekognitionClient,
-  CompareFacesCommand,
-} from '@aws-sdk/client-rekognition'
+import { CompareFacesCommand } from '@aws-sdk/client-rekognition'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 import { pgQuery } from '@/lib/postgres'
-
-const rekognition = new RekognitionClient({
-  region: process.env.AWS_REGION!,
-  credentials: {
-    accessKeyId:     process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-})
+import { getRekognitionClient, rekognitionNetworkHint } from '@/lib/rekognition-client'
 
 function normalizeCfHost(raw: string): string {
   return raw.replace(/^https?:\/\//i, '').split('/')[0].trim().toLowerCase()
@@ -121,15 +111,18 @@ export async function POST(request: NextRequest) {
     let verified   = false
 
     try {
-      const result = await rekognition.send(command)
+      const result = await getRekognitionClient().send(command)
       const matches = result.FaceMatches ?? []
       if (matches.length > 0) {
         similarity = matches[0].Similarity ?? 0
         verified   = similarity >= 80
       }
     } catch (rekErr: any) {
-      console.error('[Rekognition] CompareFaces error:', rekErr.message)
-      // Fail open only if Rekognition is unavailable (service error), not if no face found
+      console.error('[Rekognition] CompareFaces error:', rekErr?.message ?? rekErr)
+      const netHint = rekognitionNetworkHint(rekErr)
+      if (netHint) {
+        return NextResponse.json({ error: netHint }, { status: 503 })
+      }
       if (rekErr.name === 'InvalidParameterException' || rekErr.name === 'InvalidImageFormatException') {
         return NextResponse.json({ error: 'Could not read photo — use a clear JPEG or PNG selfie.' }, { status: 400 })
       }
