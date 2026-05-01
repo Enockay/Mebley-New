@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import BlockReport from '@/components/Moderation/BlockReport'
 import { ChatOverlayPortalContext } from '@/contexts/ChatOverlayPortalContext'
+import PermissionDialog from '@/components/UI/PermissionDialog'
 
 // Static waveform shape for audio messages (WhatsApp-style decorative bars)
 const WAVE_BARS = [28,45,70,52,85,62,38,78,50,90,42,65,55,80,32,60,72,45,68,36,82,54,44,72,58,34,76,48,64,42,80,50]
@@ -260,6 +261,8 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
   const audioChunksRef                  = useRef<Blob[]>([])
   const [recordingAudio, setRecordingAudio]   = useState(false)
   const [recordingDuration, setRecordingDuration] = useState(0)
+  const [callPermNeeded, setCallPermNeeded]   = useState<'start' | 'accept' | null>(null)
+  const [showVoicePermDialog, setShowVoicePermDialog] = useState(false)
   const recordingStartRef   = useRef<number>(0)
   const recordingTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null)
   const missedCallTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -641,15 +644,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
     await sendMediaMessage('gif', gifUrl, { mediaUrl: gifUrl })
   }
 
-  const toggleVoiceRecording = async () => {
-    if (isPendingConversation) {
-      setError('Chat unlocks once you both like each other')
-      return
-    }
-    if (recordingAudio && mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop()
-      return
-    }
+  const startVoiceRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mimeType = [
@@ -713,6 +708,18 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
         setError('Could not start recording. Check microphone permissions.')
       }
     }
+  }
+
+  const toggleVoiceRecording = () => {
+    if (isPendingConversation) {
+      setError('Chat unlocks once you both like each other')
+      return
+    }
+    if (recordingAudio && mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop()
+      return
+    }
+    setShowVoicePermDialog(true)
   }
 
   // ── Delete message ─────────────────────────────────────────
@@ -805,6 +812,10 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
   const declineCall = async () => {
     setIncomingCall(null)
     await sendMediaMessage('video_call', '📹 Call declined', { callStatus: 'declined' })
+    fetch('/api/chat/call-update', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelName: conversationId, status: 'declined' }),
+    }).catch(() => {})
   }
 
   // ── Chat management (mute/block) ───────────────────────────
@@ -914,6 +925,11 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
           remoteJoinedRef.current = true
           setRemoteJoined(true)
           setCallConnected(true)
+          // Mark call answered when remote video arrives
+          fetch('/api/chat/call-update', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channelName: conversationId, status: 'answered' }),
+          }).catch(() => {})
         }
         if (mediaType === 'audio') user.audioTrack?.play()
       })
@@ -933,6 +949,10 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
         if (!remoteJoinedRef.current) {
           await endCall(false)
           await sendMediaMessage('video_call', '📹 Missed call', { callStatus: 'missed' })
+          fetch('/api/chat/call-update', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channelName: conversationId, status: 'missed' }),
+          }).catch(() => {})
         }
       }, 60_000)
 
@@ -976,8 +996,16 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
     setMicMuted(false); setCamOff(false)
     if (duration > 0) {
       await sendMediaMessage('video_call', `📹 Video call · ${formatDuration(duration)}`, { callStatus: 'ended', callDuration: duration })
+      fetch('/api/chat/call-update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channelName: conversationId, status: 'ended', durationSeconds: duration }),
+      }).catch(() => {})
     } else if (!remote) {
       await sendMediaMessage('video_call', '📹 Call ended', { callStatus: 'ended' })
+      fetch('/api/chat/call-update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channelName: conversationId, status: 'ended' }),
+      }).catch(() => {})
     }
   }
 
@@ -1056,7 +1084,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
 
           {/* Video call button */}
           <button
-            onClick={e => { e.stopPropagation(); if (!inCall && !isPendingConversation) startCall() }}
+            onClick={e => { e.stopPropagation(); if (!inCall && !isPendingConversation) setCallPermNeeded('start') }}
             disabled={isPendingConversation || inCall}
             style={{ width: 38, height: 38, borderRadius: '50%', border: 'none', cursor: (isPendingConversation || inCall) ? 'not-allowed' : 'pointer', opacity: (isPendingConversation || inCall) ? 0.45 : 1, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Video size={17} color="#f6e8ff" />
@@ -1655,13 +1683,39 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
                 <PhoneOff size={24} color="#ef4444" />
                 <span style={{ fontSize: 10, color: '#ef4444', fontWeight: 600 }}>Decline</span>
               </button>
-              <button onClick={acceptCall} style={{ width: 64, height: 64, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #059669, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6, boxShadow: '0 4px 24px rgba(16,185,129,0.4)' }}>
+              <button onClick={() => setCallPermNeeded('accept')} style={{ width: 64, height: 64, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #059669, #10b981)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6, boxShadow: '0 4px 24px rgba(16,185,129,0.4)' }}>
                 <Phone size={24} color="white" fill="white" />
                 <span style={{ fontSize: 10, color: 'white', fontWeight: 600 }}>Accept</span>
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Camera + mic permission dialog — for video calls */}
+      {callPermNeeded !== null && (
+        <PermissionDialog
+          type="camera-mic"
+          onGranted={() => {
+            const action = callPermNeeded
+            setCallPermNeeded(null)
+            if (action === 'start') startCall()
+            else acceptCall()
+          }}
+          onCancel={() => setCallPermNeeded(null)}
+        />
+      )}
+
+      {/* Mic-only permission dialog — for voice note recording */}
+      {showVoicePermDialog && (
+        <PermissionDialog
+          type="mic-only"
+          onGranted={() => {
+            setShowVoicePermDialog(false)
+            startVoiceRecording()
+          }}
+          onCancel={() => setShowVoicePermDialog(false)}
+        />
       )}
     </>
   )

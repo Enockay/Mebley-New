@@ -254,7 +254,8 @@ export default function Discover() {
     <div
       ref={containerRef}
       onScroll={handleContainerScroll}
-      className="relative min-h-[calc(100vh-9.5rem)] overflow-y-auto bg-[radial-gradient(44%_50%_at_8%_90%,rgba(236,72,153,0.24),transparent_72%),radial-gradient(38%_44%_at_92%_10%,rgba(139,92,246,0.22),transparent_74%),linear-gradient(140deg,#0a031a_0%,#16042b_36%,#2b0644_70%,#3f0854_100%)] px-4 pt-4 pb-6 sm:min-h-[calc(100vh-10rem)]"
+      className="relative overflow-y-auto bg-[radial-gradient(44%_50%_at_8%_90%,rgba(236,72,153,0.24),transparent_72%),radial-gradient(38%_44%_at_92%_10%,rgba(139,92,246,0.22),transparent_74%),linear-gradient(140deg,#0a031a_0%,#16042b_36%,#2b0644_70%,#3f0854_100%)] px-3 sm:px-4 pt-4 pb-6"
+      style={{ minHeight: 'calc(100dvh - 62px - env(safe-area-inset-bottom))' }}
     >
       {matchAlert && (
         <div className="fixed top-20 left-1/2 z-50 -translate-x-1/2 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/80 px-6 py-3 text-sm font-semibold text-white shadow-2xl backdrop-blur">
@@ -267,7 +268,7 @@ export default function Discover() {
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-[27.5rem] sm:max-w-[31rem]">
+      <div className="mx-auto w-full max-w-[27.5rem] sm:max-w-[31rem] px-0">
         <div
           className="overflow-hidden rounded-[1.65rem] border bg-[linear-gradient(165deg,rgba(26,10,45,0.95),rgba(14,6,30,0.95))]"
           style={{
@@ -277,7 +278,7 @@ export default function Discover() {
               : '0 24px 68px rgba(7,2,20,0.55), 0 8px 26px rgba(236,72,153,0.16)',
           }}
         >
-          <div className="relative h-[min(58vh,33rem)] sm:h-[min(60vh,35rem)]">
+          <div className="discover-photo relative">
             {profile.photos && profile.photos.length > 0 ? (
               <img
                 src={(profile.photos[0] as any).url}

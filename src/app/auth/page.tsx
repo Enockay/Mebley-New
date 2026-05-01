@@ -3,12 +3,12 @@
 /* eslint-disable react/no-unescaped-entities */
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Mail, Loader2, Eye, EyeOff, Lock,
   ArrowLeft, Check, ShieldCheck, AlertTriangle,
-  ArrowUpLeft,
+  ArrowUpLeft, Phone, MessageSquare,
 } from 'lucide-react'
 
 import { useAuth } from '@/contexts/AuthContext'
@@ -141,6 +141,90 @@ function ErrorBox({ msg }: { msg: string }) {
     <div style={{ background: 'rgba(240,56,104,0.1)', border: '1px solid rgba(240,56,104,0.3)', borderRadius: 12, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
       <AlertTriangle size={14} color={T.rose} style={{ flexShrink: 0, marginTop: 1 }} />
       <span style={{ fontSize: 13, color: '#ff8aaa' }}>{msg}</span>
+    </div>
+  )
+}
+
+function PhoneBtn({ label, loading, onClick }: { label: string; loading?: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} disabled={loading}
+      style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '13px 16px', border: `1.5px solid ${T.border}`, borderRadius: 14, fontSize: 14, fontWeight: 500, color: T.text, background: T.bgInput, cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color 0.18s, background 0.18s' }}
+      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.22)'; el.style.background = 'rgba(255,255,255,0.1)' }}
+      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.border; el.style.background = T.bgInput }}>
+      {loading ? <Loader2 size={16} className="animate-spin" style={{ color: T.muted }} /> : <Phone size={17} color={T.muted} />}
+      {label}
+    </button>
+  )
+}
+
+function OtpBoxes({
+  value, onChange, onComplete, disabled,
+}: {
+  value: string; onChange: (v: string) => void; onComplete: () => void; disabled?: boolean
+}) {
+  const refs = useRef<(HTMLInputElement | null)[]>([])
+  const digits = value.padEnd(6, ' ').split('').slice(0, 6)
+
+  const handleChange = (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '')
+    if (!raw) return
+    if (raw.length > 1) {
+      const filled = raw.slice(0, 6)
+      onChange(filled)
+      const next = Math.min(filled.length, 5)
+      refs.current[next]?.focus()
+      if (filled.length === 6) setTimeout(onComplete, 50)
+      return
+    }
+    const arr = [...digits]
+    arr[i] = raw[0]
+    const joined = arr.join('').replace(/ /g, '')
+    onChange(joined)
+    if (i < 5) refs.current[i + 1]?.focus()
+    if (i === 5 && joined.length === 6) setTimeout(onComplete, 50)
+  }
+
+  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      const arr = [...digits]
+      if (arr[i] !== ' ') {
+        arr[i] = ' '; onChange(arr.join('').trimEnd())
+      } else if (i > 0) {
+        refs.current[i - 1]?.focus()
+        const arr2 = [...digits]; arr2[i - 1] = ' '; onChange(arr2.join('').trimEnd())
+      }
+      e.preventDefault()
+    } else if (e.key === 'Enter' && value.replace(/ /g, '').length === 6) {
+      onComplete()
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', margin: '8px 0' }}>
+      {[0,1,2,3,4,5].map(i => {
+        const d = digits[i]?.trim() || ''
+        const focused = typeof document !== 'undefined' && document.activeElement === refs.current[i]
+        return (
+          <input key={i}
+            ref={el => { refs.current[i] = el }}
+            type="text" inputMode="numeric" maxLength={6}
+            value={d}
+            disabled={disabled}
+            onChange={e => handleChange(i, e)}
+            onKeyDown={e => handleKeyDown(i, e)}
+            onFocus={e => e.target.select()}
+            style={{
+              width: 46, height: 54, textAlign: 'center', fontSize: 22, fontWeight: 700,
+              background: focused ? 'rgba(255,255,255,0.1)' : T.bgInput,
+              border: `1.5px solid ${d ? T.borderFocus : T.border}`,
+              borderRadius: 13, color: T.text, outline: 'none',
+              boxShadow: d ? '0 0 0 3px rgba(240,56,104,0.14)' : 'none',
+              transition: 'all 0.18s', fontFamily: 'inherit',
+              opacity: disabled ? 0.5 : 1,
+            }}
+          />
+        )
+      })}
     </div>
   )
 }
@@ -292,10 +376,10 @@ function AuthPageInner() {
 
   const OAUTH_NEXT_COOKIE = 'oauth_next'
 
-  const initialMode: 'landing' | 'signin' | 'signup' =
+  const initialMode: 'landing' | 'signin' | 'signup' | 'phone-otp' =
     typeof window !== 'undefined' && searchParams.get('reset') === 'true' ? 'signin' : 'landing'
 
-  const [mode, setMode]                     = useState<'landing' | 'signin' | 'signup'>(initialMode)
+  const [mode, setMode]                     = useState<'landing' | 'signin' | 'signup' | 'phone-otp'>(initialMode)
   const [error, setError]                   = useState('')
   const [loading, setLoading]               = useState(false)
   const [googleLoading, setGoogleLoading]   = useState(false)
@@ -311,6 +395,26 @@ function AuthPageInner() {
   const [loginEmail, setLE] = useState('')
   const [loginPass, setLP]  = useState('')
   const [showLP, setShowLP] = useState(false)
+
+  // ── Phone OTP flow ────────────────────────────────────────────────────────
+  const [phoneStep, setPhoneStep]   = useState<'phone' | 'otp' | 'complete'>('phone')
+  const [phoneNum, setPhoneNum]     = useState('+')
+  const [otpCode, setOtpCode]       = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [otpError, setOtpError]     = useState('')
+  const [otpCooldown, setCooldown]  = useState(0)
+  const [phoneExistsSignIn, setPhoneExistsSignIn] = useState(false)
+  // email + password to complete phone signup (only when phone is new)
+  const [phoneEmail, setPhoneEmail]     = useState('')
+  const [phonePass, setPhonePass]       = useState('')
+  const [phonePassC, setPhonePassC]     = useState('')
+  const [showPhonePass, setShowPP]      = useState(false)
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return
+    const t = setTimeout(() => setCooldown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [otpCooldown])
 
   const passwordStrength = [
     password.length >= 8,
@@ -395,6 +499,83 @@ function AuthPageInner() {
     setError('Password reset is temporarily unavailable during auth migration.')
   }
 
+  const handleSendOtp = async () => {
+    setOtpError('')
+    if (!/^\+[1-9]\d{7,14}$/.test(phoneNum)) {
+      setOtpError('Enter a valid number in E.164 format, e.g. +254712345678')
+      return
+    }
+    setOtpLoading(true)
+    try {
+      const r = await fetch('/api/auth/send-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNum }),
+      })
+      const d = await r.json()
+      if (!r.ok || !d.success) { setOtpError(d.message ?? 'Failed to send code'); return }
+      setPhoneStep('otp')
+      setCooldown(60)
+    } catch { setOtpError('Network error — please try again') }
+    finally { setOtpLoading(false) }
+  }
+
+  const handleVerifyOtp = async () => {
+    if (otpCode.replace(/\s/g, '').length < 6) return
+    setOtpError('')
+    setOtpLoading(true)
+    try {
+      const r = await fetch('/api/auth/verify-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNum, otp: otpCode.replace(/\s/g, '') }),
+      })
+      const d = await r.json()
+      if (!r.ok || !d.success) { setOtpError(d.message ?? 'Invalid code'); return }
+
+      // Check if account already exists for this phone
+      const chk = await fetch('/api/auth/phone-auth', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNum, action: 'check' }),
+      })
+      const chkData = await chk.json()
+      if (chkData.exists) {
+        // existing user — sign them in directly
+        setPhoneExistsSignIn(true)
+        const loginR = await fetch('/api/auth/phone-auth', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: phoneNum, action: 'login' }),
+        })
+        const loginD = await loginR.json()
+        if (!loginR.ok || !loginD.success) { setOtpError(loginD.error ?? 'Sign in failed'); setPhoneExistsSignIn(false); return }
+        const redirectTo = searchParams.get('redirectTo')
+        if (isSafeRedirectPath(redirectTo)) { router.push(redirectTo); return }
+        router.push(loginD.user?.isAdmin ? '/admin' : '/browse')
+      } else {
+        setPhoneStep('complete')
+      }
+    } catch { setOtpError('Network error — please try again') }
+    finally { setOtpLoading(false) }
+  }
+
+  const handlePhoneSignup = async () => {
+    setOtpError('')
+    if (!phoneEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(phoneEmail)) {
+      setOtpError('Enter a valid email address'); return
+    }
+    if (phonePass.length < 8) { setOtpError('Password must be at least 8 characters'); return }
+    if (phonePass !== phonePassC) { setOtpError('Passwords do not match'); return }
+    setOtpLoading(true)
+    try {
+      const r = await fetch('/api/auth/phone-auth', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNum, action: 'signup', email: phoneEmail, password: phonePass }),
+      })
+      const d = await r.json()
+      if (!r.ok || !d.success) { setOtpError(d.error ?? 'Signup failed'); return }
+      router.push('/setup')
+    } catch { setOtpError('Network error — please try again') }
+    finally { setOtpLoading(false) }
+  }
+
   const back = () => { setMode('landing'); setError('') }
 
   return (
@@ -465,6 +646,7 @@ function AuthPageInner() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <GoogleBtn label="Continue with Google" loading={googleLoading} onClick={handleGoogle} />
+                    <PhoneBtn  label="Continue with Phone"  onClick={() => { setMode('phone-otp'); setPhoneStep('phone'); setOtpCode(''); setOtpError('') }} />
 
                     <Divider />
 
@@ -620,6 +802,154 @@ function AuthPageInner() {
 
                         <p style={{ fontSize: 11, color: T.faint, textAlign: 'center', lineHeight: 1.7, margin: 0 }}>
                           By creating an account you agree to our{' '}
+                          <a href="/terms" target="_blank" style={{ color: T.rose, fontWeight: 600, textDecoration: 'none' }}>Terms</a>
+                          {' '}and{' '}
+                          <a href="/privacy" target="_blank" style={{ color: T.rose, fontWeight: 600, textDecoration: 'none' }}>Privacy Policy</a>
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* ══ PHONE OTP ══ */}
+              {mode === 'phone-otp' && (
+                <div>
+                  <button onClick={() => { setMode('landing'); setPhoneStep('phone'); setOtpCode(''); setOtpError('') }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: T.muted, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, marginBottom: 28, padding: 0, fontFamily: 'inherit', transition: 'color 0.18s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = T.text }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = T.muted }}>
+                    <ArrowLeft size={14} /> Back
+                  </button>
+
+                  {/* ── Step 1: Phone entry ── */}
+                  {phoneStep === 'phone' && (
+                    <>
+                      <div style={{ marginBottom: 28 }}>
+                        <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(240,56,104,0.13)', border: '1px solid rgba(240,56,104,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+                          <MessageSquare size={22} color={T.rose} />
+                        </div>
+                        <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 28, fontWeight: 700, color: '#ffffff', margin: '0 0 6px' }}>Enter your phone</h2>
+                        <p style={{ color: T.muted, fontSize: 14, margin: 0 }}>We'll send you a 6-digit verification code via SMS.</p>
+                      </div>
+
+                      {otpError && <ErrorBox msg={otpError} />}
+
+                      <div style={{ marginBottom: 20 }}>
+                        <Label>Phone number</Label>
+                        <DarkInput icon={Phone} type="tel" value={phoneNum}
+                          onChange={e => {
+                            let v = e.target.value.replace(/[^\d+]/g, '')
+                            if (!v.startsWith('+')) v = '+' + v
+                            setPhoneNum(v)
+                          }}
+                          placeholder="+254712345678"
+                          autoComplete="tel"
+                        />
+                        <p style={{ fontSize: 11, color: T.faint, marginTop: 6 }}>Include country code, e.g. +254 for Kenya, +1 for US</p>
+                      </div>
+
+                      <PrimaryBtn loading={otpLoading} onClick={handleSendOtp}>
+                        Send verification code
+                      </PrimaryBtn>
+                    </>
+                  )}
+
+                  {/* ── Step 2: OTP entry ── */}
+                  {phoneStep === 'otp' && (
+                    <>
+                      <div style={{ marginBottom: 24 }}>
+                        <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(240,56,104,0.13)', border: '1px solid rgba(240,56,104,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+                          <MessageSquare size={22} color={T.rose} />
+                        </div>
+                        <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 28, fontWeight: 700, color: '#ffffff', margin: '0 0 6px' }}>Enter the code</h2>
+                        <p style={{ color: T.muted, fontSize: 14, margin: 0 }}>
+                          Sent to <strong style={{ color: T.text }}>{phoneNum}</strong>
+                          <button onClick={() => { setPhoneStep('phone'); setOtpCode(''); setOtpError('') }}
+                            style={{ marginLeft: 8, color: T.rose, background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                            Change
+                          </button>
+                        </p>
+                      </div>
+
+                      {otpError && <ErrorBox msg={otpError} />}
+                      {phoneExistsSignIn && (
+                        <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 12, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Loader2 size={13} className="animate-spin" color="#4ade80" />
+                          <span style={{ fontSize: 13, color: '#4ade80' }}>Signing you in…</span>
+                        </div>
+                      )}
+
+                      <OtpBoxes value={otpCode} onChange={setOtpCode} onComplete={handleVerifyOtp} disabled={otpLoading || phoneExistsSignIn} />
+
+                      <div style={{ marginTop: 24 }}>
+                        <PrimaryBtn loading={otpLoading || phoneExistsSignIn} disabled={otpCode.replace(/\s/g, '').length < 6} onClick={handleVerifyOtp}>
+                          Verify code
+                        </PrimaryBtn>
+                      </div>
+
+                      <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: T.faint }}>
+                        Didn't receive it?{' '}
+                        <button
+                          onClick={() => { setCooldown(0); handleSendOtp() }}
+                          disabled={otpCooldown > 0 || otpLoading}
+                          style={{ color: otpCooldown > 0 ? T.faint : T.rose, fontWeight: 600, background: 'none', border: 'none', cursor: otpCooldown > 0 ? 'not-allowed' : 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
+                          {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : 'Resend code'}
+                        </button>
+                      </p>
+                    </>
+                  )}
+
+                  {/* ── Step 3: Complete signup (new user) ── */}
+                  {phoneStep === 'complete' && (
+                    <>
+                      <div style={{ marginBottom: 24 }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 20, padding: '5px 13px', marginBottom: 18 }}>
+                          <Check size={12} color="#4ade80" />
+                          <span style={{ fontSize: 12, color: '#4ade80', fontWeight: 600 }}>Phone verified: {phoneNum}</span>
+                        </div>
+                        <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 28, fontWeight: 700, color: '#ffffff', margin: '0 0 6px' }}>Almost there!</h2>
+                        <p style={{ color: T.muted, fontSize: 14, margin: 0 }}>Set an email and password to secure your account.</p>
+                      </div>
+
+                      {otpError && <ErrorBox msg={otpError} />}
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <div>
+                          <Label>Email address</Label>
+                          <DarkInput icon={Mail} type="email" value={phoneEmail} onChange={e => setPhoneEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+                        </div>
+
+                        <div>
+                          <Label>Password</Label>
+                          <RightInput show={showPhonePass} onToggle={() => setShowPP(p => !p)} value={phonePass}
+                            onChange={e => setPhonePass(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" />
+                        </div>
+
+                        <div>
+                          <Label>Confirm password</Label>
+                          <RightInput show={showPhonePass} onToggle={() => setShowPP(p => !p)} value={phonePassC}
+                            onChange={e => setPhonePassC(e.target.value)} placeholder="Re-enter password" autoComplete="new-password" />
+                          {phonePassC.length > 0 && phonePass !== phonePassC && (
+                            <p style={{ fontSize: 12, color: '#f87171', marginTop: 6 }}>Passwords do not match</p>
+                          )}
+                        </div>
+
+                        <div style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 12, padding: '10px 13px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                          <ShieldCheck size={13} color="#4ade80" style={{ flexShrink: 0, marginTop: 1 }} />
+                          <p style={{ fontSize: 11, color: 'rgba(134,239,172,0.85)', lineHeight: 1.6, margin: 0 }}>
+                            Your phone number is verified and your email is encrypted — never shared.
+                          </p>
+                        </div>
+
+                        <PrimaryBtn loading={otpLoading}
+                          disabled={!phoneEmail || phonePass.length < 8 || phonePass !== phonePassC}
+                          onClick={handlePhoneSignup}>
+                          {otpLoading ? 'Creating account…' : 'Create account'}
+                        </PrimaryBtn>
+
+                        <p style={{ fontSize: 11, color: T.faint, textAlign: 'center', lineHeight: 1.7, margin: 0 }}>
+                          By continuing you agree to our{' '}
                           <a href="/terms" target="_blank" style={{ color: T.rose, fontWeight: 600, textDecoration: 'none' }}>Terms</a>
                           {' '}and{' '}
                           <a href="/privacy" target="_blank" style={{ color: T.rose, fontWeight: 600, textDecoration: 'none' }}>Privacy Policy</a>

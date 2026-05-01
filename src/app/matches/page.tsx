@@ -72,7 +72,7 @@ function isUserOnline(lastActive?: string | null): boolean {
   return Date.now() - ts <= 5 * 60 * 1000
 }
 
-export default function MatchesPage({ embedded = false }: { embedded?: boolean }) {
+export default function MatchesPage({ embedded = false, onOpenChat }: { embedded?: boolean; onOpenChat?: (conv: { conversationId: string; profile: Profile }) => void }) {
   const { user, profile, loading } = useAuth()
   const router  = useRouter()
   const { can, tier } = usePlan()
@@ -203,14 +203,18 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
         if (!res.ok || !data?.conversationId) {
           return
         }
-        setChatView({ conversationId: data.conversationId, profile: conv.profile })
+        const opened = { conversationId: data.conversationId, profile: conv.profile }
+        if (embedded && onOpenChat) { onOpenChat(opened); return }
+        setChatView(opened)
         return
       } catch {
         return
       }
     }
-    setChatView({ conversationId: conv.conversationId, profile: conv.profile })
-  }, [])
+    const opened = { conversationId: conv.conversationId, profile: conv.profile }
+    if (embedded && onOpenChat) { onOpenChat(opened); return }
+    setChatView(opened)
+  }, [embedded, onOpenChat])
 
   if (loading) return (
     <div style={{
@@ -225,12 +229,19 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
   )
 
   if (chatView) return (
-    <div style={{ height: '100%' }}>
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 400,
+      background: '#0c0a1e',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
       <Chat
         conversationId={chatView.conversationId}
         otherProfile={chatView.profile}
         onBack={() => { setChatView(null); loadConversations() }}
-        embedded={embedded}
+        embedded={true}
       />
     </div>
   )
@@ -318,9 +329,11 @@ export default function MatchesPage({ embedded = false }: { embedded?: boolean }
         background: 'transparent',
         fontFamily: "'DM Sans', sans-serif",
         paddingTop: embedded ? 18 : 'max(12px, env(safe-area-inset-top))',
-        paddingBottom: embedded ? 18 : 90,
+        paddingBottom: embedded ? 18 : 'calc(72px + env(safe-area-inset-bottom) + 16px)',
+        paddingLeft: 8,
+        paddingRight: 8,
       }}>
-        <div style={{ maxWidth: 520, margin: '0 auto', padding: '0 16px' }}>
+        <div className="matches-wrap">
 
           {/* Header */}
           <div style={{ marginBottom: 16 }}>

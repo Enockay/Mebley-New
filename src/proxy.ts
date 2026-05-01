@@ -69,7 +69,7 @@ function applySecurityHeaders(response: NextResponse, request?: NextRequest): Ne
   response.headers.set('X-XSS-Protection', '1; mode=block')
   response.headers.set(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(self), payment=()'
+    'camera=(self), microphone=(self), geolocation=(self), payment=()'
   )
   // Relax frame-ancestors for same-origin embedding. If needed later we can tighten
   // by checking request?.nextUrl for specific routes/params.

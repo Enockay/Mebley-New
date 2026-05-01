@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const user = await getAuthUserFromRequest(request)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { slot, s3Key, cloudfrontUrl, durationSeconds } = await request.json()
+    const { slot, s3Key, cloudfrontUrl, durationSeconds, thumbnailUrl } = await request.json()
 
     if (![0, 1, 2].includes(slot)) {
       return NextResponse.json({ error: 'Invalid slot' }, { status: 400 })
@@ -25,17 +25,20 @@ export async function POST(request: NextRequest) {
 
     // profile_videos lives in Supabase
     const supabase = sbAdmin()
+    const upsertPayload: Record<string, unknown> = {
+      user_id:          user.id,
+      slot,
+      s3_key:           s3Key,
+      cloudfront_url:   cloudfrontUrl,
+      duration_seconds: durationSeconds,
+      status:           'active',
+      updated_at:       new Date().toISOString(),
+    }
+    if (thumbnailUrl) upsertPayload.thumbnail_url = thumbnailUrl
+
     const { data, error } = await (supabase as any)
       .from('profile_videos')
-      .upsert({
-        user_id:          user.id,
-        slot,
-        s3_key:           s3Key,
-        cloudfront_url:   cloudfrontUrl,
-        duration_seconds: durationSeconds,
-        status:           'active',
-        updated_at:       new Date().toISOString(),
-      }, { onConflict: 'user_id,slot' })
+      .upsert(upsertPayload, { onConflict: 'user_id,slot' })
       .select()
       .single()
 

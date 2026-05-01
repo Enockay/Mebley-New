@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { LogOut, Coins, Shield } from 'lucide-react'
+import { LogOut, Coins, Shield, ChevronDown } from 'lucide-react'
 import { usePaywall } from '@/hooks/usePaywall'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import NotificationBell from '@/components/UI/NotificationBell'
 
 function getPhotoUrl(photos: unknown): string | null {
   if (!Array.isArray(photos) || photos.length === 0) return null
@@ -22,13 +23,11 @@ export default function TopHeader() {
   const router               = useRouter()
   const pathname             = usePathname()
   const searchParams         = useSearchParams()
-  const currentPlan          = (profile as any)?.plan ?? 'free'
   const avatarUrl            = getPhotoUrl(profile?.photos)
   const initials             = profile?.full_name
     ? profile.full_name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
     : '?'
 
-  // SSR-safe embedded check to avoid hydration mismatch.
   const isEmbedded = searchParams.get('embedded') === '1'
   if (isEmbedded) return null
 
@@ -48,179 +47,235 @@ export default function TopHeader() {
   }
 
   return (
-    <header className="px-2 sm:px-4 md:px-6" style={{
+    <header style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 320,
-      height: '62px',
-      background: 'rgba(8,6,20,0.88)',
-      backdropFilter: 'blur(24px)',
-      WebkitBackdropFilter: 'blur(24px)',
-      borderBottom: '1px solid rgba(255,255,255,0.07)',
-      boxShadow: '0 1px 24px rgba(0,0,0,0.42)',
+      height: '64px',
+      paddingTop: 'env(safe-area-inset-top)',
+      background: 'linear-gradient(180deg, rgba(10,7,26,0.97) 0%, rgba(8,5,22,0.94) 100%)',
+      backdropFilter: 'blur(32px)',
+      WebkitBackdropFilter: 'blur(32px)',
+      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 4px 32px rgba(0,0,0,0.55)',
       display: 'flex', alignItems: 'center',
+      paddingLeft: 'max(20px, env(safe-area-inset-left))',
+      paddingRight: 'max(20px, env(safe-area-inset-right))',
     }}>
-      <div className="w-full" style={{
-        width: '100%',
-        display: 'flex', justifyContent: 'flex-start', alignItems: 'center',
-        gap: 10,
-      }}>
 
-        {/* Logo at left-most */}
+      {/* Subtle accent line at top */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
+        background: 'linear-gradient(90deg, transparent 0%, rgba(214,77,232,0.45) 30%, rgba(238,92,166,0.45) 70%, transparent 100%)',
+      }} />
+
+      <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12 }}>
+
+        {/* Logo */}
         <button
           type="button"
           onClick={() => router.push('/')}
-          className="flex items-center gap-1.5 sm:gap-2.5 min-w-0"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            border: 'none',
-            background: 'transparent',
-            padding: 0,
-            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 10,
+            border: 'none', background: 'transparent', padding: 0,
+            cursor: 'pointer', flexShrink: 0,
           }}
           title="Go to home"
         >
-          <Image
-            src="/icon.svg"
-            alt="Mebley logo"
-            width={28}
-            height={28}
-            style={{ borderRadius: '999px' }}
-            priority
-          />
-          <span
-            className="block"
-            style={{
-              fontFamily: "'Fraunces', Georgia, serif",
-              fontSize: '24px',
-              fontWeight: 700,
-              color: '#f5e8f4',
-              textShadow: '0 1px 12px rgba(245,124,180,0.22)',
-              lineHeight: 1,
-            }}
-          >
-            Mebley
-          </span>
+          <div style={{
+            width: 34, height: 34, borderRadius: '10px',
+            background: 'linear-gradient(135deg, rgba(214,77,232,0.2), rgba(238,92,166,0.15))',
+            border: '1px solid rgba(214,77,232,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 12px rgba(214,77,232,0.15)',
+          }}>
+            <Image
+              src="/icon.svg"
+              alt="Mebley logo"
+              width={22}
+              height={22}
+              style={{ borderRadius: '6px' }}
+              priority
+            />
+          </div>
+          <span className="logo-text" style={{
+            fontFamily: "'Fraunces', Georgia, serif",
+            fontSize: '18px', fontWeight: 700,
+            color: '#fff',
+            letterSpacing: '-0.3px',
+          }}>Mebley</span>
         </button>
 
-        {/* Right side */}
-        <div className="flex items-center gap-2 sm:gap-3" style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Right actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 
           {isAdmin && (
             <button
               type="button"
               onClick={() => router.push('/admin')}
               title="Moderation dashboard"
-              className="inline-flex"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '5px 10px',
-                borderRadius: '100px',
-                border: '1px solid rgba(168,85,247,0.38)',
-                background: 'rgba(168,85,247,0.12)',
-                color: '#e9d5ff',
-                fontSize: '11px',
-                fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 12px', borderRadius: '8px',
+                border: '1px solid rgba(168,85,247,0.3)',
+                background: 'rgba(168,85,247,0.1)',
+                color: '#d8b4fe',
+                fontSize: '12px', fontWeight: 600,
                 fontFamily: "'DM Sans', sans-serif",
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                letterSpacing: '0.01em',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(168,85,247,0.2)'
+                e.currentTarget.style.borderColor = 'rgba(168,85,247,0.5)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(168,85,247,0.1)'
+                e.currentTarget.style.borderColor = 'rgba(168,85,247,0.3)'
               }}
             >
-              <Shield size={13} aria-hidden />
+              <Shield size={12} aria-hidden />
               <span className="hidden sm:inline">Admin</span>
             </button>
           )}
 
-          {/* Credits */}
+          {/* Notification Bell */}
+          <div style={{
+            width: 36, height: 36, borderRadius: '10px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.04)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <NotificationBell />
+          </div>
+
+          {/* Credits pill */}
           <button
-            className="inline-flex"
             onClick={() => openPaywall('general', 'credits')}
             style={{
-              display: 'flex', alignItems: 'center', gap: '5px',
-              padding: '5px 8px', borderRadius: '100px',
-              border: '1px solid rgba(246,205,126,0.32)',
-              background: 'rgba(246,205,126,0.08)',
-              color: '#f3cd86', fontSize: '11px', fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 13px', borderRadius: '10px',
+              border: '1px solid rgba(246,205,126,0.22)',
+              background: 'rgba(246,205,126,0.07)',
+              color: '#f0c96e', fontSize: '12px', fontWeight: 600,
               fontFamily: "'DM Sans', sans-serif",
               cursor: 'pointer', whiteSpace: 'nowrap',
-            }}>
+              transition: 'all 0.2s ease',
+              letterSpacing: '0.01em',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(246,205,126,0.13)'
+              e.currentTarget.style.borderColor = 'rgba(246,205,126,0.38)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(246,205,126,0.07)'
+              e.currentTarget.style.borderColor = 'rgba(246,205,126,0.22)'
+            }}
+          >
             <Coins size={13} />
             <span>
-              {Math.max(0, Number(creditBalance ?? 0)).toLocaleString()} Credits
+              {Math.max(0, Number(creditBalance ?? 0)).toLocaleString()}
+              <span className="credits-label"> Credits</span>
             </span>
           </button>
 
-          {/* Avatar — clicks to /profile */}
+          {/* Vertical divider */}
+          <div style={{
+            width: '1px', height: '28px',
+            background: 'rgba(255,255,255,0.08)',
+            margin: '0 4px',
+            flexShrink: 0,
+          }} />
+
+          {/* Profile button */}
           <button
-            className="h-8 w-8 sm:h-9 sm:w-9"
             onClick={handleOpenProfile}
             title="My profile"
             style={{
-              borderRadius: '50%',
-              overflow: 'hidden', flexShrink: 0, padding: 0, border: 'none',
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '4px 10px 4px 4px',
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.04)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              flexShrink: 0,
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(214,77,232,0.1)'
+              e.currentTarget.style.borderColor = 'rgba(214,77,232,0.25)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+            }}
+          >
+            {/* Avatar */}
+            <div style={{
+              width: 32, height: 32, borderRadius: '8px',
+              overflow: 'hidden', flexShrink: 0,
               background: 'linear-gradient(135deg, #d64de8, #ee5ca6)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 12px rgba(214,77,232,0.28)',
-              outline: '2px solid rgba(255,255,255,0.35)',
-              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(214,77,232,0.35)',
             }}>
-            {avatarUrl ? (
-              <Image
-                src={avatarUrl}
-                alt={profile?.full_name ?? 'Avatar'}
-                width={36}
-                height={36}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                unoptimized
-              />
-            ) : (
-              <span style={{
-                color: 'white', fontSize: '13px', fontWeight: '600',
-                fontFamily: "'DM Sans', sans-serif", userSelect: 'none',
-              }}>
-                {initials}
-              </span>
-            )}
-          </button>
+              {avatarUrl ? (
+                <Image
+                  src={avatarUrl}
+                  alt={profile?.full_name ?? 'Avatar'}
+                  width={32}
+                  height={32}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  unoptimized
+                />
+              ) : (
+                <span style={{
+                  color: 'white', fontSize: '12px', fontWeight: 700,
+                  fontFamily: "'DM Sans', sans-serif", userSelect: 'none',
+                }}>
+                  {initials}
+                </span>
+              )}
+            </div>
 
-          {/* Name — hidden on small screens */}
-          <span
-            className="hidden sm:block"
-            style={{
+            {/* Name */}
+            <span className="hidden sm:block" style={{
               fontSize: '13px', fontFamily: "'DM Sans', sans-serif",
-              fontWeight: '500', color: 'rgba(255,255,255,0.72)',
-              maxWidth: '100px', overflow: 'hidden',
+              fontWeight: 500, color: 'rgba(255,255,255,0.82)',
+              maxWidth: '110px', overflow: 'hidden',
               textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
-            {profile?.full_name}
-          </span>
+              {profile?.full_name}
+            </span>
+
+            <ChevronDown size={13} color="rgba(255,255,255,0.35)" className="hidden sm:block" />
+          </button>
 
           {/* Sign out */}
           <button
-            className="h-8 w-8 sm:h-9 sm:w-9"
             onClick={() => signOut()}
             title="Sign out"
             style={{
-              borderRadius: '50%',
-              border: '1px solid rgba(255,255,255,0.18)',
+              width: 36, height: 36, borderRadius: '10px',
+              border: '1px solid rgba(255,255,255,0.08)',
               background: 'rgba(255,255,255,0.04)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 0.2s ease', color: 'rgba(255,255,255,0.65)',
+              cursor: 'pointer', transition: 'all 0.2s ease',
+              color: 'rgba(255,255,255,0.5)', flexShrink: 0,
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.background  = 'rgba(214,77,232,0.18)'
-              e.currentTarget.style.borderColor = 'rgba(214,77,232,0.35)'
-              e.currentTarget.style.color       = '#f6d0ff'
-              e.currentTarget.style.transform   = 'scale(1.05)'
+              e.currentTarget.style.background  = 'rgba(239,68,68,0.12)'
+              e.currentTarget.style.borderColor = 'rgba(239,68,68,0.28)'
+              e.currentTarget.style.color       = '#fca5a5'
             }}
             onMouseLeave={e => {
               e.currentTarget.style.background  = 'rgba(255,255,255,0.04)'
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'
-              e.currentTarget.style.color       = 'rgba(255,255,255,0.65)'
-              e.currentTarget.style.transform   = 'scale(1)'
-            }}>
-            <LogOut size={16} />
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+              e.currentTarget.style.color       = 'rgba(255,255,255,0.5)'
+            }}
+          >
+            <LogOut size={15} />
           </button>
 
         </div>

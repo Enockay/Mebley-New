@@ -73,6 +73,66 @@ const MIN_DURATION = 30
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function extractThumbnail(videoBlob: Blob): Promise<Blob | null> {
+  return new Promise(resolve => {
+    const video = document.createElement('video')
+    const src   = URL.createObjectURL(videoBlob)
+    video.src   = src
+    video.muted = true
+    video.playsInline = true
+    video.preload = 'metadata'
+    const cleanup = () => URL.revokeObjectURL(src)
+
+    video.onloadedmetadata = () => {
+      // Seek to 1s (or halfway if video < 2s)
+      video.currentTime = Math.min(1, video.duration / 2)
+    }
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width  = video.videoWidth  || 640
+        canvas.height = video.videoHeight || 360
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { cleanup(); resolve(null); return }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        canvas.toBlob(blob => { cleanup(); resolve(blob) }, 'image/jpeg', 0.82)
+      } catch { cleanup(); resolve(null) }
+    }
+    video.onerror = () => { cleanup(); resolve(null) }
+    // Fallback if seek never fires
+    setTimeout(() => { cleanup(); resolve(null) }, 6000)
+  })
+}
+
+async function uploadThumbnail(
+  thumbnail: Blob,
+  userId_unused: string,
+  slot: number
+): Promise<string | null> {
+  try {
+    const presignRes = await fetch('/api/photos/upload', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        fileType: 'image/jpeg',
+        fileSize: thumbnail.size,
+        purpose:  `video-thumb-slot-${slot}`,
+      }),
+    })
+    if (!presignRes.ok) return null
+    const { url, fields, cloudfrontUrl } = await presignRes.json()
+    if (!url) return null
+
+    const form = new FormData()
+    Object.entries(fields as Record<string, string>).forEach(([k, v]) => form.append(k, v))
+    form.append('file', thumbnail, `thumb-slot-${slot}.jpg`)
+
+    const up = await fetch(url, { method: 'POST', body: form })
+    if (!up.ok && up.status !== 204) return null
+    return cloudfrontUrl ?? null
+  } catch { return null }
+}
+
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
@@ -213,7 +273,13 @@ export default function VideoUpload({
 
       update(slot, { progress: 92, uploadState: 'confirming' })
 
-      // Step 3: Confirm — save metadata to Supabase
+      // Step 3: Extract thumbnail in parallel with confirm (best-effort)
+      const thumbnailBlob = await extractThumbnail(file).catch(() => null)
+      const thumbnailUrl  = thumbnailBlob
+        ? await uploadThumbnail(thumbnailBlob, '', slot).catch(() => null)
+        : null
+
+      // Step 4: Confirm — save metadata to Supabase
       const confirmRes = await fetch('/api/videos/confirm', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -222,6 +288,7 @@ export default function VideoUpload({
           s3Key,
           cloudfrontUrl,
           durationSeconds,
+          ...(thumbnailUrl ? { thumbnailUrl } : {}),
         }),
       })
 
@@ -290,10 +357,15 @@ export default function VideoUpload({
     chunksRef.current[slot] = []
     const mimeType =
       MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' :
+      MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') ? 'video/webm;codecs=vp8,opus' :
       MediaRecorder.isTypeSupported('video/webm')                 ? 'video/webm' :
                                                                     'video/mp4'
 
-    const recorder = new MediaRecorder(stream, { mimeType })
+    const recorder = new MediaRecorder(stream, {
+      mimeType,
+      videoBitsPerSecond: 2_500_000, // 2.5 Mbps — good quality, manageable size
+      audioBitsPerSecond:   128_000, // 128 kbps audio
+    })
     mediaRecorderRef.current[slot] = recorder
 
     recorder.ondataavailable = e => {

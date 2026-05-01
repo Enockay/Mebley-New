@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Mic, Square, Play, Pause, Trash2, Upload, Check, Loader2, MicOff } from 'lucide-react'
+import PermissionDialog from '@/components/UI/PermissionDialog'
 
 interface VoiceNoteRecorderProps {
   existingUrl?: string | null
@@ -32,6 +33,7 @@ export default function VoiceNoteRecorder({ existingUrl, onSaved, onDeleted }: V
   const [duration, setDuration]     = useState(0)
   const [error, setError]           = useState<string | null>(null)
   const [supported, setSupported]   = useState(true)
+  const [showPermDialog, setShowPermDialog] = useState(false)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef        = useRef<MediaStream | null>(null)
@@ -254,7 +256,7 @@ export default function VoiceNoteRecorder({ existingUrl, onSaved, onDeleted }: V
       {/* ── IDLE: record button ── */}
       {stage === 'idle' && (
         <button
-          onClick={startRecording}
+          onClick={() => setShowPermDialog(true)}
           style={{
             width: '100%', padding: '13px', borderRadius: 12,
             background: 'linear-gradient(135deg, rgba(244,63,94,0.18), rgba(236,72,153,0.12))',
@@ -465,6 +467,17 @@ export default function VoiceNoteRecorder({ existingUrl, onSaved, onDeleted }: V
         <p style={{ marginTop: 10, fontSize: 12, color: '#f87171', fontFamily: "'DM Sans',sans-serif" }}>
           {error}
         </p>
+      )}
+
+      {showPermDialog && (
+        <PermissionDialog
+          type="mic-only"
+          onGranted={() => {
+            setShowPermDialog(false)
+            startRecording()
+          }}
+          onCancel={() => setShowPermDialog(false)}
+        />
       )}
     </div>
   )

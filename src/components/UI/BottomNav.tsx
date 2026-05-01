@@ -92,9 +92,10 @@ export default function BottomNav() {
         WebkitBackdropFilter: 'blur(20px)',
         borderTop:       'none',
         boxShadow:       '0 -6px 28px rgba(8, 2, 16, 0.22)',
-        height:          '72px',
+        paddingBottom:   'env(safe-area-inset-bottom)',
         display:         'flex',
-        alignItems:      'center',
+        flexDirection:   'column',
+        alignItems:      'stretch',
       }}
     >
       <div
@@ -105,7 +106,8 @@ export default function BottomNav() {
           display:        'flex',
           justifyContent: 'space-around',
           alignItems:     'center',
-          padding:        '0 8px',
+          padding:        '0 4px',
+          height:         '72px',
         }}
       >
         {navItems
@@ -119,21 +121,12 @@ export default function BottomNav() {
             <button
               key={href}
               onClick={() => handleNavClick(href)}
+              className="nav-btn"
               style={{
-                display:        'flex',
-                flexDirection:  'column',
-                alignItems:     'center',
-                gap:            '4px',
-                padding:        '8px 16px',
-                borderRadius:   '16px',
-                border:         'none',
-                cursor:         'pointer',
-                transition:     'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 background:     isActive
                   ? 'linear-gradient(135deg, rgba(240,56,104,0.18), rgba(255,122,80,0.10))'
                   : 'transparent',
                 transform:      isActive ? 'translateY(-2px)' : 'translateY(0)',
-                minWidth:       '64px',
               }}
             >
               {/* Icon wrapper with glow on active */}

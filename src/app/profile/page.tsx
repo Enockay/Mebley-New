@@ -319,7 +319,7 @@ function ProfilePageContent() {
       `}</style>
 
       <div className={useDarkProfileTheme ? 'profile-embedded' : undefined} style={pageStyle}>
-        <div style={{ maxWidth: 520, margin: '0 auto', padding: useDarkProfileTheme ? '16px 12px 16px' : '80px 16px 100px' }}>
+        <div style={{ maxWidth: 520, margin: '0 auto', padding: useDarkProfileTheme ? '16px 12px 16px' : `80px 16px calc(100px + env(safe-area-inset-bottom))` }}>
 
           {/* ── Hero section — circular avatar + name ── */}
           <div className="profile-fade" data-profile-card="1" style={{ ...cardSurface, borderRadius: 10, marginBottom: 12, padding: '24px 20px' }}>

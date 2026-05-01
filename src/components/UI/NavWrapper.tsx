@@ -36,7 +36,7 @@ export default function NavWrapper({ children }: { children: React.ReactNode }) 
 
   return (
     <div
-      className="flex flex-col h-screen"
+      className="flex flex-col min-h-screen"
       style={{
         background: `
           radial-gradient(ellipse 55% 40% at 10% 90%, rgba(240,56,104,0.13) 0%, transparent 65%),
@@ -47,7 +47,16 @@ export default function NavWrapper({ children }: { children: React.ReactNode }) 
       }}
     >
       {!hideTopHeaderOnRoute && <TopHeader />}
-      <main className={`flex-1 overflow-y-auto ${hideTopHeaderOnRoute ? 'mt-0 pb-0' : 'mt-16 pb-20'}`}>
+      <main
+        className="flex-1 overflow-y-auto overflow-x-hidden"
+        style={hideTopHeaderOnRoute
+          ? undefined
+          : {
+              marginTop: '62px',
+              paddingBottom: 'calc(72px + env(safe-area-inset-bottom) + 8px)',
+            }
+        }
+      >
         {children}
       </main>
       <BottomNav />

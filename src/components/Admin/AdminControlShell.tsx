@@ -11,6 +11,7 @@ import {
   Coins,
   Wrench,
   Settings,
+  BadgeCheck,
   ChevronRight,
   Menu,
   X,
@@ -23,6 +24,7 @@ export type AdminSection =
   | 'audit'
   | 'credits'
   | 'ops'
+  | 'verification'
   | 'settings'
 
 const NAV_ITEMS: {
@@ -32,13 +34,14 @@ const NAV_ITEMS: {
   icon: React.ElementType
   description: string
 }[] = [
-  { section: 'overview',   label: 'Overview',         href: '/admin/overview', icon: LayoutDashboard, description: 'Platform health & stats'  },
-  { section: 'moderation', label: 'Moderation',       href: '/admin',          icon: ShieldAlert,     description: 'Reports & ban decisions'  },
-  { section: 'users',      label: 'Users',             href: '/admin/users',    icon: Users,           description: 'Accounts & profiles'      },
-  { section: 'audit',      label: 'Audit Log',         href: '/admin/audit',    icon: ScrollText,      description: 'Immutable action history' },
-  { section: 'credits',    label: 'Credits & Revenue', href: '/admin/credits',  icon: Coins,           description: 'Wallets, grants & revenue'},
-  { section: 'ops',        label: 'Operations',        href: '/admin/ops',      icon: Wrench,          description: 'Issues & fulfillments'    },
-  { section: 'settings',   label: 'Settings',          href: '/admin/settings', icon: Settings,        description: 'Admin profile & password' },
+  { section: 'overview',     label: 'Overview',         href: '/admin/overview',      icon: LayoutDashboard, description: 'Platform health & stats'    },
+  { section: 'moderation',   label: 'Moderation',       href: '/admin',               icon: ShieldAlert,     description: 'Reports & ban decisions'    },
+  { section: 'users',        label: 'Users',             href: '/admin/users',         icon: Users,           description: 'Accounts & profiles'        },
+  { section: 'verification', label: 'ID Verification',  href: '/admin/verification',  icon: BadgeCheck,      description: 'Selfie review & approval'   },
+  { section: 'audit',        label: 'Audit Log',         href: '/admin/audit',         icon: ScrollText,      description: 'Immutable action history'   },
+  { section: 'credits',      label: 'Credits & Revenue', href: '/admin/credits',       icon: Coins,           description: 'Wallets, grants & revenue'  },
+  { section: 'ops',          label: 'Operations',        href: '/admin/ops',           icon: Wrench,          description: 'Issues & fulfillments'      },
+  { section: 'settings',     label: 'Settings',          href: '/admin/settings',      icon: Settings,        description: 'Admin profile & password'   },
 ]
 
 export default function AdminControlShell(props: {

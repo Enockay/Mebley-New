@@ -65,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="author" content="Mebley" />
         <meta name="robots" content="index, follow" />
         <meta name="theme-color" content="#1f0b12" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Mebley" />

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     appId, appCert, channelName, 0, RtcRole.PUBLISHER, privilegeExpire, privilegeExpire
   )
 
-  // Notify the other participant (skip when callee is joining)
+  // Notify the other participant and log call history (skip when callee is joining)
   if (conversationId && !joining) {
     try {
       const convRes = await pgQuery<{ match_id: string }>(
@@ -48,6 +48,14 @@ export async function POST(req: NextRequest) {
             notifyIncomingCall(otherId, callerName, conversationId)
               .catch(err => console.error('[notifyCall]', err))
           }
+
+          // Log call to history
+          pgQuery(
+            `INSERT INTO call_history
+               (conversation_id, caller_id, callee_id, channel_name, call_type)
+             VALUES ($1, $2, $3, $4, 'video')`,
+            [conversationId, user.id, otherId, channelName]
+          ).catch(err => console.error('[call_history insert]', err))
         }
       }
     } catch (err) {

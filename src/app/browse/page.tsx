@@ -50,6 +50,8 @@ const AGE_RANGE_OPTIONS = Object.entries(AGE_RANGE_LABELS).map(([value, label]) 
 const PAGE_SIZE = 20
 const SWIPE_THRESHOLD = 0.38
 const TOP_HEADER_HEIGHT = 62
+const DESK_SIDEBAR_W    = 460   // fixed sidebar width on desktop
+const DESK_RIGHT_W      = 500   // fixed right-panel width on desktop
 
 // ── Helpers ───────────────────────────────────────────────────────
 function getPhotoUrl(photos: unknown): string | null {
@@ -745,6 +747,7 @@ function BrowsePageContent() {
 
   const activePanel = searchParams.get('panel')
   const showChatPane = !isMobile || activePanel === 'chats'
+  const rightPanelOpen = !isMobile && (showSelfSettings || (!!viewProfileSp && !showSelfSettings))
   const openPersonProfile = useCallback((spSel: ScoredProfile) => {
     setViewProfileSp(spSel)
     setDrawerPhotoIdx(0)
@@ -885,8 +888,11 @@ function BrowsePageContent() {
       overflow: 'hidden',
       overscrollBehavior: 'none',
       background: 'transparent',
+      marginLeft: !isMobile && showChatPane ? DESK_SIDEBAR_W : 0,
+      marginRight: rightPanelOpen ? DESK_RIGHT_W : 0,
+      transition: 'margin-left 0.25s ease, margin-right 0.25s ease',
     }}>
-      <div style={{ maxWidth: '520px', margin: '0 auto', padding: '16px 16px', height: '100%', overflow: 'hidden' }}>
+      <div style={{ maxWidth: isMobile ? '520px' : '700px', margin: '0 auto', padding: '16px 16px', height: '100%', overflow: 'hidden' }}>
 
         {/* Match alert */}
         {matchAlert && (
@@ -922,22 +928,27 @@ function BrowsePageContent() {
 
         {/* Filter bar */}
         <div style={{
+          position: 'fixed',
+          top: TOP_HEADER_HEIGHT,
+          left: !isMobile && showChatPane ? DESK_SIDEBAR_W : 0,
+          right: rightPanelOpen ? DESK_RIGHT_W : 0,
+          zIndex: 35,
+          display: 'flex',
+          justifyContent: 'center',
+          paddingTop: 12,
+          paddingBottom: 10,
+          background: 'linear-gradient(180deg, rgba(8,6,20,0.98) 0%, rgba(8,6,20,0.82) 75%, rgba(8,6,20,0) 100%)',
+          backdropFilter: 'blur(12px)',
+          transition: 'left 0.25s ease, right 0.25s ease',
+        }}>
+        <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          marginBottom: 16,
-          position: 'fixed',
-          top: TOP_HEADER_HEIGHT,
-          left: isMobile ? 0 : '50%',
-          transform: isMobile ? 'none' : 'translateX(-50%)',
-          width: isMobile ? '100vw' : 'min(520px, calc(100vw - 32px))',
-          zIndex: 35,
-          paddingTop: 12,
-          paddingBottom: 10,
-          paddingLeft: isMobile ? 14 : 2,
-          paddingRight: isMobile ? 14 : 2,
-          background: 'linear-gradient(180deg, rgba(8,6,20,0.98) 0%, rgba(8,6,20,0.82) 75%, rgba(8,6,20,0) 100%)',
-          backdropFilter: 'blur(12px)',
+          width: '100%',
+          maxWidth: isMobile ? '100%' : 700,
+          paddingLeft: isMobile ? 14 : 16,
+          paddingRight: isMobile ? 14 : 16,
         }}>
           <button
             onClick={() => setShowFilters(f => !f)}
@@ -1018,6 +1029,7 @@ function BrowsePageContent() {
               </button>
             ))}
           </div>
+        </div>
         </div>
 
         {/* Filter panel */}
@@ -1229,7 +1241,7 @@ function BrowsePageContent() {
               <div style={{
                 width: '100%',
                 maxWidth: 500,
-                height: isMobile ? 'calc(100vh - 195px)' : 'calc(100vh - 210px)',
+                height: isMobile ? 'calc(100dvh - 195px - env(safe-area-inset-bottom))' : 'calc(100dvh - 210px)',
                 overflowY: 'auto',
                 scrollSnapType: 'y mandatory',
                 paddingBottom: 12,
@@ -1237,8 +1249,8 @@ function BrowsePageContent() {
                 {scored.map((sp) => (
                   <div key={sp.profile.id} style={{
                     position: 'relative',
-                    height: isMobile ? 'calc(100vh - 225px)' : 'calc(100vh - 230px)',
-                    minHeight: isMobile ? 500 : 520,
+                    height: isMobile ? 'calc(100dvh - 225px - env(safe-area-inset-bottom))' : 'calc(100dvh - 210px)',
+                    minHeight: isMobile ? 500 : 540,
                     maxHeight: 760,
                     marginBottom: 12,
                     scrollSnapAlign: 'start',
@@ -1264,7 +1276,7 @@ function BrowsePageContent() {
                 onWheel={handleStackScroll}
                 onTouchStart={handleStackTouchStart}
                 onTouchEnd={handleStackTouchEnd}
-                style={{ position: 'relative', width: '100%', maxWidth: 500, height: 'min(70vh, 700px)', overflow: 'hidden' }}
+                style={{ position: 'relative', width: '100%', maxWidth: 500, height: 'min(70dvh, 700px)', overflow: 'hidden' }}
               >
                 {(() => {
                   const renderStart = stackAnimating && stackAnimDir === 'up'
@@ -1483,22 +1495,27 @@ function BrowsePageContent() {
       </div>
 
       {showChatPane && (
-      <div style={{ position: 'fixed', left: 0, top: TOP_HEADER_HEIGHT, bottom: 72, zIndex: isMobile ? 68 : 64, width: '100%', pointerEvents: 'none' }}>
+      <div style={{
+        position: 'fixed', left: 0, top: TOP_HEADER_HEIGHT, bottom: 72,
+        zIndex: isMobile ? 68 : 64,
+        width: isMobile ? '100%' : DESK_SIDEBAR_W,
+        pointerEvents: 'none',
+        transition: 'width 0.25s ease',
+      }}>
         <ChatOverlayPortalContext.Provider value={chatOverlayPortalEl}>
         <aside style={{
           pointerEvents: 'auto',
-            width: isMobile ? '100%' : '76%',
-            maxWidth: isMobile ? '100%' : 520,
+          width: '100%',
           height: '100%',
           overflow: 'hidden',
-          borderRight: isMobile ? 'none' : '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(12,10,30,0.99)',
+          borderRight: isMobile ? 'none' : '1px solid rgba(255,255,255,0.12)',
+          background: 'rgba(10,8,26,0.99)',
           padding: 0,
-          boxShadow: '0 8px 20px rgba(8,2,20,0.2)',
+          boxShadow: isMobile ? 'none' : '4px 0 24px rgba(8,2,20,0.35)',
         }}>
           {!drawerChat ? (
             <div style={{ height: '100%', borderRadius: 0, border: 'none', background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
-              <MatchesPage embedded />
+              <MatchesPage embedded onOpenChat={(conv) => setDrawerChat({ conversationId: conv.conversationId, profile: conv.profile as any })} />
             </div>
           ) : (
             <div style={{ height: '100%' }}>
@@ -1531,8 +1548,7 @@ function BrowsePageContent() {
             left: 0,
             top: 0,
             bottom: 0,
-            width: isMobile ? '100%' : '76%',
-            maxWidth: isMobile ? '100%' : 520,
+            width: '100%',
             zIndex: 500,
             pointerEvents: 'none',
           }}
@@ -1543,18 +1559,26 @@ function BrowsePageContent() {
       )}
 
       {showSelfSettings && (
-        <div style={{ position: 'fixed', left: 0, top: TOP_HEADER_HEIGHT, bottom: 72, zIndex: 65, width: '100%', pointerEvents: 'none' }}>
+        <div style={{
+          position: 'fixed',
+          right: 0,
+          left: isMobile ? 0 : 'auto',
+          top: TOP_HEADER_HEIGHT,
+          bottom: 72,
+          zIndex: 65,
+          width: isMobile ? '100%' : DESK_RIGHT_W,
+          pointerEvents: 'none',
+          transition: 'width 0.25s ease',
+        }}>
           <aside style={{
             pointerEvents: 'auto',
             width: '100%',
-            maxWidth: 520,
             height: '100%',
             overflow: 'hidden',
-            marginLeft: 'auto',
             borderLeft: '1px solid rgba(255,255,255,0.15)',
             background: 'rgba(12,10,30,0.99)',
             padding: 0,
-            boxShadow: '0 8px 20px rgba(8,2,20,0.2)',
+            boxShadow: '-4px 0 24px rgba(8,2,20,0.35)',
           }}>
             <iframe
               src="/profile?embedded=1"
@@ -1570,18 +1594,26 @@ function BrowsePageContent() {
       )}
 
       {viewProfileSp && !showSelfSettings && (
-        <div style={{ position: 'fixed', left: 0, top: TOP_HEADER_HEIGHT, bottom: 72, zIndex: 180, width: '100%', pointerEvents: 'none' }}>
+        <div style={{
+          position: 'fixed',
+          right: 0,
+          left: isMobile ? 0 : 'auto',
+          top: TOP_HEADER_HEIGHT,
+          bottom: 72,
+          zIndex: 180,
+          width: isMobile ? '100%' : DESK_RIGHT_W,
+          pointerEvents: 'none',
+          transition: 'width 0.25s ease',
+        }}>
           <aside style={{
             pointerEvents: 'auto',
             width: '100%',
-            maxWidth: isMobile ? '100%' : 480,
             height: '100%',
             overflowY: 'auto',
-            marginLeft: isMobile ? 0 : 'auto',
             borderLeft: isMobile ? 'none' : '1px solid rgba(255,255,255,0.15)',
             background: 'rgba(12,10,30,0.99)',
             padding: 16,
-            boxShadow: '0 8px 20px rgba(8,2,20,0.2)',
+            boxShadow: isMobile ? 'none' : '-4px 0 24px rgba(8,2,20,0.35)',
           }}>
             <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
