@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePaywall } from '@/hooks/usePaywall'
 import { usePlan, TIER_COLOR } from '@/hooks/usePlan'
-import { Check, Lock, Sparkles, Crown, Zap, ChevronRight } from 'lucide-react'
+import { Check, Lock, Sparkles, Crown, Zap, ChevronRight, AlertTriangle } from 'lucide-react'
 
 // ── Design tokens ─────────────────────────────────────────────────────────
 const T = {
@@ -108,6 +108,10 @@ function PaymentBanner() {
   const type    = params.get('type')
   const errMsg  = params.get('error')
 
+  const dismiss = () => {
+    router.replace('/upgrade')
+  }
+
   useEffect(() => {
     if (success) {
       refreshProfile()
@@ -137,23 +141,113 @@ function PaymentBanner() {
     </div>
   )
 
+  const errorDetail =
+    errMsg === 'payment_failed'     ? 'Your payment was not completed. You were not charged.' :
+    errMsg === 'fulfillment_failed' ? 'Payment may have gone through, but we could not activate your plan. Email support@mebley.com with your receipt.' :
+    errMsg === 'server_error'       ? 'Something failed on our side. Wait a moment and try again, or contact support if this persists.' :
+    errMsg === 'missing_ref'        ? 'We could not verify your payment session. Return from the checkout page or try again.' :
+                                      'Something went wrong. You were not charged.'
+
   return (
-    <div style={{
-      margin: '0 0 32px',
-      padding: '18px 24px',
-      borderRadius: 20,
-      background: 'rgba(240,56,104,0.08)',
-      border: '1px solid rgba(240,56,104,0.28)',
-      textAlign: 'center',
-    }}>
-      <div style={{ fontSize: 36, marginBottom: 8 }}>❌</div>
-      <p style={{ fontSize: 16, fontWeight: 700, color: T.rose, margin: '0 0 4px' }}>Payment not completed</p>
-      <p style={{ fontSize: 13, color: T.muted, margin: '0 0 16px' }}>
-        {errMsg === 'payment_failed'    && 'Your payment was not completed. You were not charged.'}
-        {errMsg === 'fulfillment_failed' && 'Payment received but activation failed — contact support@mebley.com.'}
-        {errMsg === 'server_error'       && 'A server error occurred. Please try again.'}
-        {!errMsg                         && 'Something went wrong. You were not charged.'}
-      </p>
+    <div
+      role="alert"
+      style={{
+        margin: '0 0 32px',
+        borderRadius: 22,
+        overflow: 'hidden',
+        background: 'linear-gradient(135deg, rgba(240,56,104,0.14) 0%, rgba(80,20,45,0.35) 55%, rgba(12,10,30,0.9) 100%)',
+        border: '1px solid rgba(240,56,104,0.35)',
+        boxShadow: '0 18px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)',
+      }}
+    >
+      <div style={{
+        display: 'flex',
+        gap: 18,
+        alignItems: 'flex-start',
+        padding: '22px 22px 18px',
+        textAlign: 'left',
+      }}>
+        <div style={{
+          flexShrink: 0,
+          width: 52,
+          height: 52,
+          borderRadius: 16,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(145deg, rgba(240,56,104,0.35), rgba(120,30,60,0.25))',
+          border: '1px solid rgba(240,56,104,0.45)',
+          boxShadow: '0 8px 24px rgba(240,56,104,0.18)',
+        }}>
+          <AlertTriangle size={26} color="#fda4af" strokeWidth={2.2} aria-hidden />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'rgba(253,164,175,0.85)',
+            margin: '0 0 6px',
+          }}>
+            Payment issue
+          </p>
+          <p style={{
+            fontSize: 19,
+            fontWeight: 700,
+            color: T.text,
+            margin: '0 0 8px',
+            fontFamily: "'Fraunces', serif",
+            lineHeight: 1.25,
+          }}>
+            Payment not completed
+          </p>
+          <p style={{ fontSize: 14, color: T.muted, margin: 0, lineHeight: 1.55 }}>
+            {errorDetail}
+          </p>
+        </div>
+      </div>
+      <div style={{
+        display: 'flex',
+        gap: 10,
+        flexWrap: 'wrap',
+        padding: '0 22px 20px',
+        borderTop: '1px solid rgba(240,56,104,0.12)',
+      }}>
+        <button
+          type="button"
+          onClick={dismiss}
+          style={{
+            padding: '10px 18px',
+            borderRadius: 999,
+            border: '1px solid rgba(255,255,255,0.14)',
+            background: 'rgba(255,255,255,0.06)',
+            color: T.text,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Dismiss
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push('/contact')}
+          style={{
+            padding: '10px 18px',
+            borderRadius: 999,
+            border: 'none',
+            background: `linear-gradient(135deg, ${T.rose}, ${T.rose2})`,
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: '0 10px 28px rgba(240,56,104,0.35)',
+          }}
+        >
+          Contact support
+        </button>
+      </div>
     </div>
   )
 }
