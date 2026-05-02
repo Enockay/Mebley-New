@@ -9,6 +9,8 @@ const ALLOWED_ACTIONS = [
   'credits_admin_remove',
   'user_deactivate',
   'user_reactivate',
+  'verification_approved',
+  'verification_rejected',
 ] as const
 
 export async function GET(request: NextRequest) {

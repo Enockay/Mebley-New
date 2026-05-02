@@ -52,6 +52,8 @@ export type AdminAuditAction =
   | 'credits_admin_remove'
   | 'user_deactivate'
   | 'user_reactivate'
+  | 'verification_approved'
+  | 'verification_rejected'
 
 export async function fetchAdminAuditLog(params: {
   limit?: number

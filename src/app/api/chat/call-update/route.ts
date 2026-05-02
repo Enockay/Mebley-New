@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
        status           = $1,
        answered_at      = CASE WHEN $2::boolean THEN $3::timestamptz ELSE answered_at END,
        ended_at         = CASE WHEN $4::boolean THEN $3::timestamptz ELSE ended_at END,
-       duration_seconds = CASE WHEN $5 IS NOT NULL THEN $5::int ELSE duration_seconds END
+       duration_seconds = COALESCE($5::integer, duration_seconds)
      WHERE channel_name = $6
        AND (caller_id = $7 OR callee_id = $7)
        AND started_at > NOW() - INTERVAL '4 hours'`,

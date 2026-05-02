@@ -30,6 +30,8 @@ function actionLabel(action: string): string {
   if (action === 'credits_admin_remove') return 'Credits remove'
   if (action === 'user_deactivate') return 'Deactivate user'
   if (action === 'user_reactivate') return 'Reactivate user'
+  if (action === 'verification_approved') return 'ID verification approved'
+  if (action === 'verification_rejected') return 'ID verification rejected'
   return action
 }
 
@@ -44,6 +46,8 @@ export default function AdminAuditLog() {
     | 'credits_admin_remove'
     | 'user_deactivate'
     | 'user_reactivate'
+    | 'verification_approved'
+    | 'verification_rejected'
   >('all')
   const [items, setItems] = useState<AdminAuditEntry[]>([])
   const [total, setTotal] = useState(0)
@@ -132,6 +136,8 @@ export default function AdminAuditLog() {
               <option value="credits_admin_remove">Credits remove</option>
               <option value="user_deactivate">Deactivate user</option>
               <option value="user_reactivate">Reactivate user</option>
+              <option value="verification_approved">ID verification approved</option>
+              <option value="verification_rejected">ID verification rejected</option>
             </select>
           </label>
 
