@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/rateLimit'
 import { notifyMatch, notifyLike } from '@/lib/notifications'
+import { insertUserNotification } from '@/lib/user-notifications'
 import { withPgClient, pgQuery } from '@/lib/postgres'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 
@@ -27,6 +28,12 @@ type BasicProfileRow = {
   full_name: string
   photos: unknown[] | null
   tier: string | null
+  plan: string | null
+}
+
+function isPremiumOrVip(row: BasicProfileRow): boolean {
+  const t = (row.plan ?? row.tier ?? 'free').toLowerCase()
+  return t === 'premium' || t === 'vip'
 }
 
 export async function POST(request: NextRequest) {
@@ -68,13 +75,13 @@ export async function POST(request: NextRequest) {
     const [likerRes, likeeRes] = await Promise.all([
       withPgClient((client) =>
         client.query<BasicProfileRow>(
-          'SELECT full_name, photos, tier FROM profiles WHERE id = $1 LIMIT 1',
+          'SELECT full_name, photos, tier, plan FROM profiles WHERE id = $1 LIMIT 1',
           [user.id]
         )
       ),
       withPgClient((client) =>
         client.query<BasicProfileRow>(
-          'SELECT full_name, photos, tier FROM profiles WHERE id = $1 LIMIT 1',
+          'SELECT full_name, photos, tier, plan FROM profiles WHERE id = $1 LIMIT 1',
           [likeeId]
         )
       ),
@@ -150,6 +157,25 @@ export async function POST(request: NextRequest) {
         likerProfile.full_name,
         likeeProfile.full_name,
       ).catch(err => console.error('[notifyMatch] failed:', err))
+
+      Promise.all([
+        insertUserNotification({
+          userId: user.id,
+          type:   'match',
+          title:  "It's a match!",
+          body:   `You and ${likeeProfile.full_name} liked each other.`,
+          actorId: likeeId,
+          data: conversationId ? { conversationId } : {},
+        }),
+        insertUserNotification({
+          userId: likeeId,
+          type:   'match',
+          title:  "It's a match!",
+          body:   `You and ${likerProfile.full_name} liked each other.`,
+          actorId: user.id,
+          data: conversationId ? { conversationId } : {},
+        }),
+      ]).catch(err => console.error('[user_notifications match]', err))
     } else {
       const likerPhotoUrl = Array.isArray(likerProfile.photos) && likerProfile.photos.length > 0
         ? (likerProfile.photos[0] as any)?.url ?? null
@@ -159,8 +185,20 @@ export async function POST(request: NextRequest) {
         likeeId,
         likerProfile.full_name,
         likerPhotoUrl,
-        likeeProfile.tier ?? 'free',
+        likeeProfile.plan ?? likeeProfile.tier ?? 'free',
       ).catch(err => console.error('[notifyLike] failed:', err))
+
+      const likeePaid = isPremiumOrVip(likeeProfile)
+      insertUserNotification({
+        userId: likeeId,
+        type:   'like',
+        title:  likeePaid ? `${likerProfile.full_name} liked you` : 'Someone liked you',
+        body:   likeePaid
+          ? 'Say hello from Matches → Liked Me.'
+          : 'Check Liked Me to see who’s interested — Premium shows names.',
+        actorId: likeePaid ? user.id : null,
+        data:    { revealed: likeePaid },
+      }).catch(err => console.error('[user_notifications like]', err))
     }
 
     return NextResponse.json({

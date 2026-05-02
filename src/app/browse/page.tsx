@@ -120,6 +120,7 @@ function SwipeCard({
   const [flyDir, setFlyDir]             = useState<'left' | 'right' | null>(null)
   const [photoIdx, setPhotoIdx]         = useState(0)
   const [isActive, setIsActive]         = useState(false)
+  const [likeHeartBurst, setLikeHeartBurst] = useState(false)
 
   useEffect(() => {
     const active = p.last_active
@@ -133,6 +134,10 @@ function SwipeCard({
   const canInteract = forceInteractive || isTop
 
   const triggerFly = useCallback((dir: 'left' | 'right') => {
+    if (dir === 'right') {
+      setLikeHeartBurst(true)
+      window.setTimeout(() => setLikeHeartBurst(false), 700)
+    }
     setFlyDir(dir)
     setIsFlying(true)
     setTimeout(() => {
@@ -140,6 +145,12 @@ function SwipeCard({
       else onPass(p.id)
     }, 320)
   }, [sp, p.id, onLike, onPass])
+
+  const triggerLikeFromHeartButton = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (isFlying || !canInteract) return
+    triggerFly('right')
+  }, [isFlying, canInteract, triggerFly])
 
   // Card drag (to like/pass)
   const onCardPointerDown = (e: React.PointerEvent) => {
@@ -373,18 +384,37 @@ function SwipeCard({
             <X size={18} color="#f7e7ff" />
           </button>
 
-          <button
-            onClick={e => { e.stopPropagation(); triggerFly('right') }}
-            style={{
-              width: 54, height: 54, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
-              border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', boxShadow: '0 6px 20px rgba(244,63,94,0.38)',
-            }}
-          >
-            <Heart size={22} color="white" fill="white" />
-          </button>
+          <div style={{ position: 'relative', width: 54, height: 54 }}>
+            {likeHeartBurst && (
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: -6,
+                  borderRadius: '50%',
+                  border: '2px solid rgba(255,182,193,0.85)',
+                  animation: 'browse-like-ring 0.7s ease-out forwards',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            <button
+              type="button"
+              aria-label="Like"
+              onClick={triggerLikeFromHeartButton}
+              style={{
+                width: 54, height: 54, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+                border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(244,63,94,0.38)',
+                animation: likeHeartBurst ? 'browse-heart-pop 0.55s cubic-bezier(0.34, 1.45, 0.64, 1)' : undefined,
+              }}
+            >
+              <Heart size={22} color="white" fill="white" />
+            </button>
+          </div>
 
           <button
             onClick={e => { e.stopPropagation(); triggerFly('right') }}
@@ -903,6 +933,18 @@ function BrowsePageContent() {
       marginRight: rightPanelOpen ? DESK_RIGHT_W : 0,
       transition: 'margin-left 0.25s ease, margin-right 0.25s ease',
     }}>
+      <style>{`
+        @keyframes browse-heart-pop {
+          0% { transform: scale(1); box-shadow: 0 6px 20px rgba(244,63,94,0.38); }
+          40% { transform: scale(1.2); box-shadow: 0 12px 40px rgba(244,63,94,0.55); }
+          100% { transform: scale(1); box-shadow: 0 6px 20px rgba(244,63,94,0.38); }
+        }
+        @keyframes browse-like-ring {
+          0% { transform: scale(0.75); opacity: 0.9; }
+          100% { transform: scale(2.25); opacity: 0; }
+        }
+        @keyframes spin-slow { to { transform: rotate(360deg) } }
+      `}</style>
       <div style={{ maxWidth: isMobile ? '520px' : '700px', margin: '0 auto', padding: '16px 16px', height: '100%', overflow: 'hidden' }}>
 
         {/* Match alert */}

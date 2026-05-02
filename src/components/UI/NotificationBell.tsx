@@ -1,4 +1,4 @@
-'use client'
+ 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Bell, X, Heart, MessageCircle, Zap, Info, CheckCheck } from 'lucide-react'
@@ -28,6 +28,7 @@ function timeAgo(iso: string): string {
 function typeIcon(type: string) {
   switch (type) {
     case 'match':      return <Heart size={13} color="#f03868" />
+    case 'like':       return <Heart size={13} color="#fb7185" />
     case 'message':    return <MessageCircle size={13} color="#818cf8" />
     case 'super_like': return <Zap size={13} color="#f59e0b" />
     default:           return <Info size={13} color="#94a3b8" />
@@ -37,6 +38,7 @@ function typeIcon(type: string) {
 function typeColor(type: string): string {
   switch (type) {
     case 'match':      return 'rgba(240,56,104,0.15)'
+    case 'like':       return 'rgba(251,113,133,0.18)'
     case 'message':    return 'rgba(129,140,248,0.15)'
     case 'super_like': return 'rgba(245,158,11,0.15)'
     default:           return 'rgba(148,163,184,0.15)'
@@ -69,6 +71,14 @@ export default function NotificationBell() {
     if (!fetchedRef.current) { fetchedRef.current = true; fetchNotifs() }
     const t = setInterval(() => fetchNotifs(true), 60_000)
     return () => clearInterval(t)
+  }, [fetchNotifs])
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible') fetchNotifs(true)
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
   }, [fetchNotifs])
 
   // Mark all read when panel opens

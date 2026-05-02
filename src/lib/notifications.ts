@@ -103,7 +103,7 @@ export async function notifyLike(
     headings:           { en: isPremium ? `${likerName} liked you ❤️` : 'Someone liked you ❤️' },
     contents:           { en: isPremium ? `${likerName} is interested in you — go say hi!` : 'Upgrade to see who liked you' },
     include_player_ids: playerIds,
-    url:                isPremium ? '/likes' : '/upgrade',
+    url:                isPremium ? '/matches' : '/upgrade',
     chrome_web_icon:    isPremium && likerPhotoUrl ? likerPhotoUrl : undefined,
     data:               { type: 'like', revealed: String(isPremium) },
   })
