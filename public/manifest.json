@@ -1,0 +1,17 @@
+{
+  "name": "Mebley — Modern Connections",
+  "short_name": "Mebley",
+  "description": "Voice-first dating for intentional connections across 40+ countries.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09071a",
+  "theme_color": "#1f0b12",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next'
-
-const BASE = 'https://mebley.com'
+import { getSiteUrl } from '@/lib/site-url'
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const BASE = getSiteUrl()
   const now = new Date().toISOString()
 
   return [

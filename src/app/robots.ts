@@ -1,6 +1,9 @@
 import type { MetadataRoute } from 'next'
+import { getSiteUrl } from '@/lib/site-url'
 
 export default function robots(): MetadataRoute.Robots {
+  const host = getSiteUrl()
+
   return {
     rules: [
       {
@@ -27,7 +30,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/'],
       },
     ],
-    sitemap: 'https://mebley.com/sitemap.xml',
-    host: 'https://mebley.com',
+    sitemap: `${host}/sitemap.xml`,
+    host,
   }
 }

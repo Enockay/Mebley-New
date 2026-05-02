@@ -1,4 +1,6 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
+import type { Redirect } from 'next/dist/lib/load-custom-routes'
+import { getSiteUrl } from "./src/lib/site-url"
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -65,17 +67,38 @@ const nextConfig: NextConfig = {
     ]
   },
 
-  // ─── Redirect http to https in production ───────────────────────────────────
+  // ─── Canonical URL in production (HTTPS + preferred host: www vs apex) ────
   async redirects() {
     if (process.env.NODE_ENV !== 'production') return []
-    return [
+
+    const canonical = getSiteUrl()
+    let apexHost: string | null = null
+    try {
+      const host = new URL(canonical).hostname
+      if (host.startsWith('www.')) apexHost = host.slice(4)
+    } catch {
+      /* ignore */
+    }
+
+    const rules: Redirect[] = [
       {
         source: '/:path*',
         has: [{ type: 'header', key: 'x-forwarded-proto', value: 'http' }],
-        destination: 'https://mebley.com/:path*',
+        destination: `${canonical}/:path*`,
         permanent: true,
       },
     ]
+
+    if (apexHost) {
+      rules.push({
+        source: '/:path*',
+        has: [{ type: 'host', value: apexHost }],
+        destination: `${canonical}/:path*`,
+        permanent: true,
+      })
+    }
+
+    return rules
   },
 }
 
