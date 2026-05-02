@@ -120,6 +120,7 @@ function ProfilePageContent() {
   const [hereTonightActive, setHereTonightActive] = useState(false)
   const [hereTonightExpiry, setHereTonightExpiry] = useState<string | null>(null)
   const [hereTonightLoading, setHereTonightLoading] = useState(false)
+  const [likesReceivedCount, setLikesReceivedCount] = useState<number | null>(null)
   const [spotlightActive, setSpotlightActive]     = useState(false)
   const [spotlightExpiry, setSpotlightExpiry]     = useState<string | null>(null)
   const [spotlightLoading, setSpotlightLoading]   = useState(false)
@@ -138,6 +139,17 @@ function ProfilePageContent() {
       .then(json => { if (json.videos) setVideos(json.videos) })
       .catch(() => {})
   }, [user, profile])
+
+  useEffect(() => {
+    if (!user) return
+    fetch('/api/likes/received')
+      .then(r => r.json())
+      .then(data => {
+        if (typeof data?.count === 'number') setLikesReceivedCount(data.count)
+        else setLikesReceivedCount(0)
+      })
+      .catch(() => setLikesReceivedCount(null))
+  }, [user])
 
   const handleToggleVisibility = async () => {
     if (!user || !profile) return
@@ -416,6 +428,23 @@ function ProfilePageContent() {
                       cursor: 'pointer',
                     }}>
                     <Coins size={10} /> {formattedCredits} Credits
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/matches')}
+                    disabled={likesReceivedCount === null}
+                    style={{
+                      ...s.chip('#ec4899'),
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      cursor: likesReceivedCount !== null ? 'pointer' : 'default',
+                      border: 'none',
+                      opacity: likesReceivedCount === null ? 0.6 : 1,
+                    }}
+                  >
+                    <Heart size={10} />
+                    {likesReceivedCount === null ? '…' : `${likesReceivedCount} ${likesReceivedCount === 1 ? 'like' : 'likes'}`}
                   </button>
                   {profile.location && (
                     <span style={{ ...s.chip('#0ea5e9'), display: 'inline-flex', alignItems: 'center', gap: 3 }}>

@@ -324,9 +324,10 @@ export async function GET(request: NextRequest) {
     const sortedIds = sorted.map((s: any) => s.profile.id)
     let hereTonightSet = new Set<string>()
     let spotlightSet   = new Set<string>()
+    const likeCountMap = new Map<string, number>()
 
     if (sortedIds.length > 0) {
-      const [htRes, spotRes] = await Promise.all([
+      const [htRes, spotRes, likeRes] = await Promise.all([
         pgQuery<{ sender_id: string }>(
           `SELECT DISTINCT sender_id FROM moments
            WHERE type = 'here_tonight' AND expires_at > NOW() AND sender_id = ANY($1::uuid[])`,
@@ -337,9 +338,19 @@ export async function GET(request: NextRequest) {
            WHERE boost_type = 'spotlight' AND expires_at > NOW() AND user_id = ANY($1::uuid[])`,
           [sortedIds]
         ),
+        pgQuery<{ likee_id: string; n: string }>(
+          `SELECT likee_id, COUNT(*)::text AS n
+           FROM likes
+           WHERE likee_id = ANY($1::uuid[])
+           GROUP BY likee_id`,
+          [sortedIds]
+        ),
       ])
       hereTonightSet = new Set(htRes.rows.map(r => r.sender_id))
       spotlightSet   = new Set(spotRes.rows.map(r => r.user_id))
+      for (const row of likeRes.rows) {
+        likeCountMap.set(row.likee_id, parseInt(row.n, 10))
+      }
     }
 
     // Re-sort: spotlight profiles first (they paid for visibility), then by score
@@ -350,6 +361,7 @@ export async function GET(request: NextRequest) {
           ...s.profile,
           here_tonight: hereTonightSet.has(s.profile.id),
           spotlight:    spotlightSet.has(s.profile.id),
+          received_likes_count: likeCountMap.get(s.profile.id) ?? 0,
         },
       }))
       .sort((a: any, b: any) => {

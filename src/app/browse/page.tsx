@@ -34,6 +34,8 @@ interface BrowseProfile {
   spotlight?: boolean
   photo_verified?: boolean
   voice_note_url?: string | null
+  /** Count of likes this profile has received (Discover social proof). */
+  received_likes_count?: number
 }
 
 interface ScoredProfile { score: number; reasons: string[]; profile: BrowseProfile }
@@ -50,6 +52,10 @@ const AGE_RANGE_LABELS: Record<string, string> = {
 const AGE_RANGE_OPTIONS = Object.entries(AGE_RANGE_LABELS).map(([value, label]) => ({ value, label }))
 const PAGE_SIZE = 20
 const SWIPE_THRESHOLD = 0.38
+
+function isDiscoverActionTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && !!target.closest('[data-discover-actions]')
+}
 const TOP_HEADER_HEIGHT = 62
 const DESK_SIDEBAR_W    = 460   // fixed sidebar width on desktop
 const DESK_RIGHT_W      = 500   // fixed right-panel width on desktop
@@ -185,6 +191,7 @@ function SwipeCard({
 
   // Photo swipe (to cycle photos)
   const onPhotoPointerDown = (e: React.PointerEvent) => {
+    if (isDiscoverActionTarget(e.target)) return
     isDraggingPhoto.current = true
     photoStartX.current = e.clientX
     photoCurrentX.current = e.clientX
@@ -195,6 +202,7 @@ function SwipeCard({
     photoCurrentX.current = e.clientX
   }
   const onPhotoPointerUp = (e: React.PointerEvent) => {
+    if (isDiscoverActionTarget(e.target)) return
     if (!isDraggingPhoto.current) return
     isDraggingPhoto.current = false
     const delta = photoCurrentX.current - photoStartX.current
@@ -231,8 +239,8 @@ function SwipeCard({
         ? 'none'
         : `translateY(${stackTranslateY}px) scale(${stackScale})`
 
-  const photoHeight = '78%'
-  const infoHeight  = '22%'
+  const photoHeight = '70%'
+  const infoHeight  = '30%'
   const displayPhoto = sortedPhotos[photoIdx] ?? null
 
   return (
@@ -360,17 +368,25 @@ function SwipeCard({
           </div>
         )}
 
-        {/* Vertical action rail on image */}
-        <div style={{
-          position: 'absolute',
-          right: 12,
-          bottom: 16,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-          zIndex: 4,
-        }}>
+        {/* Vertical action rail — isolated from photo swipe / tap-to-profile */}
+        <div
+          data-discover-actions
+          style={{
+            position: 'absolute',
+            right: 12,
+            bottom: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 10,
+            zIndex: 20,
+          }}
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
+        >
           <button
+            type="button"
+            onPointerDown={e => e.stopPropagation()}
             onClick={e => { e.stopPropagation(); triggerFly('left') }}
             style={{
               width: 46, height: 46, borderRadius: '50%',
@@ -401,6 +417,7 @@ function SwipeCard({
             <button
               type="button"
               aria-label="Like"
+              onPointerDown={e => e.stopPropagation()}
               onClick={triggerLikeFromHeartButton}
               style={{
                 width: 54, height: 54, borderRadius: '50%',
@@ -416,7 +433,26 @@ function SwipeCard({
             </button>
           </div>
 
+          {(p.received_likes_count ?? 0) > 0 && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: 'rgba(255,245,250,0.92)',
+                textShadow: '0 1px 6px rgba(0,0,0,0.75)',
+                letterSpacing: 0.03,
+                fontFamily: "'DM Sans', sans-serif",
+                marginTop: -2,
+                marginBottom: -4,
+              }}
+            >
+              {(p.received_likes_count ?? 0) > 99 ? '99+' : p.received_likes_count} likes
+            </span>
+          )}
+
           <button
+            type="button"
+            onPointerDown={e => e.stopPropagation()}
             onClick={e => { e.stopPropagation(); triggerFly('right') }}
             style={{
               width: 46, height: 46, borderRadius: '50%',
@@ -487,8 +523,9 @@ function SwipeCard({
         height: infoHeight,
         transition: 'height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex', flexDirection: 'column',
-        justifyContent: 'center',
-        overflow: 'hidden',
+        justifyContent: 'flex-start',
+        overflowY: 'auto',
+        overflowX: 'hidden',
         background: 'linear-gradient(180deg, rgba(10,8,26,0.97), rgba(8,6,20,0.99))',
             }}>
         <div style={{
@@ -541,6 +578,79 @@ function SwipeCard({
               </div>
             )
           })()}
+
+          {p.bio && (
+            <p style={{
+              margin: 0,
+              fontSize: 12,
+              color: 'rgba(236,232,255,0.78)',
+              lineHeight: 1.45,
+              fontFamily: "'DM Sans', sans-serif",
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}>
+              {p.bio}
+            </p>
+          )}
+
+          {p.prompts?.[0] && (
+            <div style={{
+              padding: '8px 10px',
+              borderRadius: 10,
+              background: 'rgba(236,72,153,0.08)',
+              border: '1px solid rgba(236,72,153,0.18)',
+            }}>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: 'rgba(249,168,212,0.9)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {p.prompts[0].question}
+              </p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(248,240,255,0.92)', lineHeight: 1.4, fontFamily: "'Fraunces', Georgia, serif", fontStyle: 'italic' }}>
+                {p.prompts[0].answer}
+              </p>
+            </div>
+          )}
+
+          {(p.looking_for?.length ?? 0) > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {p.looking_for.slice(0, 2).map((intent) => (
+                <span
+                  key={intent}
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: '3px 8px',
+                    borderRadius: 999,
+                    background: 'rgba(167,139,250,0.12)',
+                    border: '1px solid rgba(167,139,250,0.28)',
+                    color: 'rgba(224,213,255,0.95)',
+                  }}
+                >
+                  {intent}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {(p.interests?.length ?? 0) > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {p.interests.slice(0, 5).map((interest) => (
+                <span
+                  key={interest}
+                  style={{
+                    fontSize: 10,
+                    padding: '3px 8px',
+                    borderRadius: 999,
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    color: 'rgba(240,232,244,0.72)',
+                  }}
+                >
+                  {interest}
+                </span>
+              ))}
+            </div>
+          )}
 
           <button
             onClick={e => { e.stopPropagation(); onViewProfile(sp) }}
@@ -1498,7 +1608,7 @@ function BrowsePageContent() {
                         </div>
                       )}
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => handlePass(p.id)} disabled={!!isActing} style={{
+                        <button type="button" onClick={() => handlePass(p.id)} disabled={!!isActing} style={{
                           flex: 1, padding: '7px', borderRadius: 12,
                           border: '1.5px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)',
                           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1506,7 +1616,7 @@ function BrowsePageContent() {
                         }}>
                           <X size={15} color="rgba(240,232,244,0.6)" />
                         </button>
-                        <button onClick={() => handleLike(sp)} disabled={!!isActing} style={{
+                        <button type="button" onClick={() => handleLike(sp)} disabled={!!isActing} style={{
                           flex: 1, padding: '7px', borderRadius: 12,
                           background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
                           border: 'none', cursor: 'pointer',
@@ -1520,6 +1630,22 @@ function BrowsePageContent() {
                           }
                         </button>
                       </div>
+                      {(p.received_likes_count ?? 0) > 0 && (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 5,
+                          marginTop: 6,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: 'rgba(254,205,211,0.88)',
+                          fontFamily: "'DM Sans', sans-serif",
+                        }}>
+                          <Heart size={11} color="#fb7185" fill="#fb7185" />
+                          {(p.received_likes_count ?? 0) > 99 ? '99+' : p.received_likes_count} likes
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
@@ -1695,6 +1821,31 @@ function BrowsePageContent() {
                     {viewProfileSp.profile.location}
                   </p>
                 )}
+                {(viewProfileSp.profile.received_likes_count ?? 0) > 0 && (
+                  <p style={{
+                    margin: '0 0 12px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'rgba(254,205,211,0.95)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}>
+                    <Heart size={14} color="#fb7185" fill="#fb7185" />
+                    {(viewProfileSp.profile.received_likes_count ?? 0) > 99 ? '99+' : viewProfileSp.profile.received_likes_count} likes
+                  </p>
+                )}
+                {viewProfileSp.profile.prompts?.[0] && (
+                  <div style={{ marginBottom: 12, borderRadius: 14, border: '1px solid rgba(236,72,153,0.22)', background: 'rgba(236,72,153,0.07)', padding: 12 }}>
+                    <p style={{ margin: '0 0 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.85)', fontWeight: 700 }}>
+                      {viewProfileSp.profile.prompts[0].question}
+                    </p>
+                    <p style={{ margin: 0, fontSize: 14, color: '#fdf4ff', lineHeight: 1.55, fontFamily: "'Fraunces', Georgia, serif", fontStyle: 'italic' }}>
+                      {viewProfileSp.profile.prompts[0].answer}
+                    </p>
+                  </div>
+                )}
                 {viewProfileSp.profile.voice_note_url && (
                   <div style={{ marginBottom: 12 }}>
                     <p style={{ margin: '0 0 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>
@@ -1851,6 +2002,28 @@ function BrowsePageContent() {
                 <MapPin size={13} color="#f9a8d4" />{viewProfileSp.profile.location}
               </p>
             )}
+            {(viewProfileSp.profile.received_likes_count ?? 0) > 0 && (
+              <p style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 600, color: 'rgba(254,205,211,0.95)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Heart size={14} color="#fb7185" fill="#fb7185" />
+                {(viewProfileSp.profile.received_likes_count ?? 0) > 99 ? '99+' : viewProfileSp.profile.received_likes_count} likes
+              </p>
+            )}
+            {viewProfileSp.profile.prompts?.[0] && (
+              <div style={{ marginBottom: 12, borderRadius: 14, border: '1px solid rgba(236,72,153,0.22)', background: 'rgba(236,72,153,0.07)', padding: 12 }}>
+                <p style={{ margin: '0 0 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.85)', fontWeight: 700 }}>
+                  {viewProfileSp.profile.prompts[0].question}
+                </p>
+                <p style={{ margin: 0, fontSize: 14, color: '#fdf4ff', lineHeight: 1.55, fontFamily: "'Fraunces', Georgia, serif", fontStyle: 'italic' }}>
+                  {viewProfileSp.profile.prompts[0].answer}
+                </p>
+              </div>
+            )}
+            {viewProfileSp.profile.voice_note_url && (
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ margin: '0 0 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>Voice Note</p>
+                <VoiceNotePlayer url={viewProfileSp.profile.voice_note_url} />
+              </div>
+            )}
             <div style={{ marginBottom: 12 }}>
               <button
                 type="button"
@@ -1861,6 +2034,25 @@ function BrowsePageContent() {
                 Message · {DISCOVER_MESSAGE_START_CREDITS} credits
               </button>
             </div>
+            {viewProfileSp.profile.bio && (
+              <div style={{ marginBottom: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', padding: 12 }}>
+                <p style={{ margin: '0 0 5px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>About</p>
+                <p style={{ margin: 0, fontSize: 13, color: '#f8e9ff', lineHeight: 1.6 }}>{viewProfileSp.profile.bio}</p>
+              </div>
+            )}
+            {(viewProfileSp.profile.looking_for?.length ?? 0) > 0 || (viewProfileSp.profile.interests?.length ?? 0) > 0 ? (
+              <div style={{ marginBottom: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', padding: 12 }}>
+                <p style={{ margin: '0 0 8px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>Activities &amp; interests</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {viewProfileSp.profile.looking_for?.slice(0, 3).map((intent, i) => (
+                    <span key={`m-${intent}-${i}`} style={{ padding: '4px 11px', borderRadius: 999, fontSize: 11, fontWeight: 700, border: '1px solid rgba(236,72,153,0.5)', background: 'rgba(236,72,153,0.2)', color: '#ffe3f3' }}>{intent}</span>
+                  ))}
+                  {viewProfileSp.profile.interests?.slice(0, 12).map((interest, i) => (
+                    <span key={`mi-${interest}-${i}`} style={{ padding: '4px 11px', borderRadius: 999, fontSize: 11, border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.1)', color: '#f0e7fb' }}>{interest}</span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </aside>
         </div>
       )}
