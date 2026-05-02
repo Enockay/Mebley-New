@@ -4,6 +4,8 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePaywall } from '@/hooks/usePaywall'
+import { DISCOVER_MESSAGE_START_CREDITS } from '@/lib/discover-message-start.constants'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Chat from '@/components/Messages/Chat'
@@ -537,7 +539,8 @@ function SwipeCard({
 
 // ── Browse Page ───────────────────────────────────────────────────
 function BrowsePageContent() {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, refreshProfile } = useAuth()
+  const { openPaywall } = usePaywall()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -798,15 +801,25 @@ function BrowsePageContent() {
         body: JSON.stringify({ targetUserId: targetProfile.id }),
       })
       const data = await res.json()
+      if (res.status === 402) {
+        setError(
+          typeof data?.message === 'string'
+            ? data.message
+            : `${DISCOVER_MESSAGE_START_CREDITS} credits are required to start this conversation.`
+        )
+        openPaywall('general', 'plans')
+        return
+      }
       if (!res.ok || !data?.conversationId) {
         throw new Error(data?.error ?? 'Could not open chat')
       }
+      await refreshProfile()
       setDrawerChat({ conversationId: data.conversationId, profile: targetProfile })
     } catch (err) {
       console.error('[Browse] open chat failed:', err)
       setError('Could not open chat right now')
     }
-  }, [])
+  }, [openPaywall, refreshProfile])
 
   const stepStack = useCallback((dir: 'up' | 'down') => {
     if (viewMode !== 'stack' || scored.length <= 1 || stackAnimating) return
@@ -1650,6 +1663,8 @@ function BrowsePageContent() {
                 )}
                 <div style={{ marginBottom: 12 }}>
                   <button
+                    type="button"
+                    title={`New conversations from Discover cost ${DISCOVER_MESSAGE_START_CREDITS} credits`}
                     onClick={() => openChatWithProfile(viewProfileSp.profile)}
                     style={{
                       width: '100%', borderRadius: 12, border: 'none',
@@ -1659,7 +1674,7 @@ function BrowsePageContent() {
                       cursor: 'pointer', boxShadow: '0 3px 10px rgba(244,63,94,0.2)',
                     }}
                   >
-                    Message
+                    Message · {DISCOVER_MESSAGE_START_CREDITS} credits
                   </button>
                 </div>
                 {viewProfileSp.profile.bio && (
@@ -1795,8 +1810,13 @@ function BrowsePageContent() {
               </p>
             )}
             <div style={{ marginBottom: 12 }}>
-              <button onClick={() => openChatWithProfile(viewProfileSp.profile)} style={{ width: '100%', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #f43f5e, #ec4899)', color: 'white', fontWeight: 700, fontSize: 13, padding: '10px 12px', cursor: 'pointer' }}>
-                Message
+              <button
+                type="button"
+                title={`New conversations from Discover cost ${DISCOVER_MESSAGE_START_CREDITS} credits`}
+                onClick={() => openChatWithProfile(viewProfileSp.profile)}
+                style={{ width: '100%', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #f43f5e, #ec4899)', color: 'white', fontWeight: 700, fontSize: 13, padding: '10px 12px', cursor: 'pointer' }}
+              >
+                Message · {DISCOVER_MESSAGE_START_CREDITS} credits
               </button>
             </div>
           </aside>

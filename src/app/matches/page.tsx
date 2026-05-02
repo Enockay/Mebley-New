@@ -9,10 +9,11 @@ import Chat from '@/components/Messages/Chat'
 import type { Database } from '@/types/database.types'
 import { usePlan } from '@/hooks/usePlan'
 import { usePaywall } from '@/hooks/usePaywall'
+import { WHO_LIKED_YOU_UNLOCK_CREDITS } from '@/lib/who-liked-you-unlock.constants'
 import {
   Search, Pin, BellOff, Archive, Shield,
   MoreVertical, ChevronRight, MessageCircle,
-  Bell, ArchiveRestore, PinOff, Ghost, Heart, Lock, Sparkles,
+  Bell, ArchiveRestore, PinOff, Ghost, Heart, Lock, Sparkles, Loader2,
 } from 'lucide-react'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -72,10 +73,32 @@ function isUserOnline(lastActive?: string | null): boolean {
   return Date.now() - ts <= 5 * 60 * 1000
 }
 
+const LIKED_ME_SEEN_STORAGE_KEY = 'mebley:liked-me-latest-seen'
+
+function readLikedMeSeenLatestIso(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    return localStorage.getItem(LIKED_ME_SEEN_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+/** True when there are likers and the newest like is newer than what the user last acknowledged on Liked Me. */
+function likedMeHasUnread(likersCount: number, latestLikedAt: string | null, seenLatestIso: string | null): boolean {
+  if (likersCount <= 0 || !latestLikedAt) return false
+  if (!seenLatestIso) return true
+  const tLatest = new Date(latestLikedAt).getTime()
+  const tSeen = new Date(seenLatestIso).getTime()
+  if (Number.isNaN(tLatest)) return true
+  if (Number.isNaN(tSeen)) return true
+  return tLatest > tSeen
+}
+
 export default function MatchesPage({ embedded = false, onOpenChat }: { embedded?: boolean; onOpenChat?: (conv: { conversationId: string; profile: Profile }) => void }) {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, refreshProfile } = useAuth()
   const router  = useRouter()
-  const { can, tier } = usePlan()
+  const { can, creditBalance } = usePlan()
   const { openPaywall } = usePaywall()
 
   const [tab, setTab]                       = useState<'messages' | 'liked-me'>('messages')
@@ -90,9 +113,15 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
 
   const [likers, setLikers]         = useState<Liker[]>([])
   const [likersCount, setLikersCount] = useState(0)
+  const [latestLikedAt, setLatestLikedAt] = useState<string | null>(null)
+  const [likedMeSeenLatestIso, setLikedMeSeenLatestIso] = useState<string | null>(readLikedMeSeenLatestIso)
   const [likersLocked, setLikersLocked] = useState(true)
   const [likersFetching, setLikersFetching] = useState(false)
   const [likingBack, setLikingBack] = useState<string | null>(null)
+  const [likedMeUnlocking, setLikedMeUnlocking] = useState(false)
+
+  const likersHardLocked = !can('who_liked_you') && creditBalance < WHO_LIKED_YOU_UNLOCK_CREDITS
+  const likedMeHasNew = likedMeHasUnread(likersCount, latestLikedAt, likedMeSeenLatestIso)
 
   useEffect(() => {
     if (!loading && !user) router.push('/auth')
@@ -129,15 +158,88 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
       const data = await res.json()
       setLikers(Array.isArray(data?.likers) ? data.likers : [])
       setLikersCount(data?.count ?? 0)
+      const latest = typeof data?.latest_liked_at === 'string' ? data.latest_liked_at : null
+      setLatestLikedAt(latest)
       setLikersLocked(data?.locked ?? true)
+      if (latest) {
+        try {
+          localStorage.setItem(LIKED_ME_SEEN_STORAGE_KEY, latest)
+        } catch { /* ignore */ }
+        setLikedMeSeenLatestIso(latest)
+      }
     } finally {
       setLikersFetching(false)
+    }
+  }, [user])
+
+  /** Prefetch “liked me” count for tab badge (GET returns count even when list is locked). */
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    fetch('/api/likes/received')
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return
+        setLikersCount(typeof data?.count === 'number' ? data.count : 0)
+        setLatestLikedAt(typeof data?.latest_liked_at === 'string' ? data.latest_liked_at : null)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
     }
   }, [user])
 
   useEffect(() => {
     if (tab === 'liked-me') loadLikers()
   }, [tab, loadLikers])
+
+  const handleLikedMeTab = async () => {
+    if (can('who_liked_you')) {
+      setTab('liked-me')
+      return
+    }
+    setLikedMeUnlocking(true)
+    try {
+      const res  = await fetch('/api/likes/received/unlock', { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+      if (res.status === 402) {
+        openPaywall('general', 'credits')
+        return
+      }
+      if (!res.ok || !data.unlocked) {
+        openPaywall('general', 'plans')
+        return
+      }
+      await refreshProfile()
+      setTab('liked-me')
+    } catch {
+      openPaywall('general', 'plans')
+    } finally {
+      setLikedMeUnlocking(false)
+    }
+  }
+
+  const handleUnlockLikedMeOverlay = async () => {
+    setLikedMeUnlocking(true)
+    try {
+      const res  = await fetch('/api/likes/received/unlock', { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+      if (res.status === 402) {
+        openPaywall('general', 'credits')
+        return
+      }
+      if (!res.ok || !data.unlocked) {
+        openPaywall('general', 'plans')
+        return
+      }
+      await refreshProfile()
+      await loadLikers()
+    } catch {
+      openPaywall('general', 'plans')
+    } finally {
+      setLikedMeUnlocking(false)
+    }
+  }
 
   const handleLikeBack = async (liker: Liker) => {
     setLikingBack(liker.id)
@@ -149,7 +251,11 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
       })
       const data = await res.json()
       // Remove from likers list (either matched or liked back)
-      setLikers(prev => prev.filter(l => l.id !== liker.id))
+      setLikers(prev => {
+        const next = prev.filter(l => l.id !== liker.id)
+        setLatestLikedAt(next[0]?.liked_at ?? null)
+        return next
+      })
       setLikersCount(prev => Math.max(0, prev - 1))
       if (data?.isMatch) {
         // Switch to messages tab to see new match
@@ -200,9 +306,14 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
           body: JSON.stringify({ targetUserId: conv.profile.id }),
         })
         const data = await res.json()
+        if (res.status === 402) {
+          openPaywall('general', 'plans')
+          return
+        }
         if (!res.ok || !data?.conversationId) {
           return
         }
+        await refreshProfile()
         const opened = { conversationId: data.conversationId, profile: conv.profile }
         if (embedded && onOpenChat) { onOpenChat(opened); return }
         setChatView(opened)
@@ -214,7 +325,7 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
     const opened = { conversationId: conv.conversationId, profile: conv.profile }
     if (embedded && onOpenChat) { onOpenChat(opened); return }
     setChatView(opened)
-  }, [embedded, onOpenChat])
+  }, [embedded, onOpenChat, openPaywall, refreshProfile])
 
   if (loading) return (
     <div style={{
@@ -360,39 +471,65 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
               </button>
 
               <button
-                onClick={() => {
-                  if (!can('who_liked_you')) {
-                    openPaywall('general', 'plans')
-                    return
-                  }
-                  setTab('liked-me')
-                }}
+                type="button"
+                disabled={likedMeUnlocking}
+                onClick={() => { void handleLikedMeTab() }}
+                aria-label={likedMeHasNew ? `Liked Me, new likes${likersHardLocked ? '' : ` (${likersCount})`}` : 'Liked Me'}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '8px 16px', borderRadius: 100,
                   background: tab === 'liked-me' ? 'rgba(240,56,104,0.22)' : 'rgba(255,255,255,0.07)',
                   border: `1.5px solid ${tab === 'liked-me' ? 'rgba(240,56,104,0.5)' : 'rgba(255,255,255,0.14)'}`,
                   color: tab === 'liked-me' ? '#fca5a5' : 'rgba(245,220,251,0.6)',
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, cursor: likedMeUnlocking ? 'wait' : 'pointer',
+                  opacity: likedMeUnlocking ? 0.75 : 1,
                   fontFamily: "'DM Sans', sans-serif", backdropFilter: 'blur(8px)',
                   position: 'relative',
                 }}
               >
-                <Heart size={13} />
+                {likedMeUnlocking ? <Loader2 size={13} className="animate-spin" /> : <Heart size={13} />}
                 Liked Me
-                {/* Count badge */}
-                {likersCount > 0 && (
+                {/* Notification-style badge when there are likes newer than last visit */}
+                {likedMeHasNew && likersCount > 0 && (
+                  likersHardLocked ? (
+                    <span
+                      aria-hidden
+                      style={{
+                        position: 'absolute', top: -3, right: -3,
+                        width: 10, height: 10, borderRadius: 99,
+                        background: '#f03868',
+                        border: '2px solid #080614',
+                        boxSizing: 'content-box',
+                      }}
+                    />
+                  ) : (
+                    <span style={{
+                      position: 'absolute', top: -3, right: -3,
+                      minWidth: 17, height: 17, borderRadius: 99,
+                      background: '#f03868',
+                      fontSize: 10, fontWeight: 700, color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0 4px',
+                      border: '2px solid #080614',
+                      lineHeight: 1,
+                    }}>
+                      {likersCount > 99 ? '99+' : likersCount}
+                    </span>
+                  )
+                )}
+                {/* Softer count when already viewed */}
+                {!likedMeHasNew && likersCount > 0 && (
                   <span style={{
                     marginLeft: 4, minWidth: 18, height: 18, borderRadius: 999,
-                    background: can('who_liked_you') ? '#f03868' : 'rgba(240,56,104,0.5)',
+                    background: can('who_liked_you') ? '#f03868' : (likersHardLocked ? 'rgba(240,56,104,0.5)' : 'rgba(167,139,250,0.85)'),
                     color: '#fff', fontSize: 10, fontWeight: 700,
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     padding: '0 5px',
                   }}>
-                    {can('who_liked_you') ? likersCount : '?'}
+                    {likersHardLocked ? '?' : likersCount}
                   </span>
                 )}
-                {!can('who_liked_you') && (
+                {!can('who_liked_you') && likersHardLocked && (
                   <Lock size={10} style={{ marginLeft: 2, opacity: 0.7 }} />
                 )}
               </button>
@@ -486,9 +623,30 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
                       </p>
                     )}
                     <p style={{ fontSize: 13, color: 'rgba(245,220,251,0.65)', margin: '0 0 20px', lineHeight: 1.5 }}>
-                      Upgrade to Premium to see everyone who liked your profile and like them back instantly.
+                      Premium includes this forever. Or spend{' '}
+                      <strong style={{ color: '#f9a8d4' }}>{WHO_LIKED_YOU_UNLOCK_CREDITS} credits</strong>
+                      {' '}to reveal everyone for <strong style={{ color: '#f9a8d4' }}>24 hours</strong>.
                     </p>
+                    {creditBalance >= WHO_LIKED_YOU_UNLOCK_CREDITS && (
+                      <button
+                        type="button"
+                        disabled={likedMeUnlocking}
+                        onClick={() => { void handleUnlockLikedMeOverlay() }}
+                        style={{
+                          padding: '12px 28px', borderRadius: 100, border: '1.5px solid rgba(167,139,250,0.5)',
+                          background: 'linear-gradient(135deg, rgba(124,58,237,0.35), rgba(167,139,250,0.2))',
+                          color: '#ede9fe', fontSize: 14, fontWeight: 700, cursor: likedMeUnlocking ? 'wait' : 'pointer',
+                          fontFamily: "'DM Sans', sans-serif",
+                          marginBottom: 12,
+                          width: '100%', maxWidth: 320,
+                          boxShadow: '0 6px 20px rgba(99,102,241,0.2)',
+                        }}
+                      >
+                        {likedMeUnlocking ? 'Unlocking…' : `Reveal with ${WHO_LIKED_YOU_UNLOCK_CREDITS} credits`}
+                      </button>
+                    )}
                     <button
+                      type="button"
                       onClick={() => openPaywall('general', 'plans')}
                       style={{
                         padding: '12px 28px', borderRadius: 100, border: 'none',
@@ -501,7 +659,7 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
                       Upgrade to Premium
                     </button>
                     <p style={{ fontSize: 11, color: 'rgba(245,220,251,0.4)', margin: '12px 0 0' }}>
-                      Premium · {tier === 'starter' ? 'Upgrade your plan' : '$10/month'}
+                      Or upgrade — Premium includes Liked Me anytime.
                     </p>
                   </div>
                 </div>

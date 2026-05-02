@@ -1,9 +1,10 @@
 // src/app/api/likes/received/route.ts
-// Returns profiles who liked the current user but there's no mutual match yet.
-// Requires Premium tier — checked server-side to prevent client bypass.
+// Returns profiles who liked the current user (no mutual match yet).
+// Premium/VIP see the list; Starter/Free can unlock for 24h with credits (see /api/likes/received/unlock).
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 import { pgQuery } from '@/lib/postgres'
+import { hasWhoLikedYouCreditUnlock } from '@/lib/who-liked-you-unlock'
 
 type LikerRow = {
   id:          string
@@ -19,9 +20,9 @@ type LikerRow = {
 
 const PAID_TIERS = ['premium', 'vip']
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthUserFromRequest(req)
+    const user = await getAuthUserFromRequest(request)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     // Server-side tier check — prevents client-side bypass
@@ -31,10 +32,14 @@ export async function GET(req: NextRequest) {
     )
     const plan = planRes.rows[0]?.plan ?? 'free'
 
-    if (!PAID_TIERS.includes(plan)) {
+    const tierReveal = PAID_TIERS.includes(plan)
+    const creditReveal = !tierReveal && (await hasWhoLikedYouCreditUnlock(user.id))
+
+    if (!tierReveal && !creditReveal) {
       // Return count only for free/starter users so the UI can show an upgrade prompt
-      const countRes = await pgQuery<{ n: string }>(
-        `SELECT COUNT(*) AS n
+      const countRes = await pgQuery<{ n: string; latest_liked_at: string | null }>(
+        `SELECT COUNT(*)::text AS n,
+                MAX(l.created_at)::text AS latest_liked_at
          FROM likes l
          WHERE l.likee_id = $1
            AND NOT EXISTS (
@@ -50,7 +55,8 @@ export async function GET(req: NextRequest) {
         [user.id]
       )
       const count = parseInt(countRes.rows[0]?.n ?? '0', 10)
-      return NextResponse.json({ likers: [], count, locked: true })
+      const latestLikedAt = countRes.rows[0]?.latest_liked_at ?? null
+      return NextResponse.json({ likers: [], count, locked: true, latest_liked_at: latestLikedAt })
     }
 
     // Premium/VIP — return full profiles
@@ -83,7 +89,13 @@ export async function GET(req: NextRequest) {
       [user.id]
     )
 
-    return NextResponse.json({ likers: res.rows, count: res.rows.length, locked: false })
+    const latestLikedAt = res.rows[0]?.liked_at ?? null
+    return NextResponse.json({
+      likers: res.rows,
+      count:  res.rows.length,
+      locked: false,
+      latest_liked_at: latestLikedAt,
+    })
 
   } catch (err) {
     console.error('[likes/received]', err)
