@@ -154,7 +154,7 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
     if (!user) return
     setLikersFetching(true)
     try {
-      const res  = await fetch('/api/likes/received')
+      const res  = await fetch('/api/likes/received', { credentials: 'include' })
       const data = await res.json()
       setLikers(Array.isArray(data?.likers) ? data.likers : [])
       setLikersCount(data?.count ?? 0)
@@ -176,7 +176,7 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
   useEffect(() => {
     if (!user) return
     let cancelled = false
-    fetch('/api/likes/received')
+    fetch('/api/likes/received', { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
         if (cancelled) return
@@ -200,7 +200,7 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
     }
     setLikedMeUnlocking(true)
     try {
-      const res  = await fetch('/api/likes/received/unlock', { method: 'POST' })
+      const res  = await fetch('/api/likes/received/unlock', { method: 'POST', credentials: 'include' })
       const data = await res.json().catch(() => ({}))
       if (res.status === 402) {
         openPaywall('general', 'credits')
@@ -222,7 +222,7 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
   const handleUnlockLikedMeOverlay = async () => {
     setLikedMeUnlocking(true)
     try {
-      const res  = await fetch('/api/likes/received/unlock', { method: 'POST' })
+      const res  = await fetch('/api/likes/received/unlock', { method: 'POST', credentials: 'include' })
       const data = await res.json().catch(() => ({}))
       if (res.status === 402) {
         openPaywall('general', 'credits')
@@ -247,18 +247,20 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
       const res  = await fetch('/api/likes', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body:    JSON.stringify({ likeeId: liker.id }),
       })
-      const data = await res.json()
-      // Remove from likers list (either matched or liked back)
-      setLikers(prev => {
-        const next = prev.filter(l => l.id !== liker.id)
-        setLatestLikedAt(next[0]?.liked_at ?? null)
-        return next
-      })
-      setLikersCount(prev => Math.max(0, prev - 1))
+      const data = await res.json().catch(() => ({}))
+      if (res.status === 402) {
+        openPaywall('general', 'credits')
+        return
+      }
+      if (!res.ok || data?.success !== true) {
+        return
+      }
+      await refreshProfile()
+      await loadLikers()
       if (data?.isMatch) {
-        // Switch to messages tab to see new match
         loadConversations()
         setTab('messages')
       }
@@ -790,7 +792,8 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
           )}
 
           {/* ── Messages tab ──────────────────────────────────────────── */}
-          {tab === 'messages' && fetching ? (
+          {tab === 'messages' && (
+            fetching ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[1,2,3].map(i => (
                 <div key={i} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.14)', padding: '16px', display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -968,10 +971,11 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
                 )
               })}
             </div>
+          )
           )}
 
           {/* Archive link at bottom */}
-          {!showArchived && conversations.some(c => c.isArchived) && (
+          {tab === 'messages' && !showArchived && conversations.some(c => c.isArchived) && (
             <button
               onClick={() => setShowArchived(true)}
               style={{ width: '100%', marginTop: 16, padding: '14px', borderRadius: 14, border: '1.5px solid rgba(240,56,104,0.18)', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'rgba(240,232,244,0.7)', fontFamily: "'DM Sans',sans-serif" }}>
