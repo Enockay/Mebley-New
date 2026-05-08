@@ -112,7 +112,7 @@ export default function TopHeader() {
           </div>
           <span className="logo-text hdr-logo-text" style={{
             fontFamily: "'Fraunces', Georgia, serif",
-            fontSize: '18px', fontWeight: 700,
+            fontSize: '28px', fontWeight: 700,
             color: '#fff',
             letterSpacing: '-0.3px',
           }}>Mebley</span>

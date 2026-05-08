@@ -53,7 +53,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 16,
           }}>🧵</div>
-          <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700, color: T.text }}>
+          <span style={{ fontFamily: "'Fraunces', serif", fontSize: 30, fontWeight: 700, color: '#fff' }}>
             Mebley
           </span>
         </Link>
@@ -94,7 +94,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
               <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg, #f03868, #ff7a50)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🧵</div>
-              <span style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 700 }}>Mebley</span>
+              <span style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 700, color: '#fff' }}>Mebley</span>
             </div>
             <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.7, maxWidth: 260, margin: '0 0 18px' }}>
               Intentional connections across 40+ countries. Dating built for people who want something real.

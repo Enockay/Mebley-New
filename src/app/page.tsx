@@ -241,7 +241,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px' }}>
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <img src="/icon.svg" alt="Mebley" style={{ width: 32, height: 32, borderRadius: '50%' }} />
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#ff6b96' }}>Mebley</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#fff' }}>Mebley</span>
           </a>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -667,7 +667,7 @@ export default function LandingPage() {
             <div>
               <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 12 }}>
                 <img src="/icon.svg" alt="Mebley" style={{ width: 28, height: 28, borderRadius: '50%' }} />
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#ff6b96' }}>Mebley</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#fff' }}>Mebley</span>
               </a>
               <p style={{ fontSize: 13.5, color: T.faint, maxWidth: 200, lineHeight: 1.65 }}>
                 Dating built for people who want something real.
@@ -699,26 +699,7 @@ export default function LandingPage() {
           }}>
             <p style={{ fontSize: 12, color: 'rgba(200,170,190,0.65)' }}>© 2025 Mebley Inc. All rights reserved.</p>
 
-            {/* Powered by — center */}
-            <a
-              href="https://www.blackie-networks.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontSize: 12, color: 'rgba(200,170,190,0.6)',
-                textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 5,
-                transition: 'color 0.15s',
-                letterSpacing: '0.03em',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,180,210,0.9)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(200,170,190,0.6)' }}
-            >
-              Powered by
-              <span style={{ fontWeight: 700, color: 'rgba(230,180,210,0.8)' }}>Blackie Networks</span>
-              <span>🩷</span>
-            </a>
-
-            <div style={{ display: 'flex', gap: 8 }}>
+<div style={{ display: 'flex', gap: 8 }}>
               {['𝕏','IG','TT'].map(s => (
                 <a key={s} href="#" style={{
                   width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',

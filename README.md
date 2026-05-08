@@ -297,3 +297,87 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 ❯  
 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   ? for shortcuts
+Explore(Full system gap audit)                                                                                                  
+  ⎿  Done (40 tool uses · 67.1k tokens · 4m 15s)                                                                                  
+  (ctrl+o to expand)                                                                                                              
+                                                                                                                                  
+⏺ Here's an honest gap report based on the audit:                                                                                 
+                                                                                                                                  
+  ---                                                                                                                             
+  What's fully done                                                                                                               
+                                                                                                                                  
+  Every major system is built and wired:                                                                                          
+  - Auth (email + Google OAuth, session management)                                                                               
+  - Discovery + matching engine                                                                                                   
+  - Real-time chat with SSE streaming, GIFs, media sharing                                                                        
+  - Video/audio calls via Agora                                                                                                   
+  - Photo/video/voice uploads to S3                                                                                               
+  - Selfie identity verification (Rekognition + admin override)                                                                   
+  - Credits + Paystack payments (one-time and recurring)                                                                          
+  - Push notifications (OneSignal) + in-app notification bell                                                                     
+  - Full admin panel (moderation, users, credits, revenue, audit, verification, ops)                                              
+  - Rate limiting, security headers, CSRF protection                                                                              
+                                                                                                                                  
+  ---             
+  What's partially built                                                                                                          
+                                                                                                                                  
+  ┌────────────────────────┬───────────────────────────────┬──────────────────────────────────────────────────────────────────┐   
+  │          Gap           │          What exists          │                          What's missing                          │   
+  ├────────────────────────┼───────────────────────────────┼──────────────────────────────────────────────────────────────────┤   
+  │ Message read receipts  │ DB schema supports it         │ No "seen" indicator in Chat UI                                   │
+  ├────────────────────────┼───────────────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Moments / Here Tonight │ Table + API route exist       │ No dedicated UI surface — users can't see who is "here tonight"  │   
+  │                        │                               │ in Browse/Discover                                               │   
+  ├────────────────────────┼───────────────────────────────┼──────────────────────────────────────────────────────────────────┤   
+  │ Photo reorder /        │ Photos stored as JSONB array  │ No drag-to-reorder UI in profile edit; slot 0 is assumed primary │   
+  │ primary                │                               │  but can't be changed                                            │
+  ├────────────────────────┼───────────────────────────────┼──────────────────────────────────────────────────────────────────┤   
+  │ Data consistency admin │ consistency_issues table      │ No admin page to view/resolve flagged issues                     │
+  │  view                  │ populated                     │                                                                  │   
+  └────────────────────────┴───────────────────────────────┴──────────────────────────────────────────────────────────────────┘   
+   
+  ---                                                                                                                             
+  What's completely missing
+                           
+  ┌──────────────────────┬──────────┬─────────────────────────────────────────────────────────────────────────────────────────┐
+  │         Item         │ Priority │                                          Notes                                          │   
+  ├──────────────────────┼──────────┼─────────────────────────────────────────────────────────────────────────────────────────┤
+  │ .env.example file    │ High     │ Secrets are in .env which may be committed. A documented .env.example protects against  │   
+  │                      │          │ accidental key leaks and helps new deploys                                              │
+  ├──────────────────────┼──────────┼─────────────────────────────────────────────────────────────────────────────────────────┤   
+  │ Video encoding       │ Medium   │ Videos uploaded raw to S3 — no transcoding, thumbnail, or compression. Large files will │
+  │ pipeline             │          │  load slowly                                                                            │   
+  ├──────────────────────┼──────────┼─────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Call history         │ Low      │ No dedicated view; calls happen but aren't logged/reviewable                            │   
+  ├──────────────────────┼──────────┼─────────────────────────────────────────────────────────────────────────────────────────┤   
+  │ OTP login UI         │ Low      │ /api/auth/send-otp + /verify-otp routes exist but auth page doesn't expose them — it's  │
+  │                      │          │ email/password + Google only                                                            │   
+  ├──────────────────────┼──────────┼─────────────────────────────────────────────────────────────────────────────────────────┤
+  │ MongoDB cleanup      │ Low      │ mongodb.ts exists but zero routes use it — dead code                                    │   
+  ├──────────────────────┼──────────┼─────────────────────────────────────────────────────────────────────────────────────────┤   
+  │ Sentry / error       │ Medium   │ No observability. Errors only surface in server logs. No alerting if the app breaks in  │
+  │ monitoring           │          │ production                                                                              │   
+  ├──────────────────────┼──────────┼─────────────────────────────────────────────────────────────────────────────────────────┤
+  │ CI/CD                │ Medium   │ No .github/workflows/ — deploys are manual                                              │   
+  ├──────────────────────┼──────────┼─────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Analytics events     │ Low      │ No user-action tracking (what users click, where they drop off)                         │
+  └──────────────────────┴──────────┴─────────────────────────────────────────────────────────────────────────────────────────┘   
+   
+  ---                                                                                                                             
+  Most impactful things to tackle next
+                                      
+  1. .env.example — 10 minutes, protects secrets
+  2. Message read receipts — visible to every user, easy to add                                                                   
+  3. Photo reorder UI — users can't fix their primary photo without knowing about slot 0                                          
+  4. Here Tonight / Moments UI — the feature is paid for (credits) but invisible                                                  
+  5. Sentry — you're blind to production errors without it                                                                        
+                                                                                                                                  
+  Want me to start on any of these?                                                                                               
+                  
+✻ Baked for 2m 49s                                                                                                                
+                                                                                          
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ [Pasted text #1 +7 lines]                                                                                                       
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                                                  
+
