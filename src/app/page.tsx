@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
 import Script from 'next/script'
 
 /* ── Data ──────────────────────────────────────────────────────────── */
@@ -91,6 +92,181 @@ function GCard({ children, className = '' }: { children: React.ReactNode; classN
       onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.border; el.style.background = T.card }}>
       {children}
     </div>
+  )
+}
+
+/* ── Hero slideshow images ──────────────────────────────────────── */
+const HERO_SLIDES = [
+  { src: '/hero-bg.png',   mobile: 'object-[75%_top]', desktop: 'object-[center_top]' },
+  { src: '/hero-bg-2.png', mobile: 'object-[center_top]', desktop: 'object-[center_top]' },
+  { src: '/hero-bg-3.png', mobile: 'object-[center_top]', desktop: 'object-[center_top]' },
+  { src: '/hero-bg-4.png', mobile: 'object-[center_top]', desktop: 'object-[center_top]' },
+  { src: '/hero-bg-5.png', mobile: 'object-[center_top]', desktop: 'object-[center_top]' },
+]
+
+function HeroSection() {
+  const [idx, setIdx] = useState(0)
+
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % HERO_SLIDES.length), 6000)
+    return () => clearInterval(t)
+  }, [])
+
+  return (
+    <section style={{
+      position: 'relative', overflow: 'hidden',
+      minHeight: '100vh', background: '#000',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Slideshow — all images stacked, active one fades in */}
+      {HERO_SLIDES.map((slide, i) => (
+        <img key={slide.src} src={slide.src} alt=""
+          className={`${slide.mobile} md:${slide.desktop}`}
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            objectFit: 'cover',
+            opacity: i === idx ? 1 : 0,
+            transition: 'opacity 2s ease-in-out',
+            zIndex: 0,
+          }}
+        />
+      ))}
+
+      {/* Gradient overlays */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 1,
+        background: 'linear-gradient(to right, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.68) 18%, rgba(0,0,0,0.45) 35%, rgba(0,0,0,0.16) 55%, transparent 72%)',
+      }} />
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 1,
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, transparent 16%, transparent 78%, rgba(0,0,0,0.28) 100%)',
+      }} />
+
+      {/* ── Max-width wrapper ── */}
+      <div style={{
+        position: 'relative', zIndex: 2,
+        width: '100%', maxWidth: 1280, margin: '0 auto',
+        flex: 1, display: 'flex',
+      }}>
+
+        {/* Notification cards */}
+        <div className="hidden md:flex" style={{
+          position: 'absolute', top: '50%', right: 32,
+          transform: 'translateY(-50%)', zIndex: 3,
+          flexDirection: 'column', gap: 12, width: 260,
+        }}>
+          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6, duration: 0.7, ease: [0.16,1,0.3,1] }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)', border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                {[4,10,15,7,13,5,11,8,14,6,10,4].map((h, i) => (
+                  <div key={i} style={{ width: 2.5, height: h, background: T.rose, borderRadius: 2, opacity: 0.9 }} />
+                ))}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1 }}>Voice note</div>
+                <div style={{ fontSize: 11, color: T.muted, marginTop: 3 }}>0:28</div>
+              </div>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, border: `1.5px solid rgba(240,56,104,0.55)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.rose, fontSize: 10 }}>▶</div>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.9, duration: 0.7, ease: [0.16,1,0.3,1] }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)', border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)' }}>
+              <div style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>🧵</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: 4 }}>Stitch sent</div>
+                <div style={{ fontSize: 11, color: T.muted, lineHeight: 1.45 }}>Can't wait to hear your thoughts!</div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1.2, duration: 0.7, ease: [0.16,1,0.3,1] }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)', border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>♥</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: 4 }}>It's a match! 🎉</div>
+                <div style={{ fontSize: 11, color: T.muted, lineHeight: 1.45 }}>You and Alex liked each other</div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Left content column */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: 640, paddingLeft: 'clamp(24px, 3vw, 48px)', paddingRight: 'clamp(16px, 3vw, 40px)' }}>
+
+          {/* Logo */}
+          <div style={{ paddingTop: 26 }}>
+            <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+              <img src="/icon.svg" alt="Mebley" style={{ width: 32, height: 32, borderRadius: '50%' }} />
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: '#fff' }}>Mebley</span>
+            </a>
+          </div>
+
+          {/* Copy */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 20, paddingBottom: 20 }}>
+            <Reveal>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 100, marginBottom: 22, border: `1px solid ${T.roseBorder}`, background: 'rgba(240,56,104,0.1)', fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#ff90b4' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: T.rose, display: 'inline-block', boxShadow: '0 0 6px rgba(240,56,104,0.7)' }} />
+                Intentional dating, reimagined
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.07}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.8rem, 5.5vw, 5rem)', fontWeight: 800, lineHeight: 1.0, letterSpacing: '-0.02em', color: '#fff', margin: '0 0 20px' }}>
+                Find your<br />
+                <span style={{ background: `linear-gradient(118deg, #ff7dab 0%, ${T.rose} 45%, ${T.coral} 100%)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>person.</span>
+              </h1>
+            </Reveal>
+
+            <Reveal delay={0.12}>
+              <p style={{ fontSize: 'clamp(14px,1.4vw,16px)', color: 'rgba(200,185,215,0.75)', lineHeight: 1.75, margin: '0 0 28px', maxWidth: 400 }}>
+                Thoughtful profiles, voice-first chemistry, and matches ranked by depth — not by who swiped most recently.
+              </p>
+            </Reveal>
+
+            <Reveal delay={0.17}>
+              <div style={{ display: 'flex', gap: 14, marginBottom: 28, flexWrap: 'wrap' }}>
+                <a href="/auth" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 30px', borderRadius: 100, background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`, boxShadow: '0 12px 32px rgba(240,56,104,0.42)', fontSize: 15, fontWeight: 700, color: '#fff', textDecoration: 'none', transition: 'opacity 0.15s, transform 0.15s' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '0.9'; el.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '1'; el.style.transform = 'translateY(0)' }}>
+                  Start free →
+                </a>
+                <a href="#how" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 26px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.06)', fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.82)', textDecoration: 'none', backdropFilter: 'blur(10px)', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.roseBorder; el.style.color = '#fff' }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.22)'; el.style.color = 'rgba(255,255,255,0.82)' }}>
+                  How it works
+                </a>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.21}>
+              <div style={{ display: 'flex', gap: 'clamp(14px,2.5vw,28px)', flexWrap: 'wrap' }}>
+                {[{ icon: '🛡️', text: 'Privacy-first' },{ icon: '🌍', text: '40+ countries' },{ icon: '⭐', text: '4.8 rated' },{ icon: '🔒', text: 'Safe & secure' }].map(({ icon, text }) => (
+                  <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'rgba(200,180,215,0.65)' }}>
+                    <span style={{ fontSize: 14 }}>{icon}</span>{text}
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+
+          {/* Stats */}
+          <Reveal delay={0.26}>
+            <div style={{ display: 'flex', paddingBottom: 44 }}>
+              {STATS.map((s, i) => (
+                <div key={s.l} style={{ paddingRight: i < STATS.length - 1 ? 'clamp(14px,2.5vw,32px)' : 0, borderRight: i < STATS.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none', marginRight: i < STATS.length - 1 ? 'clamp(14px,2.5vw,32px)' : 0 }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.4rem,2.5vw,2rem)', fontWeight: 800, color: T.rose, lineHeight: 1 }}>{s.v}</div>
+                  <div style={{ fontSize: 'clamp(10px,1.1vw,12px)', color: 'rgba(180,155,200,0.5)', marginTop: 5, letterSpacing: '0.04em' }}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -260,216 +436,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ────────── HERO ────────── */}
-      <section style={{
-        position: 'relative', overflow: 'hidden',
-        minHeight: '100vh', background: '#000',
-        display: 'flex', flexDirection: 'column',
-      }}>
-        {/* Background photo */}
-        <img src="/hero-bg.png" alt=""
-          className="object-[75%_top] md:object-[center_top]"
-          style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%',
-            objectFit: 'cover',
-          }} />
-        {/* Gradient — lighter so photo bleeds through behind text */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(to right, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.68) 18%, rgba(0,0,0,0.45) 35%, rgba(0,0,0,0.16) 55%, transparent 72%)',
-        }} />
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, transparent 16%, transparent 78%, rgba(0,0,0,0.28) 100%)',
-        }} />
-
-        {/* ── Max-width wrapper — centres all hero content like other sections ── */}
-        <div style={{
-          position: 'relative', zIndex: 1,
-          width: '100%', maxWidth: 1280, margin: '0 auto',
-          flex: 1, display: 'flex',
-        }}>
-
-        {/* ── Notification cards — grouped together, right side, vertically centred ── */}
-        <div className="hidden md:flex" style={{
-          position: 'absolute', top: '50%', right: 32,
-          transform: 'translateY(-50%)', zIndex: 3,
-          flexDirection: 'column', gap: 12, width: 260,
-        }}>
-          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6, duration: 0.7, ease: [0.16,1,0.3,1] }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18,
-              background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)',
-              border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-                {[4,10,15,7,13,5,11,8,14,6,10,4].map((h, i) => (
-                  <div key={i} style={{ width: 2.5, height: h, background: T.rose, borderRadius: 2, opacity: 0.9 }} />
-                ))}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1 }}>Voice note</div>
-                <div style={{ fontSize: 11, color: T.muted, marginTop: 3 }}>0:28</div>
-              </div>
-              <div style={{
-                width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                border: `1.5px solid rgba(240,56,104,0.55)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: T.rose, fontSize: 10,
-              }}>▶</div>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.9, duration: 0.7, ease: [0.16,1,0.3,1] }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18,
-              background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)',
-              border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)',
-            }}>
-              <div style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>🧵</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: 4 }}>Stitch sent</div>
-                <div style={{ fontSize: 11, color: T.muted, lineHeight: 1.45 }}>Can't wait to hear your thoughts!</div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 1.2, duration: 0.7, ease: [0.16,1,0.3,1] }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18,
-              background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)',
-              border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)',
-            }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-              }}>♥</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: 4 }}>It's a match! 🎉</div>
-                <div style={{ fontSize: 11, color: T.muted, lineHeight: 1.45 }}>You and Alex liked each other</div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* ── Left content column (logo → copy → stats) ── */}
-        <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column',
-          maxWidth: 640,
-          paddingLeft: 'clamp(24px, 3vw, 48px)',
-          paddingRight: 'clamp(16px, 3vw, 40px)',
-        }}>
-
-          {/* Logo */}
-          <div style={{ paddingTop: 26 }}>
-            <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-              <img src="/icon.svg" alt="Mebley" style={{ width: 32, height: 32, borderRadius: '50%' }} />
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: '#fff' }}>Mebley</span>
-            </a>
-          </div>
-
-          {/* Centre copy */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 20, paddingBottom: 20 }}>
-            <Reveal>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: 7,
-                padding: '7px 16px', borderRadius: 100, marginBottom: 22,
-                border: `1px solid ${T.roseBorder}`, background: 'rgba(240,56,104,0.1)',
-                fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#ff90b4',
-              }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: T.rose, display: 'inline-block', boxShadow: '0 0 6px rgba(240,56,104,0.7)' }} />
-                Intentional dating, reimagined
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.07}>
-              <h1 style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(2.8rem, 5.5vw, 5rem)',
-                fontWeight: 800, lineHeight: 1.0,
-                letterSpacing: '-0.02em', color: '#fff',
-                margin: '0 0 20px',
-              }}>
-                Find your<br />
-                <span style={{
-                  background: `linear-gradient(118deg, #ff7dab 0%, ${T.rose} 45%, ${T.coral} 100%)`,
-                  WebkitBackgroundClip: 'text', backgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent', color: 'transparent',
-                }}>person.</span>
-              </h1>
-            </Reveal>
-
-            <Reveal delay={0.12}>
-              <p style={{ fontSize: 'clamp(14px,1.4vw,16px)', color: 'rgba(200,185,215,0.75)', lineHeight: 1.75, margin: '0 0 28px', maxWidth: 400 }}>
-                Thoughtful profiles, voice-first chemistry, and matches ranked by depth — not by who swiped most recently.
-              </p>
-            </Reveal>
-
-            <Reveal delay={0.17}>
-              <div style={{ display: 'flex', gap: 14, marginBottom: 28, flexWrap: 'wrap' }}>
-                <a href="/auth" style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '14px 30px', borderRadius: 100,
-                  background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`,
-                  boxShadow: '0 12px 32px rgba(240,56,104,0.42)',
-                  fontSize: 15, fontWeight: 700, color: '#fff', textDecoration: 'none',
-                  transition: 'opacity 0.15s, transform 0.15s',
-                }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '0.9'; el.style.transform = 'translateY(-2px)' }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '1'; el.style.transform = 'translateY(0)' }}>
-                  Start free →
-                </a>
-                <a href="#how" style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '14px 26px', borderRadius: 100,
-                  border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.06)',
-                  fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.82)', textDecoration: 'none',
-                  backdropFilter: 'blur(10px)', transition: 'all 0.15s',
-                }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.roseBorder; el.style.color = '#fff' }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.22)'; el.style.color = 'rgba(255,255,255,0.82)' }}>
-                  How it works
-                </a>
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.21}>
-              <div style={{ display: 'flex', gap: 'clamp(14px,2.5vw,28px)', flexWrap: 'wrap' }}>
-                {[
-                  { icon: '🛡️', text: 'Privacy-first' },
-                  { icon: '🌍', text: '40+ countries' },
-                  { icon: '⭐', text: '4.8 rated' },
-                  { icon: '🔒', text: 'Safe & secure' },
-                ].map(({ icon, text }) => (
-                  <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'rgba(200,180,215,0.65)' }}>
-                    <span style={{ fontSize: 14 }}>{icon}</span>{text}
-                  </div>
-                ))}
-              </div>
-            </Reveal>
-          </div>
-
-          {/* Stats pinned to bottom */}
-          <Reveal delay={0.26}>
-            <div style={{ display: 'flex', paddingBottom: 44 }}>
-              {STATS.map((s, i) => (
-                <div key={s.l} style={{
-                  paddingRight: i < STATS.length - 1 ? 'clamp(14px,2.5vw,32px)' : 0,
-                  borderRight: i < STATS.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                  marginRight: i < STATS.length - 1 ? 'clamp(14px,2.5vw,32px)' : 0,
-                }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.4rem,2.5vw,2rem)', fontWeight: 800, color: T.rose, lineHeight: 1 }}>{s.v}</div>
-                  <div style={{ fontSize: 'clamp(10px,1.1vw,12px)', color: 'rgba(180,155,200,0.5)', marginTop: 5, letterSpacing: '0.04em' }}>{s.l}</div>
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        </div>
-        </div>{/* end max-width wrapper */}
-      </section>
+      <HeroSection />
 
       {/* ────────── FEATURES ────────── */}
       <section id="features" style={{ position: 'relative', overflow: 'hidden', minHeight: 580 }}>
