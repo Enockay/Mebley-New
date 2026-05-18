@@ -260,170 +260,221 @@ export default function LandingPage() {
       </nav>
 
       {/* ────────── HERO ────────── */}
-      <section className="pt-20 md:pt-24" style={{
-        paddingBottom: 0,
-        position: 'relative',
-        overflow: 'hidden',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        background: `
-          radial-gradient(ellipse 90% 80% at -10% 0%, rgba(240,56,104,0.22) 0%, transparent 55%),
-          radial-gradient(ellipse 70% 70% at 110% -5%, rgba(100,55,210,0.18) 0%, transparent 52%),
-          radial-gradient(ellipse 50% 55% at 60% 110%, rgba(160,25,80,0.14) 0%, transparent 52%),
-          ${T.bg}
-        `,
+      <section style={{
+        position: 'relative', overflow: 'hidden',
+        minHeight: '100vh', background: '#000',
+        display: 'flex', flexDirection: 'column',
       }}>
-        {/* grid mesh */}
+        {/* Background photo */}
+        <img src="/hero-bg.png" alt=""
+          className="object-[75%_top] md:object-[center_top]"
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            objectFit: 'cover',
+          }} />
+        {/* Gradient — lighter so photo bleeds through behind text */}
         <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.022,
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)`,
-          backgroundSize: '72px 72px',
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to right, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.68) 18%, rgba(0,0,0,0.45) 35%, rgba(0,0,0,0.16) 55%, transparent 72%)',
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, transparent 16%, transparent 78%, rgba(0,0,0,0.28) 100%)',
         }} />
 
-        {/* Large decorative glow behind cards */}
+        {/* ── Max-width wrapper — centres all hero content like other sections ── */}
         <div style={{
-          position: 'absolute', top: '10%', right: '5%',
-          width: 520, height: 520, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(214,77,232,0.1) 0%, rgba(240,56,104,0.06) 40%, transparent 70%)',
-          pointerEvents: 'none', filter: 'blur(40px)',
-        }} />
+          position: 'relative', zIndex: 1,
+          width: '100%', maxWidth: 1280, margin: '0 auto',
+          flex: 1, display: 'flex',
+        }}>
 
-        <div className="px-4 sm:px-8 md:px-10 pt-0 md:pt-6" style={{ maxWidth: 1240, margin: '0 auto', position: 'relative', width: '100%' }}>
-          <div className="grid md:grid-cols-2 gap-10 md:gap-16" style={{ alignItems: 'center' }}>
-
-            {/* ── Copy ── */}
-            <div>
-              <Reveal>
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '7px 16px', borderRadius: 100,
-                  border: `1px solid ${T.roseBorder}`, background: 'rgba(240,56,104,0.09)',
-                  fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#ff90b4',
-                  marginBottom: 28,
-                }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.rose, display: 'inline-block', boxShadow: '0 0 6px rgba(240,56,104,0.7)' }} />
-                  Intentional dating, reimagined
-                </div>
-              </Reveal>
-
-              <Reveal delay={0.07}>
-                <h1 style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 'clamp(2rem, 6vw, 4rem)',
-                  fontWeight: 800,
-                  lineHeight: 1.03,
-                  letterSpacing: '-0.03em',
-                  color: '#ffffff',
-                  margin: '0 0 24px',
-                }}>
-                  Find your<br />
-                  <span style={{
-                    background: `linear-gradient(118deg, #ff7dab 0%, ${T.rose} 45%, ${T.coral} 100%)`,
-                    WebkitBackgroundClip: 'text', backgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent', color: 'transparent',
-                  }}>
-                    person.
-                  </span>
-                </h1>
-              </Reveal>
-
-              <Reveal delay={0.13}>
-                <p style={{ fontSize: 'clamp(15px, 1.5vw, 18px)', color: T.muted, lineHeight: 1.75, maxWidth: 500, margin: '0 0 40px' }}>
-                  Thoughtful profiles, voice-first chemistry, and matches ranked by depth — not by who swiped most recently.
-                </p>
-              </Reveal>
-
-              {/* ── Mobile profile preview ── */}
-              <Reveal delay={0.15}>
-                <div className="block md:hidden" style={{ marginBottom: 36 }}>
-                  <MobileHeroCard />
-                </div>
-              </Reveal>
-
-              <Reveal delay={0.18}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 36 }}>
-                  <a href="/auth" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                    padding: '15px 36px', borderRadius: 100,
-                    background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`,
-                    boxShadow: '0 16px 40px rgba(240,56,104,0.38)',
-                    fontSize: 15, fontWeight: 700, color: '#fff', textDecoration: 'none',
-                    transition: 'opacity 0.15s, transform 0.15s',
-                  }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '0.9'; el.style.transform = 'translateY(-2px)' }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '1'; el.style.transform = 'translateY(0)' }}>
-                    Start free →
-                  </a>
-                  <a href="#how" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                    padding: '15px 30px', borderRadius: 100,
-                    border: `1px solid rgba(255,255,255,0.14)`, background: 'rgba(255,255,255,0.05)',
-                    fontSize: 15, fontWeight: 500, color: T.muted, textDecoration: 'none',
-                    transition: 'all 0.15s',
-                  }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.roseBorder; el.style.color = T.text }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.14)'; el.style.color = T.muted }}>
-                    How it works
-                  </a>
-                </div>
-              </Reveal>
-
-              <Reveal delay={0.24}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 48 }}>
-                  {[
-                    { icon: '✓', text: 'Free to start' },
-                    { icon: '🌍', text: '40+ countries' },
-                    { icon: '★', text: '4.8 rated' },
-                    { icon: '🔒', text: 'Privacy-first' },
-                  ].map(({ icon, text }) => (
-                    <span key={text} style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      padding: '7px 14px', borderRadius: 100, fontSize: 12.5, fontWeight: 500,
-                      border: `1px solid rgba(255,255,255,0.09)`, background: 'rgba(255,255,255,0.04)',
-                      color: 'rgba(200,180,215,0.6)',
-                    }}>
-                      <span style={{ fontSize: 11 }}>{icon}</span>
-                      {text}
-                    </span>
-                  ))}
-                </div>
-              </Reveal>
-
-              {/* Stats row */}
-              <Reveal delay={0.28}>
-                <div style={{ display: 'flex', gap: 'clamp(16px, 4vw, 32px)', flexWrap: 'wrap' }}>
-                  {STATS.map(s => (
-                    <div key={s.l}>
-                      <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.55rem', fontWeight: 800, color: T.rose, lineHeight: 1 }}>{s.v}</div>
-                      <div style={{ fontSize: 11, color: T.faint, marginTop: 4, letterSpacing: '0.06em' }}>{s.l}</div>
-                    </div>
-                  ))}
-                </div>
-              </Reveal>
+        {/* ── Notification cards — grouped together, right side, vertically centred ── */}
+        <div className="hidden md:flex" style={{
+          position: 'absolute', top: '50%', right: 32,
+          transform: 'translateY(-50%)', zIndex: 3,
+          flexDirection: 'column', gap: 12, width: 260,
+        }}>
+          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6, duration: 0.7, ease: [0.16,1,0.3,1] }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18,
+              background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)',
+              border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                {[4,10,15,7,13,5,11,8,14,6,10,4].map((h, i) => (
+                  <div key={i} style={{ width: 2.5, height: h, background: T.rose, borderRadius: 2, opacity: 0.9 }} />
+                ))}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1 }}>Voice note</div>
+                <div style={{ fontSize: 11, color: T.muted, marginTop: 3 }}>0:28</div>
+              </div>
+              <div style={{
+                width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                border: `1.5px solid rgba(240,56,104,0.55)`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: T.rose, fontSize: 10,
+              }}>▶</div>
             </div>
+          </motion.div>
 
-            {/* ── Desktop card scene ── */}
-            <Reveal delay={0.1} className="hidden md:flex">
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
-                <div style={{ position: 'relative', width: '100%', maxWidth: 540, minHeight: 620 }}>
-                  <HeroCardScene />
-                </div>
+          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.9, duration: 0.7, ease: [0.16,1,0.3,1] }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18,
+              background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)',
+              border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)',
+            }}>
+              <div style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>🧵</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: 4 }}>Stitch sent</div>
+                <div style={{ fontSize: 11, color: T.muted, lineHeight: 1.45 }}>Can't wait to hear your thoughts!</div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1.2, duration: 0.7, ease: [0.16,1,0.3,1] }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18,
+              background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)',
+              border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)',
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+              }}>♥</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: 4 }}>It's a match! 🎉</div>
+                <div style={{ fontSize: 11, color: T.muted, lineHeight: 1.45 }}>You and Alex liked each other</div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* ── Left content column (logo → copy → stats) ── */}
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          maxWidth: 640,
+          paddingLeft: 'clamp(24px, 3vw, 48px)',
+          paddingRight: 'clamp(16px, 3vw, 40px)',
+        }}>
+
+          {/* Logo */}
+          <div style={{ paddingTop: 26 }}>
+            <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+              <img src="/icon.svg" alt="Mebley" style={{ width: 32, height: 32, borderRadius: '50%' }} />
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: '#fff' }}>Mebley</span>
+            </a>
+          </div>
+
+          {/* Centre copy */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 20, paddingBottom: 20 }}>
+            <Reveal>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '7px 16px', borderRadius: 100, marginBottom: 22,
+                border: `1px solid ${T.roseBorder}`, background: 'rgba(240,56,104,0.1)',
+                fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#ff90b4',
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: T.rose, display: 'inline-block', boxShadow: '0 0 6px rgba(240,56,104,0.7)' }} />
+                Intentional dating, reimagined
               </div>
             </Reveal>
 
-          </div>
-        </div>
+            <Reveal delay={0.07}>
+              <h1 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(2.8rem, 5.5vw, 5rem)',
+                fontWeight: 800, lineHeight: 1.0,
+                letterSpacing: '-0.02em', color: '#fff',
+                margin: '0 0 20px',
+              }}>
+                Find your<br />
+                <span style={{
+                  background: `linear-gradient(118deg, #ff7dab 0%, ${T.rose} 45%, ${T.coral} 100%)`,
+                  WebkitBackgroundClip: 'text', backgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent', color: 'transparent',
+                }}>person.</span>
+              </h1>
+            </Reveal>
 
-        {/* Bottom fade */}
-        <div style={{ height: 80, background: `linear-gradient(to bottom, transparent, ${T.bg})`, marginTop: 40 }} />
+            <Reveal delay={0.12}>
+              <p style={{ fontSize: 'clamp(14px,1.4vw,16px)', color: 'rgba(200,185,215,0.75)', lineHeight: 1.75, margin: '0 0 28px', maxWidth: 400 }}>
+                Thoughtful profiles, voice-first chemistry, and matches ranked by depth — not by who swiped most recently.
+              </p>
+            </Reveal>
+
+            <Reveal delay={0.17}>
+              <div style={{ display: 'flex', gap: 14, marginBottom: 28, flexWrap: 'wrap' }}>
+                <a href="/auth" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '14px 30px', borderRadius: 100,
+                  background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`,
+                  boxShadow: '0 12px 32px rgba(240,56,104,0.42)',
+                  fontSize: 15, fontWeight: 700, color: '#fff', textDecoration: 'none',
+                  transition: 'opacity 0.15s, transform 0.15s',
+                }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '0.9'; el.style.transform = 'translateY(-2px)' }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '1'; el.style.transform = 'translateY(0)' }}>
+                  Start free →
+                </a>
+                <a href="#how" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '14px 26px', borderRadius: 100,
+                  border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.06)',
+                  fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.82)', textDecoration: 'none',
+                  backdropFilter: 'blur(10px)', transition: 'all 0.15s',
+                }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.roseBorder; el.style.color = '#fff' }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.22)'; el.style.color = 'rgba(255,255,255,0.82)' }}>
+                  How it works
+                </a>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.21}>
+              <div style={{ display: 'flex', gap: 'clamp(14px,2.5vw,28px)', flexWrap: 'wrap' }}>
+                {[
+                  { icon: '🛡️', text: 'Privacy-first' },
+                  { icon: '🌍', text: '40+ countries' },
+                  { icon: '⭐', text: '4.8 rated' },
+                  { icon: '🔒', text: 'Safe & secure' },
+                ].map(({ icon, text }) => (
+                  <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'rgba(200,180,215,0.65)' }}>
+                    <span style={{ fontSize: 14 }}>{icon}</span>{text}
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+
+          {/* Stats pinned to bottom */}
+          <Reveal delay={0.26}>
+            <div style={{ display: 'flex', paddingBottom: 44 }}>
+              {STATS.map((s, i) => (
+                <div key={s.l} style={{
+                  paddingRight: i < STATS.length - 1 ? 'clamp(14px,2.5vw,32px)' : 0,
+                  borderRight: i < STATS.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                  marginRight: i < STATS.length - 1 ? 'clamp(14px,2.5vw,32px)' : 0,
+                }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.4rem,2.5vw,2rem)', fontWeight: 800, color: T.rose, lineHeight: 1 }}>{s.v}</div>
+                  <div style={{ fontSize: 'clamp(10px,1.1vw,12px)', color: 'rgba(180,155,200,0.5)', marginTop: 5, letterSpacing: '0.04em' }}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+        </div>{/* end max-width wrapper */}
       </section>
 
       {/* ────────── FEATURES ────────── */}
       <section id="features" style={{ position: 'relative', overflow: 'hidden', minHeight: 580 }}>
         <img src="/bg-features.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(6,4,18,0.97) 0%, rgba(6,4,18,0.82) 38%, rgba(6,4,18,0.35) 65%, transparent 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(6,4,18,0.78) 0%, rgba(6,4,18,0.55) 35%, rgba(6,4,18,0.18) 60%, transparent 80%)' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '72px 32px', display: 'grid', alignItems: 'center' }} className="md:grid-cols-2">
           <Reveal>
             <Label text="Features" />
@@ -570,7 +621,7 @@ export default function LandingPage() {
       </section>
 
       {/* ────────── CTA ────────── */}
-      <section style={{ position: 'relative', overflow: 'hidden', minHeight: 520, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <section style={{ position: 'relative', overflow: 'hidden', minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {/* Full-bleed photo */}
         <img
           src="/couple-5.jpg"
@@ -578,8 +629,8 @@ export default function LandingPage() {
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
         />
         {/* Multi-layer overlay for readability */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,7,26,0.55) 0%, rgba(9,7,26,0.72) 60%, rgba(9,7,26,0.92) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(240,56,104,0.12) 0%, transparent 70%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,7,26,0.18) 0%, rgba(9,7,26,0.38) 55%, rgba(9,7,26,0.72) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 55% at 50% 45%, rgba(9,7,26,0.52) 0%, transparent 100%)' }} />
 
         {/* Content */}
         <Reveal>
@@ -691,180 +742,3 @@ export default function LandingPage() {
   )
 }
 
-/* ── Shared photo tile ─────────────────────────────────────────────── */
-function PhotoTile({
-  src, position, size, rotate, floatY, floatDuration, floatDelay, entranceDelay, objectPosition = 'top', zIndex = 1, children,
-}: {
-  src: string; position: React.CSSProperties; size: { w: number | string; h: number | string };
-  rotate: number; floatY: [number, number]; floatDuration: number; floatDelay: number;
-  entranceDelay: number; objectPosition?: string; zIndex?: number; children?: React.ReactNode;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40, scale: 0.92 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.75, delay: entranceDelay, ease: [0.16, 1, 0.3, 1] }}
-      style={{ position: 'absolute', zIndex, transform: `rotate(${rotate}deg)`, ...position }}
-    >
-      <motion.div
-        animate={{ y: floatY }}
-        transition={{ duration: floatDuration, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut', delay: floatDelay }}
-        style={{
-          width: size.w, height: size.h, borderRadius: 22, overflow: 'hidden',
-          boxShadow: '0 28px 64px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.1)',
-          position: 'relative',
-        }}
-      >
-        <img src={src} alt="Couple" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(9,7,26,0.45) 0%, transparent 52%)' }} />
-        {children}
-      </motion.div>
-    </motion.div>
-  )
-}
-
-/* ── Mobile hero photo collage ─────────────────────────────────────── */
-function MobileHeroCard() {
-  return (
-    <div style={{ position: 'relative', width: '100%', maxWidth: 340, height: 310, margin: '0 auto' }}>
-
-      {/* Ambient glow */}
-      <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%,-50%)', width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,56,104,0.22) 0%, transparent 70%)', filter: 'blur(36px)', pointerEvents: 'none' }} />
-
-      {/* Main photo — large, slight left tilt */}
-      <PhotoTile src="/couple-2.jpg" position={{ top: 0, left: 0 }} size={{ w: 195, h: 260 }}
-        rotate={-4} floatY={[-7, 5]} floatDuration={3.6} floatDelay={0}
-        entranceDelay={0.15} objectPosition="top" zIndex={2} />
-
-      {/* Accent photo — right, counter-tilt */}
-      <PhotoTile src="/couple-4.jpg" position={{ top: 30, right: 0 }} size={{ w: 155, h: 200 }}
-        rotate={5} floatY={[6, -7]} floatDuration={4.0} floatDelay={0.5}
-        entranceDelay={0.3} objectPosition="top" zIndex={3} />
-
-      {/* Third photo — bottom center, peeking out */}
-      <PhotoTile src="/couple-1.jpg" position={{ bottom: 0, left: '50%' }} size={{ w: 150, h: 130 }}
-        rotate={-2} floatY={[-5, 6]} floatDuration={3.8} floatDelay={0.9}
-        entranceDelay={0.45} objectPosition="top" zIndex={1} />
-
-      {/* Match badge */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1.1, duration: 0.5, ease: [0.16,1,0.3,1] }}
-        style={{
-          position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10,
-          padding: '6px 13px', borderRadius: 100, whiteSpace: 'nowrap',
-          background: 'rgba(9,7,26,0.88)', backdropFilter: 'blur(14px)',
-          border: '1px solid rgba(240,56,104,0.38)',
-          fontSize: 11, fontWeight: 700, color: '#ff90b4',
-          display: 'flex', alignItems: 'center', gap: 5,
-          boxShadow: '0 6px 20px rgba(240,56,104,0.2)',
-        }}
-      >
-        ⚡ 94% match
-      </motion.div>
-
-      {/* Match toast */}
-      <motion.div
-        initial={{ opacity: 0, y: 10, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ delay: 1.5, duration: 0.5, ease: [0.16,1,0.3,1] }}
-        style={{
-          position: 'absolute', bottom: 8, right: 0, zIndex: 10,
-          display: 'flex', alignItems: 'center', gap: 7,
-          padding: '8px 12px', borderRadius: 13, whiteSpace: 'nowrap',
-          background: 'rgba(9,7,26,0.92)', backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(240,56,104,0.25)',
-          boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
-        }}
-      >
-        <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #f03868, #ff7a50)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>🎉</div>
-        <div>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: '#fff', lineHeight: 1 }}>It's a match!</div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Amara liked you back</div>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
-
-/* ── Hero photo collage (desktop) ──────────────────────────────────── */
-function HeroCardScene() {
-  return (
-    <div style={{ position: 'relative', width: 540, height: 630 }}>
-
-      {/* Ambient rose glow */}
-      <div style={{ position: 'absolute', top: '42%', left: '48%', transform: 'translate(-50%,-50%)', width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle, rgba(240,56,104,0.17) 0%, transparent 68%)', filter: 'blur(52px)', pointerEvents: 'none', zIndex: 0 }} />
-      {/* Purple accent glow */}
-      <div style={{ position: 'absolute', top: '15%', right: '10%', width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle, rgba(120,60,220,0.14) 0%, transparent 70%)', filter: 'blur(40px)', pointerEvents: 'none', zIndex: 0 }} />
-
-      {/* ── Photo 1: top-right landscape — African savanna sunset ── */}
-      <PhotoTile src="/couple-2.jpg" position={{ top: 0, right: 0 }} size={{ w: 295, h: 218 }}
-        rotate={4} floatY={[-8, 5]} floatDuration={3.4} floatDelay={0}
-        entranceDelay={0.15} objectPosition="top" zIndex={2}>
-        <div style={{
-          position: 'absolute', top: 13, left: 13,
-          padding: '5px 12px', borderRadius: 100,
-          background: 'rgba(9,7,26,0.75)', backdropFilter: 'blur(14px)',
-          border: '1px solid rgba(240,56,104,0.4)',
-          fontSize: 11, fontWeight: 700, color: '#ff90b4',
-          display: 'flex', alignItems: 'center', gap: 5,
-        }}>⚡ 94% match</div>
-      </PhotoTile>
-
-      {/* ── Photo 2: center-left portrait — NYC couple ── */}
-      <PhotoTile src="/couple-4.jpg" position={{ top: 110, left: 0 }} size={{ w: 216, h: 300 }}
-        rotate={-7} floatY={[7, -9]} floatDuration={4.0} floatDelay={0.45}
-        entranceDelay={0.28} objectPosition="top" zIndex={3} />
-
-      {/* ── Photo 3: center-right square — indoor warm couple ── */}
-      <PhotoTile src="/couple-3.jpg" position={{ top: 240, right: 22 }} size={{ w: 214, h: 214 }}
-        rotate={6} floatY={[-6, 7]} floatDuration={3.7} floatDelay={0.9}
-        entranceDelay={0.42} objectPosition="center" zIndex={2} />
-
-      {/* ── Photo 4: bottom-left landscape — Indian sunset couple ── */}
-      <PhotoTile src="/couple-1.jpg" position={{ bottom: 0, left: 58 }} size={{ w: 286, h: 208 }}
-        rotate={-3} floatY={[5, -7]} floatDuration={4.2} floatDelay={1.2}
-        entranceDelay={0.55} objectPosition="top" zIndex={4} />
-
-      {/* ── Floating "It's a match" toast ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 14, scale: 0.88 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ delay: 1.3, duration: 0.6, ease: [0.16,1,0.3,1] }}
-        style={{
-          position: 'absolute', bottom: 22, right: 14, zIndex: 10,
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '12px 16px', borderRadius: 16, whiteSpace: 'nowrap',
-          background: 'rgba(9,7,26,0.94)', backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(240,56,104,0.3)',
-          boxShadow: '0 20px 52px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05)',
-        }}
-      >
-        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #f03868, #ff7a50)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🎉</div>
-        <div>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', lineHeight: 1 }}>It's a match!</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.42)', marginTop: 3 }}>Amara liked you back</div>
-        </div>
-      </motion.div>
-
-      {/* ── Floating "Stitch sent" badge ── */}
-      <motion.div
-        initial={{ opacity: 0, x: -16, scale: 0.9 }}
-        animate={{ opacity: 1, x: 0, scale: 1 }}
-        transition={{ delay: 1.7, duration: 0.55, ease: [0.16,1,0.3,1] }}
-        style={{
-          position: 'absolute', top: 14, left: 60, zIndex: 10,
-          padding: '8px 15px', borderRadius: 12, whiteSpace: 'nowrap',
-          background: 'rgba(100,55,210,0.88)', backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(150,100,255,0.45)',
-          fontSize: 11.5, fontWeight: 700, color: '#e9d5ff',
-          boxShadow: '0 10px 28px rgba(100,55,210,0.5)',
-          display: 'flex', alignItems: 'center', gap: 6,
-        }}
-      >
-        🧵 Stitch sent
-      </motion.div>
-    </div>
-  )
-}

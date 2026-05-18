@@ -299,67 +299,80 @@ function BrandPanel() {
       flexDirection: 'column',
       justifyContent: 'space-between',
       padding: '40px 48px',
-      background: `
-        radial-gradient(ellipse 80% 60% at 10% 10%, rgba(240,56,104,0.2) 0%, transparent 55%),
-        radial-gradient(ellipse 60% 50% at 90% 5%, rgba(100,60,200,0.16) 0%, transparent 52%),
-        ${T.bg}
-      `,
-      borderRight: `1px solid ${T.border}`,
+      position: 'relative',
+      overflow: 'hidden',
     }}
     className="auth-brand-panel">
-      {/* logo */}
-      <div>
-        <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <img src="/icon.svg" alt="Mebley" style={{ height: 36, width: 36, borderRadius: '50%', objectFit: 'cover' }} />
-          <span style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: '#ff6b96' }}>Mebley</span>
-        </a>
-      </div>
+      {/* Background photo */}
+      <img src="/auth-bg.png" alt="" style={{
+        position: 'absolute', inset: 0, width: '100%', height: '100%',
+        objectFit: 'cover', objectPosition: 'center top',
+      }} />
+      {/* Gradient overlay: dark on left for text, fades to photo on right */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(to right, rgba(10,6,22,0.88) 0%, rgba(10,6,22,0.72) 35%, rgba(10,6,22,0.42) 62%, transparent 100%)',
+      }} />
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(to bottom, rgba(10,6,22,0.32) 0%, transparent 20%, transparent 75%, rgba(10,6,22,0.55) 100%)',
+      }} />
+      {/* All content sits above the photo */}
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+        {/* logo */}
+        <div>
+          <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+            <img src="/icon.svg" alt="Mebley" style={{ height: 36, width: 36, borderRadius: '50%', objectFit: 'cover' }} />
+            <span style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: '#ff6b96' }}>Mebley</span>
+          </a>
+        </div>
 
-      {/* headline */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 48 }}>
-        <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 52, fontWeight: 700, lineHeight: 1.04, margin: '0 0 16px', color: '#ffffff' }}>
-          Find your
-          <span style={{ display: 'block', background: 'linear-gradient(118deg, #ff6b96 0%, #f03868 40%, #ff7a50 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>
-            person.
-          </span>
-        </h1>
-        <p style={{ fontSize: 15, color: 'rgba(220,190,210,0.7)', lineHeight: 1.7, maxWidth: 280, margin: '0 0 40px' }}>
-          Thoughtful profiles, voice chemistry, and matches ranked by depth — not by who swiped last.
-        </p>
+        {/* headline */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 48 }}>
+          <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 52, fontWeight: 700, lineHeight: 1.04, margin: '0 0 16px', color: '#ffffff', textShadow: '0 2px 24px rgba(0,0,0,0.5)' }}>
+            Find your
+            <span style={{ display: 'block', background: 'linear-gradient(118deg, #ff6b96 0%, #f03868 40%, #ff7a50 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>
+              person.
+            </span>
+          </h1>
+          <p style={{ fontSize: 15, color: 'rgba(240,210,225,0.85)', lineHeight: 1.7, maxWidth: 280, margin: '0 0 40px', textShadow: '0 1px 12px rgba(0,0,0,0.6)' }}>
+            Thoughtful profiles, voice chemistry, and matches ranked by depth — not by who swiped last.
+          </p>
 
-        {/* mock profile card */}
-        <div style={{ background: 'linear-gradient(150deg, #bf4578 0%, #8b2556 55%, #4a0e38 100%)', borderRadius: 20, overflow: 'hidden', maxWidth: 240, boxShadow: '0 24px 60px rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ position: 'relative', height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontFamily: "'Fraunces',serif", fontSize: 64, fontWeight: 700, color: 'rgba(255,255,255,0.1)' }}>A</span>
-            <div style={{ position: 'absolute', inset: '0 0 0 0', background: 'linear-gradient(to top, rgba(12,3,22,0.88) 0%, transparent 60%)' }} />
-            <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', borderRadius: 20, padding: '3px 10px', fontSize: 10, fontWeight: 700, color: 'white', border: '1px solid rgba(255,255,255,0.28)' }}>94% match</div>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 14px' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>Amara, 27</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Nairobi · Kenya</div>
+          {/* mock profile card */}
+          <div style={{ background: 'linear-gradient(150deg, #bf4578 0%, #8b2556 55%, #4a0e38 100%)', borderRadius: 20, overflow: 'hidden', maxWidth: 240, boxShadow: '0 24px 60px rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <div style={{ position: 'relative', height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontFamily: "'Fraunces',serif", fontSize: 64, fontWeight: 700, color: 'rgba(255,255,255,0.1)' }}>A</span>
+              <div style={{ position: 'absolute', inset: '0 0 0 0', background: 'linear-gradient(to top, rgba(12,3,22,0.88) 0%, transparent 60%)' }} />
+              <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', borderRadius: 20, padding: '3px 10px', fontSize: 10, fontWeight: 700, color: 'white', border: '1px solid rgba(255,255,255,0.28)' }}>94% match</div>
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 14px' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>Amara, 27</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Nairobi · Kenya</div>
+              </div>
             </div>
-          </div>
-          <div style={{ padding: '12px 14px 14px', background: '#130620' }}>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {['Art lover', 'Traveller', 'Bookworm'].map(t => (
-                <span key={t} style={{ borderRadius: 20, padding: '3px 10px', fontSize: 10, color: 'rgba(255,255,255,0.58)', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>{t}</span>
-              ))}
+            <div style={{ padding: '12px 14px 14px', background: '#130620' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {['Art lover', 'Traveller', 'Bookworm'].map(t => (
+                  <span key={t} style={{ borderRadius: 20, padding: '3px 10px', fontSize: 10, color: 'rgba(255,255,255,0.58)', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>{t}</span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* trust */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {[
-          { icon: '🔒', text: 'End-to-end encrypted' },
-          { icon: '🌍', text: '40+ countries, one platform' },
-          { icon: '⭐', text: '4.8 rated experience' },
-        ].map(({ icon, text }) => (
-          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 14 }}>{icon}</span>
-            <span style={{ fontSize: 12, color: 'rgba(180,150,170,0.55)' }}>{text}</span>
-          </div>
-        ))}
+        {/* trust */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[
+            { icon: '🔒', text: 'End-to-end encrypted' },
+            { icon: '🌍', text: '40+ countries, one platform' },
+            { icon: '⭐', text: '4.8 rated experience' },
+          ].map(({ icon, text }) => (
+            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 14 }}>{icon}</span>
+              <span style={{ fontSize: 12, color: 'rgba(230,200,215,0.75)', textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>{text}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
