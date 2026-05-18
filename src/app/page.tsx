@@ -483,46 +483,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ────────── JOURNEY ────────── */}
-      <section style={{ position: 'relative', overflow: 'hidden', aspectRatio: '3/2', minHeight: 'clamp(340px, 55vw, 800px)' }}>
-        <img src="/journey-bg.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 60% at 50% 55%, rgba(6,4,18,0.72) 0%, rgba(6,4,18,0.35) 55%, transparent 80%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(6,4,18,0.45) 0%, transparent 30%, transparent 65%, rgba(6,4,18,0.55) 100%)' }} />
-
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 1, padding: 'clamp(20px, 4vw, 40px) clamp(16px, 5vw, 32px)', textAlign: 'center', boxSizing: 'border-box' }}>
-          <div style={{ width: '100%', maxWidth: 520 }}>
-            <Reveal>
-              <Label text="Where stories begin" />
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.4rem, 4vw, 3rem)', fontWeight: 800, color: '#fff', lineHeight: 1.08, margin: '0 0 clamp(10px, 2vw, 14px)', textShadow: '0 2px 24px rgba(0,0,0,0.6)' }}>
-                From first date to{' '}
-                <span style={{ background: `linear-gradient(118deg, #ff7dab, ${T.coral})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>forever.</span>
-              </h2>
-              <p style={{ fontSize: 'clamp(13px, 1.8vw, 15px)', color: 'rgba(230,210,240,0.75)', lineHeight: 1.7, maxWidth: '100%', margin: '0 auto clamp(18px, 3vw, 28px)', textShadow: '0 1px 12px rgba(0,0,0,0.5)' }}>
-                Every great love story starts with one intentional decision. Mebley is where that decision gets made — thoughtfully, beautifully, for keeps.
-              </p>
-              <div style={{ display: 'flex', gap: 'clamp(14px, 3.5vw, 32px)', flexWrap: 'wrap', marginBottom: 'clamp(18px, 3vw, 32px)', justifyContent: 'center' }}>
-                {[['500+', 'Couples matched'], ['78%', 'Reply rate'], ['40+', 'Countries']].map(([v, l]) => (
-                  <div key={l}>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', fontWeight: 800, color: T.rose, lineHeight: 1, textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>{v}</div>
-                    <div style={{ fontSize: 'clamp(9px, 1.1vw, 11px)', color: 'rgba(200,170,220,0.6)', marginTop: 3, letterSpacing: '0.06em' }}>{l}</div>
-                  </div>
-                ))}
-              </div>
-              <a href="/auth" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: 'clamp(10px, 1.5vw, 13px) clamp(22px, 3vw, 32px)', borderRadius: 100, fontSize: 'clamp(13px, 1.5vw, 14px)', fontWeight: 700, color: '#fff',
-                background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`,
-                boxShadow: '0 12px 36px rgba(240,56,104,0.45)',
-                textDecoration: 'none', transition: 'opacity 0.15s, transform 0.15s',
-              }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '0.9'; el.style.transform = 'translateY(-2px)' }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.opacity = '1'; el.style.transform = 'translateY(0)' }}>
-                Start your story →
-              </a>
-            </Reveal>
-          </div>
-        </div>
-      </section>
 
       {/* ────────── WHY MEBLEY ────────── */}
       <section style={{ position: 'relative', overflow: 'hidden', minHeight: 520 }}>
