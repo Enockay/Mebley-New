@@ -149,51 +149,6 @@ function HeroSection() {
         flex: 1, display: 'flex',
       }}>
 
-        {/* Notification cards */}
-        <div className="hidden md:flex" style={{
-          position: 'absolute', top: '50%', right: 32,
-          transform: 'translateY(-50%)', zIndex: 3,
-          flexDirection: 'column', gap: 12, width: 260,
-        }}>
-          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6, duration: 0.7, ease: [0.16,1,0.3,1] }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)', border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-                {[4,10,15,7,13,5,11,8,14,6,10,4].map((h, i) => (
-                  <div key={i} style={{ width: 2.5, height: h, background: T.rose, borderRadius: 2, opacity: 0.9 }} />
-                ))}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1 }}>Voice note</div>
-                <div style={{ fontSize: 11, color: T.muted, marginTop: 3 }}>0:28</div>
-              </div>
-              <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, border: `1.5px solid rgba(240,56,104,0.55)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.rose, fontSize: 10 }}>▶</div>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.9, duration: 0.7, ease: [0.16,1,0.3,1] }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)', border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)' }}>
-              <div style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>🧵</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: 4 }}>Stitch sent</div>
-                <div style={{ fontSize: 11, color: T.muted, lineHeight: 1.45 }}>Can't wait to hear your thoughts!</div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, x: 48 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 1.2, duration: 0.7, ease: [0.16,1,0.3,1] }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(8,4,18,0.92)', backdropFilter: 'blur(22px)', border: `1px solid rgba(240,56,104,0.3)`, boxShadow: '0 10px 36px rgba(0,0,0,0.65)' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>♥</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1, marginBottom: 4 }}>It's a match! 🎉</div>
-                <div style={{ fontSize: 11, color: T.muted, lineHeight: 1.45 }}>You and Alex liked each other</div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
         {/* Left content column */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: 640, paddingLeft: 'clamp(24px, 3vw, 48px)', paddingRight: 'clamp(16px, 3vw, 40px)' }}>
 
@@ -591,13 +546,13 @@ export default function LandingPage() {
       <section style={{ position: 'relative', overflow: 'hidden', minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {/* Full-bleed photo */}
         <img
-          src="/couple-5.jpg"
+          src="/couple-5.png"
           alt="Couple"
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
         />
         {/* Multi-layer overlay for readability */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,7,26,0.18) 0%, rgba(9,7,26,0.38) 55%, rgba(9,7,26,0.72) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 55% at 50% 45%, rgba(9,7,26,0.52) 0%, transparent 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,7,26,0.05) 0%, rgba(9,7,26,0.18) 55%, rgba(9,7,26,0.55) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 55% at 50% 45%, rgba(9,7,26,0.28) 0%, transparent 100%)' }} />
 
         {/* Content */}
         <Reveal>
