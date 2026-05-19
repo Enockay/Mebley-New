@@ -4,6 +4,7 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
+import { cdnUrl } from '@/lib/cdn'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Mail, Loader2, Eye, EyeOff, Lock,
@@ -304,7 +305,7 @@ function BrandPanel() {
     }}
     className="auth-brand-panel">
       {/* Background photo */}
-      <img src="/auth-bg.png" alt="" style={{
+      <img src={cdnUrl('/auth-bg.png')} alt="" style={{
         position: 'absolute', inset: 0, width: '100%', height: '100%',
         objectFit: 'cover', objectPosition: 'center top',
       }} />
@@ -322,7 +323,7 @@ function BrandPanel() {
         {/* logo */}
         <div>
           <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <img src="/icon.svg" alt="Mebley" style={{ height: 36, width: 36, borderRadius: '50%', objectFit: 'cover' }} />
+            <img src={cdnUrl('/icon.svg')} alt="Mebley" style={{ height: 36, width: 36, borderRadius: '50%', objectFit: 'cover' }} />
             <span style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: '#ff6b96' }}>Mebley</span>
           </a>
         </div>
@@ -653,7 +654,7 @@ function AuthPageInner() {
 
             {/* mobile logo */}
             <a href="/" className="auth-mobile-header" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-              <img src="/icon.svg" alt="Mebley" style={{ height: 28, width: 28, borderRadius: '50%' }} />
+              <img src={cdnUrl('/icon.svg')} alt="Mebley" style={{ height: 28, width: 28, borderRadius: '50%' }} />
               <span style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: '#ff6b96' }}>Mebley</span>
             </a>
           </div>

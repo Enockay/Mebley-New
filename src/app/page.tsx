@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import Script from 'next/script'
+import { cdnUrl } from '@/lib/cdn'
 
 /* ── Data ──────────────────────────────────────────────────────────── */
 const STATS = [
@@ -97,11 +98,11 @@ function GCard({ children, className = '' }: { children: React.ReactNode; classN
 
 /* ── Hero slideshow images ──────────────────────────────────────── */
 const HERO_SLIDES = [
-  { src: '/hero-bg.png',   mobile: 'object-[75%_top]', desktop: 'object-[center_top]' },
-  { src: '/hero-bg-2.png', mobile: 'object-[center_top]', desktop: 'object-[center_top]' },
-  { src: '/hero-bg-3.png', mobile: 'object-[center_top]', desktop: 'object-[center_top]' },
-  { src: '/hero-bg-4.png', mobile: 'object-[center_top]', desktop: 'object-[center_top]' },
-  { src: '/hero-bg-5.png', mobile: 'object-[center_top]', desktop: 'object-[center_top]' },
+  { src: cdnUrl('/hero-bg.png'),   mobile: 'object-[75%_top]', desktop: 'object-[right_top]' },
+  { src: cdnUrl('/hero-bg-2.png'), mobile: 'object-[70%_top]', desktop: 'object-[right_top]' },
+  { src: cdnUrl('/hero-bg-3.png'), mobile: 'object-[70%_top]', desktop: 'object-[right_top]' },
+  { src: cdnUrl('/hero-bg-4.png'), mobile: 'object-[70%_top]', desktop: 'object-[right_top]' },
+  { src: cdnUrl('/hero-bg-5.png'), mobile: 'object-[70%_top]', desktop: 'object-[right_top]' },
 ]
 
 function HeroSection() {
@@ -135,7 +136,7 @@ function HeroSection() {
       {/* Gradient overlays */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 1,
-        background: 'linear-gradient(to right, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.68) 18%, rgba(0,0,0,0.45) 35%, rgba(0,0,0,0.16) 55%, transparent 72%)',
+        background: 'linear-gradient(to right, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.88) 25%, rgba(0,0,0,0.65) 42%, rgba(0,0,0,0.22) 60%, transparent 78%)',
       }} />
       <div style={{
         position: 'absolute', inset: 0, zIndex: 1,
@@ -155,7 +156,7 @@ function HeroSection() {
           {/* Logo */}
           <div style={{ paddingTop: 26 }}>
             <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-              <img src="/icon.svg" alt="Mebley" style={{ width: 32, height: 32, borderRadius: '50%' }} />
+              <img src={cdnUrl('/icon.svg')} alt="Mebley" style={{ width: 32, height: 32, borderRadius: '50%' }} />
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: '#fff' }}>Mebley</span>
             </a>
           </div>
@@ -361,7 +362,7 @@ export default function LandingPage() {
       }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px' }}>
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <img src="/icon.svg" alt="Mebley" style={{ width: 32, height: 32, borderRadius: '50%' }} />
+            <img src={cdnUrl('/icon.svg')} alt="Mebley" style={{ width: 32, height: 32, borderRadius: '50%' }} />
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: '#fff' }}>Mebley</span>
           </a>
 
@@ -395,7 +396,7 @@ export default function LandingPage() {
 
       {/* ────────── FEATURES ────────── */}
       <section id="features" style={{ position: 'relative', overflow: 'hidden', minHeight: 580 }}>
-        <img src="/bg-features.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }} />
+        <img src={cdnUrl('/bg-features.jpg')} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'right top' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(6,4,18,0.78) 0%, rgba(6,4,18,0.55) 35%, rgba(6,4,18,0.18) 60%, transparent 80%)' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '72px 32px', display: 'grid', alignItems: 'center' }} className="md:grid-cols-2">
           <Reveal>
@@ -459,7 +460,7 @@ export default function LandingPage() {
 
       {/* ────────── WHY MEBLEY ────────── */}
       <section style={{ position: 'relative', overflow: 'hidden', minHeight: 520 }}>
-        <img src="/bg-why.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
+        <img src={cdnUrl('/bg-why.jpg')} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'right 30%' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(6,4,18,0.97) 0%, rgba(6,4,18,0.82) 38%, rgba(6,4,18,0.35) 65%, transparent 100%)' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '72px 32px', display: 'grid', alignItems: 'center' }} className="md:grid-cols-2">
           <Reveal>
@@ -543,20 +544,20 @@ export default function LandingPage() {
       </section>
 
       {/* ────────── CTA ────────── */}
-      <section style={{ position: 'relative', overflow: 'hidden', minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {/* Full-bleed photo */}
+      <section style={{ position: 'relative', overflow: 'hidden', minHeight: '80vh', display: 'flex', alignItems: 'center' }}>
+        {/* Full-bleed photo — couple anchored to the right */}
         <img
-          src="/couple-5.png"
+          src={cdnUrl('/couple-5.png')}
           alt="Couple"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'right top' }}
         />
-        {/* Multi-layer overlay for readability */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,7,26,0.05) 0%, rgba(9,7,26,0.18) 55%, rgba(9,7,26,0.55) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 55% at 50% 45%, rgba(9,7,26,0.28) 0%, transparent 100%)' }} />
+        {/* Left-side dark gradient so text is readable, right shows couple */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,7,26,0.97) 0%, rgba(9,7,26,0.88) 28%, rgba(9,7,26,0.60) 48%, rgba(9,7,26,0.18) 68%, transparent 85%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,7,26,0.15) 0%, transparent 20%, transparent 75%, rgba(9,7,26,0.45) 100%)' }} />
 
-        {/* Content */}
+        {/* Content — left-aligned to stay in the dark zone */}
         <Reveal>
-          <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '72px 24px', maxWidth: 680, margin: '0 auto' }}>
+          <div style={{ position: 'relative', zIndex: 1, textAlign: 'left', padding: '72px 24px', maxWidth: 560, marginLeft: 'clamp(24px, 6vw, 120px)' }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 14px', borderRadius: 100, marginBottom: 22,
@@ -574,10 +575,10 @@ export default function LandingPage() {
             }}>
               Your person is already here.
             </h2>
-            <p style={{ fontSize: 16, color: 'rgba(240,225,245,0.72)', maxWidth: 400, margin: '0 auto 40px', lineHeight: 1.75 }}>
+            <p style={{ fontSize: 16, color: 'rgba(240,225,245,0.72)', maxWidth: 400, margin: '0 0 40px', lineHeight: 1.75 }}>
               Join thousands building something real — one intentional connection at a time.
             </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-start', flexWrap: 'wrap' }}>
               <a href="/auth" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 padding: '15px 42px', borderRadius: 100, fontSize: 15, fontWeight: 700, color: '#fff',
@@ -611,7 +612,7 @@ export default function LandingPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 40, paddingBottom: 40 }}>
             <div>
               <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 12 }}>
-                <img src="/icon.svg" alt="Mebley" style={{ width: 28, height: 28, borderRadius: '50%' }} />
+                <img src={cdnUrl('/icon.svg')} alt="Mebley" style={{ width: 28, height: 28, borderRadius: '50%' }} />
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: '#fff' }}>Mebley</span>
               </a>
               <p style={{ fontSize: 13.5, color: T.faint, maxWidth: 200, lineHeight: 1.65 }}>
