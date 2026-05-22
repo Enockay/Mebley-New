@@ -27,6 +27,24 @@ export async function GET(request: NextRequest) {
       tier: string | null
       last_active: string | null
       credit_balance: number | null
+      bio: string | null
+      gender: string | null
+      age_range: string | null
+      location: string | null
+      nationality: string | null
+      interests: string[]
+      looking_for: string[]
+      photos: unknown
+      prompts: unknown
+      profile_completeness: number | null
+      visibility: string | null
+      visible: boolean | null
+      gender_preference: string[] | null
+      plan: string | null
+      plan_expires: string | null
+      likes_received: string
+      likes_sent: string
+      matches_count: string
     }
 
     const baseSelect = `
@@ -40,7 +58,25 @@ export async function GET(request: NextRequest) {
         p.username,
         p.tier,
         p.last_active,
-        cw.balance AS credit_balance
+        cw.balance AS credit_balance,
+        p.bio,
+        p.gender,
+        p.age_range,
+        p.location,
+        p.nationality,
+        COALESCE(p.interests, '{}') AS interests,
+        COALESCE(p.looking_for, '{}') AS looking_for,
+        COALESCE(p.photos, '[]'::jsonb) AS photos,
+        COALESCE(p.prompts, '[]'::jsonb) AS prompts,
+        p.profile_completeness,
+        p.visibility,
+        p.visible,
+        p.gender_preference,
+        p.plan,
+        p.plan_expires,
+        (SELECT COUNT(*)::text FROM likes WHERE likee_id = u.id) AS likes_received,
+        (SELECT COUNT(*)::text FROM likes WHERE liker_id = u.id) AS likes_sent,
+        (SELECT COUNT(*)::text FROM matches WHERE user1_id = u.id OR user2_id = u.id) AS matches_count
       FROM app_users u
       LEFT JOIN profiles p ON p.id = u.id
       LEFT JOIN credit_wallets cw ON cw.user_id = u.id
@@ -87,7 +123,14 @@ export async function GET(request: NextRequest) {
       total = parseInt(countRes.rows[0]?.count ?? '0', 10)
     }
 
-    return NextResponse.json({ users, total, limit, offset })
+    const normalized = users.map((u) => ({
+      ...u,
+      likes_received: parseInt(u.likes_received ?? '0', 10),
+      likes_sent: parseInt(u.likes_sent ?? '0', 10),
+      matches_count: parseInt(u.matches_count ?? '0', 10),
+    }))
+
+    return NextResponse.json({ users: normalized, total, limit, offset })
   } catch (error) {
     console.error('[admin/users] GET error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Users } from 'lucide-react'
+import { Users, Heart, Zap, Star, MapPin, Globe, Eye, EyeOff } from 'lucide-react'
 import type { AdminUser } from '@/lib/admin-users-api'
 import { fetchAdminUsers, setAdminUserStatus } from '@/lib/admin-users-api'
 import AdminPageHeader from '@/components/Admin/AdminPageHeader'
@@ -66,6 +66,36 @@ function TierBadge({ tier }: { tier: string | null }) {
     >
       {t}
     </span>
+  )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(240,232,244,0.4)' }}>
+      {children}
+    </p>
+  )
+}
+
+function StatChip({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number | string; color: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <span style={{ color, display: 'flex' }}>{icon}</span>
+      <span style={{ fontSize: 11, color: 'rgba(240,232,244,0.5)' }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#f0e8f4' }}>{value}</span>
+    </div>
+  )
+}
+
+function TagList({ tags, color }: { tags: string[]; color: string }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+      {tags.map((t) => (
+        <span key={t} style={{ fontSize: 11, fontWeight: 600, borderRadius: 999, padding: '3px 9px', background: `${color}22`, color, border: `1px solid ${color}44` }}>
+          {t}
+        </span>
+      ))}
+    </div>
   )
 }
 
@@ -358,21 +388,14 @@ export default function AdminUsersPanel() {
                   border: '1px solid rgba(255,255,255,0.1)',
                   background: 'rgba(255,255,255,0.03)',
                   padding: 18,
+                  overflowY: 'auto',
+                  maxHeight: '80vh',
                 }}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    marginBottom: 16,
-                  }}
-                >
+                {/* Header row */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
                   <div>
-                    <div
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
-                    >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <h3 style={{ margin: 0, fontSize: 15, color: '#ffffff' }}>
                         {selected.full_name || '(no name)'}
                       </h3>
@@ -385,18 +408,13 @@ export default function AdminUsersPanel() {
                       </p>
                     )}
                   </div>
-
                   <button
                     onClick={handleStatusToggle}
                     disabled={actionBusy}
                     style={{
                       borderRadius: 10,
-                      border: selected.is_active
-                        ? '1px solid rgba(239,68,68,0.5)'
-                        : '1px solid rgba(34,197,94,0.5)',
-                      background: selected.is_active
-                        ? 'rgba(239,68,68,0.14)'
-                        : 'rgba(34,197,94,0.14)',
+                      border: selected.is_active ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(34,197,94,0.5)',
+                      background: selected.is_active ? 'rgba(239,68,68,0.14)' : 'rgba(34,197,94,0.14)',
                       color: selected.is_active ? '#fca5a5' : '#86efac',
                       padding: '8px 14px',
                       fontSize: 13,
@@ -411,30 +429,51 @@ export default function AdminUsersPanel() {
                 </div>
 
                 {feedback && (
-                  <div
-                    style={{
-                      marginBottom: 14,
-                      padding: '10px 12px',
-                      borderRadius: 10,
-                      fontSize: 13,
-                      background: feedback.ok
-                        ? 'rgba(34,197,94,0.1)'
-                        : 'rgba(239,68,68,0.12)',
-                      border: `1px solid ${feedback.ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
-                      color: feedback.ok ? '#86efac' : '#fca5a5',
-                    }}
-                  >
+                  <div style={{ marginBottom: 14, padding: '10px 12px', borderRadius: 10, fontSize: 13, background: feedback.ok ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.12)', border: `1px solid ${feedback.ok ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, color: feedback.ok ? '#86efac' : '#fca5a5' }}>
                     {feedback.msg}
                   </div>
                 )}
 
-                <div style={{ display: 'grid', gap: 0 }}>
+                {/* Profile photos */}
+                {selected.photos?.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <SectionLabel>Photos</SectionLabel>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                      {selected.photos.map((ph, i) => (
+                        <a key={i} href={ph.url} target="_blank" rel="noreferrer" style={{ display: 'block', flexShrink: 0 }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={ph.url}
+                            alt={`Photo ${i + 1}`}
+                            style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)' }}
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Stats row */}
+                <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                  <StatChip icon={<Heart size={13} />} label="Likes received" value={selected.likes_received} color="#f43f5e" />
+                  <StatChip icon={<Zap size={13} />} label="Likes sent" value={selected.likes_sent} color="#f97316" />
+                  <StatChip icon={<Star size={13} />} label="Matches" value={selected.matches_count} color="#a855f7" />
+                  {selected.profile_completeness != null && (
+                    <StatChip icon={<Eye size={13} />} label="Profile %" value={`${selected.profile_completeness}%`} color="#22d3ee" />
+                  )}
+                </div>
+
+                {/* Account info */}
+                <SectionLabel>Account</SectionLabel>
+                <div style={{ display: 'grid', gap: 0, marginBottom: 14 }}>
                   {([
                     ['Email', selected.email],
                     ['Joined', formatDate(selected.created_at)],
                     ['Last active', timeAgo(selected.last_active)],
                     ['Credits', selected.credit_balance != null ? selected.credit_balance.toLocaleString() : '—'],
                     ['Email verified', selected.email_verified ? 'Yes' : 'No'],
+                    ['Plan', selected.plan ?? 'free'],
+                    ['Plan expires', formatDate(selected.plan_expires)],
                   ] as [string, string][]).map(([label, value]) => (
                     <div key={label} style={cellStyle}>
                       <span style={labelStyle}>{label}</span>
@@ -443,9 +482,81 @@ export default function AdminUsersPanel() {
                   ))}
                 </div>
 
-                <p
-                  style={{ marginTop: 12, fontSize: 11, color: 'rgba(240,232,244,0.3)', wordBreak: 'break-all' }}
-                >
+                {/* Profile info */}
+                <SectionLabel>Profile</SectionLabel>
+                <div style={{ display: 'grid', gap: 0, marginBottom: 14 }}>
+                  {[
+                    ['Gender', selected.gender],
+                    ['Age range', selected.age_range],
+                    ['Location', selected.location],
+                    ['Nationality', selected.nationality],
+                    ['Visibility', selected.visibility],
+                    ['Visible', selected.visible != null ? (selected.visible ? 'Yes' : 'No') : null],
+                  ].filter(([, v]) => v != null).map(([label, value]) => (
+                    <div key={label as string} style={cellStyle}>
+                      <span style={labelStyle}>{label}</span>
+                      <span style={{ ...valueStyle, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        {label === 'Visible' && (value === 'Yes'
+                          ? <Eye size={12} color="#86efac" />
+                          : <EyeOff size={12} color="#fca5a5" />)}
+                        {label === 'Location' && <MapPin size={12} color="rgba(240,232,244,0.5)" />}
+                        {label === 'Nationality' && <Globe size={12} color="rgba(240,232,244,0.5)" />}
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bio */}
+                {selected.bio && (
+                  <div style={{ marginBottom: 14 }}>
+                    <SectionLabel>Bio</SectionLabel>
+                    <p style={{ margin: '6px 0 0', fontSize: 13, color: 'rgba(240,232,244,0.8)', lineHeight: 1.5, background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      {selected.bio}
+                    </p>
+                  </div>
+                )}
+
+                {/* Looking for */}
+                {selected.looking_for?.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <SectionLabel>Looking for</SectionLabel>
+                    <TagList tags={selected.looking_for} color="#f43f5e" />
+                  </div>
+                )}
+
+                {/* Gender preference */}
+                {(selected.gender_preference?.length ?? 0) > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <SectionLabel>Gender preference</SectionLabel>
+                    <TagList tags={selected.gender_preference!} color="#a855f7" />
+                  </div>
+                )}
+
+                {/* Interests */}
+                {selected.interests?.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <SectionLabel>Interests</SectionLabel>
+                    <TagList tags={selected.interests} color="#22d3ee" />
+                  </div>
+                )}
+
+                {/* Prompts */}
+                {selected.prompts?.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <SectionLabel>Prompts</SectionLabel>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
+                      {selected.prompts.map((pr, i) => (
+                        <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          <p style={{ margin: 0, fontSize: 11, color: 'rgba(240,232,244,0.45)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{pr.question}</p>
+                          <p style={{ margin: '3px 0 0', fontSize: 13, color: '#f0e8f4', lineHeight: 1.4 }}>{pr.answer}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p style={{ marginTop: 12, fontSize: 11, color: 'rgba(240,232,244,0.3)', wordBreak: 'break-all' }}>
                   ID: <span style={{ fontFamily: 'ui-monospace, monospace' }}>{selected.id}</span>
                 </p>
               </div>

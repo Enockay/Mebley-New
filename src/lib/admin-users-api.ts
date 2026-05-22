@@ -9,6 +9,26 @@ export type AdminUser = {
   tier: string | null
   last_active: string | null
   credit_balance: number | null
+  // profile fields
+  bio: string | null
+  gender: string | null
+  age_range: string | null
+  location: string | null
+  nationality: string | null
+  interests: string[]
+  looking_for: string[]
+  photos: { url: string }[]
+  prompts: { question: string; answer: string }[]
+  profile_completeness: number | null
+  visibility: string | null
+  visible: boolean | null
+  gender_preference: string[] | null
+  plan: string | null
+  plan_expires: string | null
+  // stats
+  likes_received: number
+  likes_sent: number
+  matches_count: number
 }
 
 type UsersResponse = {
