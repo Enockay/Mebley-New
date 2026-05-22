@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import type {} from 'react'
 import Script from 'next/script'
 import { cdnUrl } from '@/lib/cdn'
 
@@ -96,42 +96,21 @@ function GCard({ children, className = '' }: { children: React.ReactNode; classN
   )
 }
 
-/* ── Hero slideshow images ──────────────────────────────────────── */
-const HERO_SLIDES = [
-  { src: cdnUrl('/hero-bg.png'),   mobile: 'object-[75%_top]', desktop: 'object-[right_top]' },
-  { src: cdnUrl('/hero-bg-2.png'), mobile: 'object-[70%_top]', desktop: 'object-[right_top]' },
-  { src: cdnUrl('/hero-bg-3.png'), mobile: 'object-[70%_top]', desktop: 'object-[right_top]' },
-  { src: cdnUrl('/hero-bg-4.png'), mobile: 'object-[70%_top]', desktop: 'object-[right_top]' },
-  { src: cdnUrl('/hero-bg-5.png'), mobile: 'object-[70%_top]', desktop: 'object-[right_top]' },
-]
-
 function HeroSection() {
-  const [idx, setIdx] = useState(0)
-
-  useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % HERO_SLIDES.length), 6000)
-    return () => clearInterval(t)
-  }, [])
-
   return (
     <section style={{
       position: 'relative', overflow: 'hidden',
       minHeight: '100vh', background: '#000',
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* Slideshow — all images stacked, active one fades in */}
-      {HERO_SLIDES.map((slide, i) => (
-        <img key={slide.src} src={slide.src} alt=""
-          className={`${slide.mobile} md:${slide.desktop}`}
-          style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%',
-            objectFit: 'cover',
-            opacity: i === idx ? 1 : 0,
-            transition: 'opacity 2s ease-in-out',
-            zIndex: 0,
-          }}
-        />
-      ))}
+      {/* Static hero image */}
+      <img src={cdnUrl('/hero-bg.png')} alt=""
+        className="object-[75%_top] md:object-[right_top]"
+        style={{
+          position: 'absolute', inset: 0, width: '100%', height: '100%',
+          objectFit: 'cover', zIndex: 0,
+        }}
+      />
 
       {/* Gradient overlays */}
       <div style={{
@@ -142,6 +121,8 @@ function HeroSection() {
         position: 'absolute', inset: 0, zIndex: 1,
         background: 'linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, transparent 16%, transparent 78%, rgba(0,0,0,0.28) 100%)',
       }} />
+      {/* Mobile: full overlay so text stays readable over the photo */}
+      <div className="md:hidden" style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'rgba(0,0,0,0.52)' }} />
 
       {/* ── Max-width wrapper ── */}
       <div style={{
@@ -151,7 +132,7 @@ function HeroSection() {
       }}>
 
         {/* Left content column */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: 640, paddingLeft: 'clamp(24px, 3vw, 48px)', paddingRight: 'clamp(16px, 3vw, 40px)' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 640, paddingLeft: 'clamp(20px, 3vw, 48px)', paddingRight: 'clamp(20px, 3vw, 40px)' }}>
 
           {/* Logo */}
           <div style={{ paddingTop: 26 }}>
@@ -459,29 +440,37 @@ export default function LandingPage() {
 
 
       {/* ────────── WHY MEBLEY ────────── */}
-      <section style={{ position: 'relative', overflow: 'hidden', minHeight: 520 }}>
-        <img src={cdnUrl('/bg-why.jpg')} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'right 30%' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(6,4,18,0.97) 0%, rgba(6,4,18,0.82) 38%, rgba(6,4,18,0.35) 65%, transparent 100%)' }} />
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '72px 32px', display: 'grid', alignItems: 'center' }} className="md:grid-cols-2">
+      <section style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Background image — content in flow defines section height */}
+        <img src={cdnUrl('/hero-bg-5.png')} alt=""
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'right 30%' }} />
+        {/* Desktop gradient: left side dark, right fades to image */}
+        <div className="hidden md:block" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(6,4,18,0.97) 0%, rgba(6,4,18,0.82) 38%, rgba(6,4,18,0.35) 65%, transparent 100%)' }} />
+        {/* Mobile gradient: full dark overlay so text is always readable */}
+        <div className="md:hidden" style={{ position: 'absolute', inset: 0, background: 'rgba(6,4,18,0.82)' }} />
+        {/* Content in normal flow — defines section height on all screen sizes */}
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: 'clamp(48px, 8vw, 72px) clamp(20px, 4vw, 32px)' }}>
           <Reveal>
-            <Label text="Why Mebley" />
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 800, color: '#fff', lineHeight: 1.08, margin: '0 0 16px' }}>
-              Real love starts with{' '}
-              <span style={{ background: `linear-gradient(118deg, #ff7dab, ${T.coral})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>real intent.</span>
-            </h2>
-            <p style={{ fontSize: 14.5, color: 'rgba(200,175,215,0.6)', lineHeight: 1.7, maxWidth: 400, margin: '0 0 32px' }}>
-              Mebley is built for people who are done with games — and ready for something genuine.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
-              {VALUES.map((v) => (
-                <div key={v.title} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 13, flexShrink: 0, background: 'rgba(240,56,104,0.15)', border: '1px solid rgba(240,56,104,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{v.icon}</div>
-                  <div>
-                    <div style={{ fontSize: 14.5, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{v.title}</div>
-                    <div style={{ fontSize: 13, color: 'rgba(180,150,200,0.58)', lineHeight: 1.55 }}>{v.desc}</div>
+            <div style={{ maxWidth: 520 }}>
+              <Label text="Why Mebley" />
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', fontWeight: 800, color: '#fff', lineHeight: 1.08, margin: '0 0 16px' }}>
+                Real love starts with{' '}
+                <span style={{ background: `linear-gradient(118deg, #ff7dab, ${T.coral})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>real intent.</span>
+              </h2>
+              <p style={{ fontSize: 'clamp(13px, 1.4vw, 14.5px)', color: 'rgba(200,175,215,0.6)', lineHeight: 1.7, margin: '0 0 32px' }}>
+                Mebley is built for people who are done with games — and ready for something genuine.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+                {VALUES.map((v) => (
+                  <div key={v.title} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 13, flexShrink: 0, background: 'rgba(240,56,104,0.15)', border: '1px solid rgba(240,56,104,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{v.icon}</div>
+                    <div>
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{v.title}</div>
+                      <div style={{ fontSize: 13, color: 'rgba(180,150,200,0.58)', lineHeight: 1.55 }}>{v.desc}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </Reveal>
         </div>
@@ -544,20 +533,22 @@ export default function LandingPage() {
       </section>
 
       {/* ────────── CTA ────────── */}
-      <section style={{ position: 'relative', overflow: 'hidden', minHeight: '80vh', display: 'flex', alignItems: 'center' }}>
-        {/* Full-bleed photo — couple anchored to the right */}
+      <section style={{ position: 'relative', overflow: 'hidden', minHeight: 'clamp(520px, 80vh, 900px)', display: 'flex', alignItems: 'center' }}>
+        {/* Full-bleed photo */}
         <img
-          src={cdnUrl('/couple-5.png')}
+          src={cdnUrl('/hero-bg-4.png')}
           alt="Couple"
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'right top' }}
         />
-        {/* Left-side dark gradient so text is readable, right shows couple */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,7,26,0.97) 0%, rgba(9,7,26,0.88) 28%, rgba(9,7,26,0.60) 48%, rgba(9,7,26,0.18) 68%, transparent 85%)' }} />
+        {/* Desktop: left-to-right gradient */}
+        <div className="hidden md:block" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,7,26,0.97) 0%, rgba(9,7,26,0.88) 28%, rgba(9,7,26,0.60) 48%, rgba(9,7,26,0.18) 68%, transparent 85%)' }} />
+        {/* Mobile: full dark overlay */}
+        <div className="md:hidden" style={{ position: 'absolute', inset: 0, background: 'rgba(9,7,26,0.80)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(9,7,26,0.15) 0%, transparent 20%, transparent 75%, rgba(9,7,26,0.45) 100%)' }} />
 
-        {/* Content — left-aligned to stay in the dark zone */}
+        {/* Content */}
         <Reveal>
-          <div style={{ position: 'relative', zIndex: 1, textAlign: 'left', padding: '72px 24px', maxWidth: 560, marginLeft: 'clamp(24px, 6vw, 120px)' }}>
+          <div style={{ position: 'relative', zIndex: 1, textAlign: 'left', padding: 'clamp(48px, 8vw, 72px) clamp(20px, 4vw, 24px)', maxWidth: 560, marginLeft: 'clamp(20px, 6vw, 120px)' }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 14px', borderRadius: 100, marginBottom: 22,

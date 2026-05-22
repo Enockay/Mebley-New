@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
       photos: unknown
       prompts: unknown
       profile_completeness: number | null
-      visibility: string | null
       visible: boolean | null
       gender_preference: string[] | null
       plan: string | null
@@ -69,7 +68,6 @@ export async function GET(request: NextRequest) {
         COALESCE(p.photos, '{}'::jsonb[]) AS photos,
         COALESCE(p.prompts, '{}'::jsonb[]) AS prompts,
         p.profile_completeness,
-        p.visibility,
         p.visible,
         p.gender_preference,
         p.plan,

@@ -69,6 +69,29 @@ function TierBadge({ tier }: { tier: string | null }) {
   )
 }
 
+function Avatar({ photos, name, size = 36 }: { photos: { url: string }[]; name: string | null; size?: number }) {
+  const url = photos?.[0]?.url
+  const initials = (name ?? '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+  return url ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt={name ?? ''}
+      style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1.5px solid rgba(255,255,255,0.12)' }}
+    />
+  ) : (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: 'linear-gradient(135deg, rgba(240,56,104,0.4), rgba(255,122,80,0.4))',
+      border: '1.5px solid rgba(240,56,104,0.3)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: Math.round(size * 0.36), fontWeight: 700, color: '#fff',
+    }}>
+      {initials}
+    </div>
+  )
+}
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p style={{ margin: 0, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(240,232,244,0.4)' }}>
@@ -268,10 +291,12 @@ export default function AdminUsersPanel() {
                       key={u.id}
                       onClick={() => handleSelect(u)}
                       style={{
-                        display: 'block',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
                         width: '100%',
                         textAlign: 'left',
-                        padding: '11px 14px',
+                        padding: '10px 14px',
                         background: isSelected ? 'rgba(240,56,104,0.12)' : 'transparent',
                         borderBottom: '1px solid rgba(255,255,255,0.07)',
                         cursor: 'pointer',
@@ -279,43 +304,21 @@ export default function AdminUsersPanel() {
                         borderLeft: isSelected ? '3px solid rgba(240,56,104,0.8)' : '3px solid transparent',
                       }}
                     >
-                      <div
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: '#f0e8f4',
-                            flex: 1,
-                            minWidth: 0,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {u.email}
-                        </span>
-                        <StatusBadge active={u.is_active} />
-                      </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: 7,
-                          marginTop: 4,
-                          alignItems: 'center',
-                          flexWrap: 'wrap',
-                        }}
-                      >
-                        {u.username && (
-                          <span style={{ fontSize: 11, color: 'rgba(240,232,244,0.5)' }}>
-                            @{u.username}
+                      <Avatar photos={u.photos} name={u.full_name} size={36} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#f0e8f4', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {u.email}
                           </span>
-                        )}
-                        <TierBadge tier={u.tier} />
-                        <span style={{ fontSize: 11, color: 'rgba(240,232,244,0.38)' }}>
-                          {formatDate(u.created_at)}
-                        </span>
+                          <StatusBadge active={u.is_active} />
+                        </div>
+                        <div style={{ display: 'flex', gap: 7, marginTop: 3, alignItems: 'center', flexWrap: 'wrap' }}>
+                          {u.username && (
+                            <span style={{ fontSize: 11, color: 'rgba(240,232,244,0.5)' }}>@{u.username}</span>
+                          )}
+                          <TierBadge tier={u.tier} />
+                          <span style={{ fontSize: 11, color: 'rgba(240,232,244,0.38)' }}>{formatDate(u.created_at)}</span>
+                        </div>
                       </div>
                     </button>
                   )
@@ -394,19 +397,22 @@ export default function AdminUsersPanel() {
               >
                 {/* Header row */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <h3 style={{ margin: 0, fontSize: 15, color: '#ffffff' }}>
-                        {selected.full_name || '(no name)'}
-                      </h3>
-                      <StatusBadge active={selected.is_active} />
-                      <TierBadge tier={selected.tier} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Avatar photos={selected.photos} name={selected.full_name} size={52} />
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <h3 style={{ margin: 0, fontSize: 15, color: '#ffffff' }}>
+                          {selected.full_name || '(no name)'}
+                        </h3>
+                        <StatusBadge active={selected.is_active} />
+                        <TierBadge tier={selected.tier} />
+                      </div>
+                      {selected.username && (
+                        <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(240,232,244,0.5)' }}>
+                          @{selected.username}
+                        </p>
+                      )}
                     </div>
-                    {selected.username && (
-                      <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(240,232,244,0.5)' }}>
-                        @{selected.username}
-                      </p>
-                    )}
                   </div>
                   <button
                     onClick={handleStatusToggle}
@@ -490,7 +496,6 @@ export default function AdminUsersPanel() {
                     ['Age range', selected.age_range],
                     ['Location', selected.location],
                     ['Nationality', selected.nationality],
-                    ['Visibility', selected.visibility],
                     ['Visible', selected.visible != null ? (selected.visible ? 'Yes' : 'No') : null],
                   ].filter(([, v]) => v != null).map(([label, value]) => (
                     <div key={label as string} style={cellStyle}>

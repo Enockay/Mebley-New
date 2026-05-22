@@ -20,7 +20,6 @@ export type AdminUser = {
   photos: { url: string }[]
   prompts: { question: string; answer: string }[]
   profile_completeness: number | null
-  visibility: string | null
   visible: boolean | null
   gender_preference: string[] | null
   plan: string | null
