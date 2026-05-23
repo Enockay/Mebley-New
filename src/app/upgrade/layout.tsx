@@ -10,6 +10,13 @@ export const metadata: Metadata = {
     description:
       'Get unlimited Stitches, see everyone who liked you, and boost your visibility. Premium plans starting from just a few dollars a month.',
     url: 'https://mebley.com/upgrade',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Mebley Premium' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Mebley Premium — Upgrade Your Dating',
+    description: 'Unlimited Stitches, see who liked you, Spotlight boosts and more.',
+    images: ['/opengraph-image'],
   },
 }
 

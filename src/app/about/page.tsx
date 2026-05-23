@@ -11,6 +11,13 @@ export const metadata: Metadata = {
     title: 'About Mebley — Our Story & Mission',
     description: 'We\'re building dating that respects your time, your values, and your desire for something real. Meet the team behind Mebley.',
     url: 'https://mebley.com/about',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'About Mebley' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About Mebley — Our Story & Mission',
+    description: 'We\'re building dating that respects your time, your values, and your desire for something real.',
+    images: ['/opengraph-image'],
   },
 }
 

@@ -22,6 +22,10 @@ const jsonLd = {
       name: siteName,
       url: siteUrl,
       logo: `${siteUrl}/icon.svg`,
+      sameAs: [
+        'https://twitter.com/mebley',
+        'https://instagram.com/mebleyapp',
+      ],
     },
     {
       '@type': 'WebSite',
@@ -31,6 +35,28 @@ const jsonLd = {
       description: siteDescription,
       publisher: { '@id': `${siteUrl}/#organization` },
       inLanguage: 'en-US',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: { '@type': 'EntryPoint', urlTemplate: `${siteUrl}/browse?q={search_term_string}` },
+        'query-input': 'required name=search_term_string',
+      },
+    },
+    {
+      '@type': 'SiteLinksSearchBox',
+      target: `${siteUrl}/?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+    {
+      '@type': 'ItemList',
+      name: 'Mebley Site Navigation',
+      itemListElement: [
+        { '@type': 'SiteLinksSearchBox', position: 1, url: siteUrl, name: 'Home' },
+        { '@type': 'ListItem', position: 2, url: `${siteUrl}/auth`,    name: 'Join Free / Sign In' },
+        { '@type': 'ListItem', position: 3, url: `${siteUrl}/about`,   name: 'About Mebley' },
+        { '@type': 'ListItem', position: 4, url: `${siteUrl}/upgrade`, name: 'Upgrade to Premium' },
+        { '@type': 'ListItem', position: 5, url: `${siteUrl}/blog`,    name: 'Blog' },
+        { '@type': 'ListItem', position: 6, url: `${siteUrl}/contact`, name: 'Contact Us' },
+      ],
     },
   ],
 }
