@@ -113,16 +113,17 @@ function HeroSection() {
       />
 
       {/* Gradient overlays */}
-      <div style={{
+      {/* Desktop: left-heavy horizontal gradient so image shows on the right */}
+      <div className="hidden md:block" style={{
         position: 'absolute', inset: 0, zIndex: 1,
         background: 'linear-gradient(to right, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.88) 25%, rgba(0,0,0,0.65) 42%, rgba(0,0,0,0.22) 60%, transparent 78%)',
       }} />
+      {/* Mobile: single lighter overlay so the image remains visible */}
+      <div className="md:hidden" style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'rgba(0,0,0,0.48)' }} />
       <div style={{
         position: 'absolute', inset: 0, zIndex: 1,
         background: 'linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, transparent 16%, transparent 78%, rgba(0,0,0,0.28) 100%)',
       }} />
-      {/* Mobile: full overlay so text stays readable over the photo */}
-      <div className="md:hidden" style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'rgba(0,0,0,0.52)' }} />
 
       {/* ── Max-width wrapper ── */}
       <div style={{
@@ -377,8 +378,13 @@ export default function LandingPage() {
 
       {/* ────────── FEATURES ────────── */}
       <section id="features" style={{ position: 'relative', overflow: 'hidden', minHeight: 580 }}>
-        <img src={cdnUrl('/bg-features.jpg')} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'right top' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(6,4,18,0.78) 0%, rgba(6,4,18,0.55) 35%, rgba(6,4,18,0.18) 60%, transparent 80%)' }} />
+        <img src={cdnUrl('/bg-features.jpg')} alt=""
+          className="object-[center_top] md:object-[right_top]"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+        {/* Desktop: left-heavy gradient so image peeks through on the right */}
+        <div className="hidden md:block" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(6,4,18,0.78) 0%, rgba(6,4,18,0.55) 35%, rgba(6,4,18,0.18) 60%, transparent 80%)' }} />
+        {/* Mobile: lighter overlay — image centre-cropped so the person is visible */}
+        <div className="md:hidden" style={{ position: 'absolute', inset: 0, background: 'rgba(6,4,18,0.42)' }} />
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: '72px 32px', display: 'grid', alignItems: 'center' }} className="md:grid-cols-2">
           <Reveal>
             <Label text="Features" />
@@ -440,14 +446,15 @@ export default function LandingPage() {
 
 
       {/* ────────── WHY MEBLEY ────────── */}
-      <section style={{ position: 'relative', overflow: 'hidden' }}>
+      <section style={{ position: 'relative', overflow: 'hidden', minHeight: 'clamp(560px, 80vh, 900px)' }}>
         {/* Background image — content in flow defines section height */}
         <img src={cdnUrl('/hero-bg-5.png')} alt=""
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'right 30%' }} />
+          className="object-[center_30%] md:object-[right_30%]"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
         {/* Desktop gradient: left side dark, right fades to image */}
         <div className="hidden md:block" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(6,4,18,0.97) 0%, rgba(6,4,18,0.82) 38%, rgba(6,4,18,0.35) 65%, transparent 100%)' }} />
-        {/* Mobile gradient: full dark overlay so text is always readable */}
-        <div className="md:hidden" style={{ position: 'absolute', inset: 0, background: 'rgba(6,4,18,0.82)' }} />
+        {/* Mobile: lighter overlay so the image shows through while text stays readable */}
+        <div className="md:hidden" style={{ position: 'absolute', inset: 0, background: 'rgba(6,4,18,0.62)' }} />
         {/* Content in normal flow — defines section height on all screen sizes */}
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 1280, margin: '0 auto', padding: 'clamp(48px, 8vw, 72px) clamp(20px, 4vw, 32px)' }}>
           <Reveal>
@@ -538,7 +545,8 @@ export default function LandingPage() {
         <img
           src={cdnUrl('/hero-bg-4.png')}
           alt="Couple"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'right top' }}
+          className="object-[center_top] md:object-[right_top]"
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
         {/* Desktop: left-to-right gradient */}
         <div className="hidden md:block" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(9,7,26,0.97) 0%, rgba(9,7,26,0.88) 28%, rgba(9,7,26,0.60) 48%, rgba(9,7,26,0.18) 68%, transparent 85%)' }} />
