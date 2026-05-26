@@ -251,6 +251,7 @@ interface ChatProps {
   otherProfile:   Profile
   onBack:         () => void
   embedded?:      boolean
+  onViewProfile?: () => void
 }
 
 const AGE_RANGE_LABELS: Record<string, string> = {
@@ -300,7 +301,7 @@ function formatLastSeen(lastActive?: string | null): string {
   return `Last seen ${diffDays}d ago`
 }
 
-export default function Chat({ conversationId, otherProfile, onBack, embedded = false }: ChatProps) {
+export default function Chat({ conversationId, otherProfile, onBack, embedded = false, onViewProfile }: ChatProps) {
   const { profile: currentProfile } = useAuth()
   const chatOverlayPortal = useContext(ChatOverlayPortalContext)
   const isPendingConversation = conversationId.startsWith('pending-')
@@ -1147,26 +1148,31 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
             <ArrowLeft size={18} color="#f8ecff" />
           </button>
 
-          <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#f43f5e,#ec4899)', padding: 2, flexShrink: 0 }}>
-            <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#120326' }}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(244,63,94,0.1)' }}>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: '#f43f5e', fontFamily: "'Fraunces',serif" }}>{initials}</span>
-                  </div>
-              }
+          <div
+            onClick={onViewProfile}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, cursor: onViewProfile ? 'pointer' : 'default' }}
+          >
+            <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#f43f5e,#ec4899)', padding: 2, flexShrink: 0 }}>
+              <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#120326' }}>
+                {avatarUrl
+                  ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(244,63,94,0.1)' }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: '#f43f5e', fontFamily: "'Fraunces',serif" }}>{initials}</span>
+                    </div>
+                }
+              </div>
             </div>
-          </div>
 
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#fff6fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {otherProfile.full_name}{ageLabel ? `, ${ageLabel}` : ''}
-            </p>
-            <p style={{ margin: 0, fontSize: 11, color: online ? '#a7f3d0' : 'rgba(246,223,252,0.72)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: isPendingConversation ? '#f9a8d4' : (online ? '#34d399' : 'rgba(246,223,252,0.42)'), boxShadow: isPendingConversation ? '0 0 0 2px rgba(249,168,212,0.18)' : (online ? '0 0 0 2px rgba(52,211,153,0.22)' : 'none') }} />
-              {statusText}
-              {otherProfile.location ? ` • ${otherProfile.location}` : ''}
-            </p>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#fff6fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {otherProfile.full_name}{ageLabel ? `, ${ageLabel}` : ''}
+              </p>
+              <p style={{ margin: 0, fontSize: 11, color: online ? '#a7f3d0' : 'rgba(246,223,252,0.72)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: isPendingConversation ? '#f9a8d4' : (online ? '#34d399' : 'rgba(246,223,252,0.42)'), boxShadow: isPendingConversation ? '0 0 0 2px rgba(249,168,212,0.18)' : (online ? '0 0 0 2px rgba(52,211,153,0.22)' : 'none') }} />
+                {statusText}
+                {otherProfile.location ? ` • ${otherProfile.location}` : ''}
+              </p>
+            </div>
           </div>
 
           {/* Video call button */}

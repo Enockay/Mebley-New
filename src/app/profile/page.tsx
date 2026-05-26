@@ -11,7 +11,6 @@ import {
   Camera, ChevronRight, Heart, BadgeCheck, Edit3, Coins, ShieldCheck, Loader2,
 } from 'lucide-react'
 import EditProfile from '@/components/Profile/EditProfile'
-import DeleteAccount from '@/components/Profile/DeleteAccount'
 import { usePaywall } from '@/hooks/usePaywall'
 import { usePlan } from '@/hooks/usePlan'
 import PlanBadge from '@/components/UI/PlanBadge'
@@ -894,9 +893,6 @@ function ProfilePageContent() {
               ))}
             </div>
           </div>
-
-          {/* ── Delete account ── */}
-          <DeleteAccount embedded={isEmbedded} />
 
         </div>
       </div>

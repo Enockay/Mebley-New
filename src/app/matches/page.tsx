@@ -14,6 +14,7 @@ import {
   Search, Pin, BellOff, Archive, Shield,
   MoreVertical, ChevronRight, MessageCircle,
   Bell, ArchiveRestore, PinOff, Ghost, Heart, Lock, Sparkles, Loader2,
+  X, MapPin,
 } from 'lucide-react'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -101,6 +102,7 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
   const { can, creditBalance } = usePlan()
   const { openPaywall } = usePaywall()
 
+  const [viewProfileOverlay, setViewProfileOverlay] = useState<Profile | null>(null)
   const [tab, setTab]                       = useState<'messages' | 'liked-me'>('messages')
   const [conversations, setConversations]   = useState<Conversation[]>([])
   const [fetching, setFetching]             = useState(true)
@@ -354,8 +356,49 @@ export default function MatchesPage({ embedded = false, onOpenChat }: { embedded
         conversationId={chatView.conversationId}
         otherProfile={chatView.profile}
         onBack={() => { setChatView(null); loadConversations() }}
+        onViewProfile={() => setViewProfileOverlay(chatView!.profile)}
         embedded={true}
       />
+      {viewProfileOverlay && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(12,10,30,0.99)', overflowY: 'auto', padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontFamily: "'Fraunces', Georgia, serif", fontSize: 22, color: 'white' }}>Profile</h3>
+            <button onClick={() => setViewProfileOverlay(null)} style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)', background: 'rgba(255,255,255,0.08)', color: '#f8e9ff', cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
+              <X size={16} />
+            </button>
+          </div>
+          {Array.isArray((viewProfileOverlay as any).photos) && (viewProfileOverlay as any).photos.length > 0 && (
+            <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16, border: '1px solid rgba(255,255,255,0.14)' }}>
+              <img src={(viewProfileOverlay as any).photos[0]?.url} alt={viewProfileOverlay.full_name ?? ''} style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }} />
+            </div>
+          )}
+          <p style={{ margin: '0 0 6px', fontFamily: "'Fraunces', Georgia, serif", fontSize: 28, color: 'white', lineHeight: 1.1 }}>{viewProfileOverlay.full_name}</p>
+          {viewProfileOverlay.location && (
+            <p style={{ margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(245,225,251,0.9)', fontSize: 13 }}>
+              <MapPin size={13} color="#f9a8d4" />{viewProfileOverlay.location}
+            </p>
+          )}
+          {viewProfileOverlay.bio && (
+            <div style={{ marginBottom: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', padding: 12 }}>
+              <p style={{ margin: '0 0 5px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>About</p>
+              <p style={{ margin: 0, fontSize: 13, color: '#f8e9ff', lineHeight: 1.6 }}>{viewProfileOverlay.bio}</p>
+            </div>
+          )}
+          {((viewProfileOverlay as any).interests?.length > 0 || (viewProfileOverlay as any).looking_for?.length > 0) && (
+            <div style={{ borderRadius: 14, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', padding: 12 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(249,168,212,0.8)', fontWeight: 700 }}>Activities &amp; interests</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {(viewProfileOverlay as any).looking_for?.map((item: string, i: number) => (
+                  <span key={i} style={{ padding: '4px 11px', borderRadius: 999, fontSize: 11, fontWeight: 700, border: '1px solid rgba(236,72,153,0.5)', background: 'rgba(236,72,153,0.2)', color: '#ffe3f3' }}>{item}</span>
+                ))}
+                {(viewProfileOverlay as any).interests?.map((item: string, i: number) => (
+                  <span key={i} style={{ padding: '4px 11px', borderRadius: 999, fontSize: 11, border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.1)', color: '#f0e7fb' }}>{item}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 

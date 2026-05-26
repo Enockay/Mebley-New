@@ -109,6 +109,25 @@ export async function notifyLike(
   })
 }
 
+export async function notifyProfileView(
+  viewedUserId: string,
+  viewerName:   string,
+  viewerId:     string,
+  viewerPhoto:  string | null,
+): Promise<void> {
+  const playerIds = await getPlayerIds([viewedUserId])
+  if (playerIds.length === 0) return
+
+  await sendNotification({
+    headings:           { en: `${viewerName} viewed your profile 👀` },
+    contents:           { en: 'Tap to see who checked you out' },
+    include_player_ids: playerIds,
+    url:                '/notifications',
+    chrome_web_icon:    viewerPhoto ?? undefined,
+    data:               { type: 'profile_view', viewerId },
+  })
+}
+
 export async function notifyIncomingCall(
   receiverId:     string,
   callerName:     string,

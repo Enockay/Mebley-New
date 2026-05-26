@@ -897,6 +897,12 @@ function BrowsePageContent() {
     if (searchParams.get('panel')) {
       router.replace('/browse', { scroll: false })
     }
+    // Record the profile view (fire-and-forget)
+    fetch('/api/profile/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ viewedId: spSel.profile.id }),
+    }).catch(() => {})
   }, [router, searchParams])
 
   const handleLike = useCallback(async (sp: ScoredProfile) => {
@@ -954,12 +960,16 @@ function BrowsePageContent() {
         throw new Error(data?.error ?? 'Could not open chat')
       }
       await refreshProfile()
+      setViewProfileSp(null)
       setDrawerChat({ conversationId: data.conversationId, profile: targetProfile })
+      if (isMobile) {
+        router.replace('/browse?panel=chats', { scroll: false })
+      }
     } catch (err) {
       console.error('[Browse] open chat failed:', err)
       setError('Could not open chat right now')
     }
-  }, [openPaywall, refreshProfile])
+  }, [openPaywall, refreshProfile, isMobile, router])
 
   const stepStack = useCallback((dir: 'up' | 'down') => {
     if (viewMode !== 'stack' || scored.length <= 1 || stackAnimating) return
@@ -1364,20 +1374,26 @@ function BrowsePageContent() {
               color: '#f0e8f4',
               lineHeight: 1.2,
             }}>
-              {activeFilterCount > 0 ? 'No one matches yet' : 'You\'re all caught up'}
+              {activeFilterCount > 0
+                ? 'No one matches yet'
+                : (profile?.profile_completeness ?? 100) < 50
+                  ? 'Your profile isn\'t ready yet'
+                  : 'You\'re all caught up'}
             </h3>
             <p style={{
               margin: '0 0 24px',
               color: 'rgba(240,232,244,0.52)',
               fontSize: 14, lineHeight: 1.7,
-              maxWidth: 240,
+              maxWidth: 260,
               fontFamily: "'DM Sans', sans-serif",
             }}>
               {activeFilterCount > 0
                 ? 'Widen your filters to discover more people nearby.'
-                : 'New people join every day.\nCheck back soon for fresh matches.'}
+                : (profile?.profile_completeness ?? 100) < 50
+                  ? 'Complete your profile — add photos, a bio, and a few details so others can find and match with you.'
+                  : 'New people join every day.\nCheck back soon for fresh matches.'}
             </p>
-            {activeFilterCount > 0 && (
+            {activeFilterCount > 0 ? (
               <button onClick={handleResetFilters} style={{
                 padding: '12px 28px', borderRadius: 50,
                 background: 'linear-gradient(135deg, #f03868, #ff7a50)',
@@ -1387,7 +1403,19 @@ function BrowsePageContent() {
                 boxShadow: '0 6px 24px rgba(240,56,104,0.35)',
                 letterSpacing: '0.01em',
               }}>Clear filters</button>
-            )}
+            ) : (profile?.profile_completeness ?? 100) < 50 ? (
+              <a href="/profile" style={{
+                display: 'inline-block',
+                padding: '12px 28px', borderRadius: 50,
+                background: 'linear-gradient(135deg, #f03868, #ff7a50)',
+                color: 'white', fontSize: 14,
+                fontWeight: 600, cursor: 'pointer',
+                fontFamily: "'DM Sans', sans-serif",
+                boxShadow: '0 6px 24px rgba(240,56,104,0.35)',
+                letterSpacing: '0.01em',
+                textDecoration: 'none',
+              }}>Complete my profile</a>
+            ) : null}
           </div>
 
         ) : viewMode === 'stack' ? (
@@ -1714,6 +1742,7 @@ function BrowsePageContent() {
                   conversationId={drawerChat.conversationId}
                   otherProfile={drawerChat.profile as any}
                   onBack={() => setDrawerChat(null)}
+                  onViewProfile={() => setViewProfileSp({ score: 0, reasons: [], profile: drawerChat!.profile })}
                   embedded
                 />
               </div>
@@ -1792,7 +1821,7 @@ function BrowsePageContent() {
                   <img
                     src={(viewProfileSp.profile.photos?.[drawerPhotoIdx] as any)?.url ?? getPhotoUrl(viewProfileSp.profile.photos) ?? ''}
                     alt={viewProfileSp.profile.full_name}
-                    style={{ width: '100%', height: 400, objectFit: 'cover', objectPosition: 'top' }}
+                    style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
                   />
                 </div>
                 {Array.isArray(viewProfileSp.profile.photos) && viewProfileSp.profile.photos.length > 1 && (
@@ -1994,7 +2023,7 @@ function BrowsePageContent() {
               </button>
             </div>
             <div style={{ borderRadius: 5, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.14)', marginBottom: 12 }}>
-              <img src={(viewProfileSp.profile.photos?.[drawerPhotoIdx] as any)?.url ?? getPhotoUrl(viewProfileSp.profile.photos) ?? ''} alt={viewProfileSp.profile.full_name} style={{ width: '100%', height: 400, objectFit: 'cover', objectPosition: 'top' }} />
+              <img src={(viewProfileSp.profile.photos?.[drawerPhotoIdx] as any)?.url ?? getPhotoUrl(viewProfileSp.profile.photos) ?? ''} alt={viewProfileSp.profile.full_name} style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }} />
             </div>
             <p style={{ margin: '0 0 6px', fontFamily: "'Fraunces', Georgia, serif", fontSize: 28, color: 'white', lineHeight: 1.1 }}>{viewProfileSp.profile.full_name}</p>
             {viewProfileSp.profile.location && (
