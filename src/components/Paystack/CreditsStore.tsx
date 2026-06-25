@@ -8,10 +8,10 @@ import { useAuth } from '@/contexts/AuthContext'
 // ── Products ─────────────────────────────────────────────────────────────────
 
 const CREDIT_PACKS = [
-  { key: 'starter', label: 'Starter',  credits: 100, bonus: 0,   usd: 4.99,  emoji: '🪨', popular: false },
-  { key: 'popular', label: 'Popular',  credits: 300, bonus: 30,  usd: 19.99, emoji: '⭐', popular: true  },
-  { key: 'value',   label: 'Value',    credits: 700, bonus: 100, usd: 39.99, emoji: '🔥', popular: false },
-  { key: 'mega',    label: 'Mega',     credits: 1600,bonus: 300, usd: 74.99, emoji: '💥', popular: false },
+  { key: 'starter', label: 'Starter',  credits: 100,  bonus: 0,   kes: 650,  usd: 4.99,  emoji: '🪨', popular: false },
+  { key: 'popular', label: 'Popular',  credits: 300,  bonus: 30,  kes: 2600, usd: 19.99, emoji: '⭐', popular: true  },
+  { key: 'value',   label: 'Value',    credits: 700,  bonus: 100, kes: 5200, usd: 39.99, emoji: '🔥', popular: false },
+  { key: 'mega',    label: 'Mega',     credits: 1600, bonus: 300, kes: 9750, usd: 74.99, emoji: '💥', popular: false },
 ] as const
 
 const BOOSTS = [
@@ -212,45 +212,95 @@ export default function CreditsStore({ onClose }: CreditsStoreProps) {
 
           {/* ── BUY tab ─────────────────────────────────────────────────── */}
           {tab === 'buy' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {CREDIT_PACKS.map(pack => (
-                <div key={pack.key} style={{
-                  padding: '14px 16px', borderRadius: 14,
-                  background: pack.popular ? 'linear-gradient(135deg,rgba(240,56,104,0.12),rgba(167,139,250,0.08))' : C.card,
-                  border: `1.5px solid ${pack.popular ? 'rgba(240,56,104,0.35)' : C.border}`,
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  position: 'relative', overflow: 'hidden',
-                }}>
-                  {pack.popular && (
-                    <div style={{ position: 'absolute', top: 0, right: 0, background: 'linear-gradient(135deg,#f03868,#e03060)', color: '#fff', fontSize: 9, fontWeight: 800, padding: '3px 10px', borderBottomLeftRadius: 10, letterSpacing: '0.08em' }}>
-                      POPULAR
-                    </div>
-                  )}
-                  <div style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>{pack.emoji}</div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 700, color: C.text, fontFamily: "'DM Sans',sans-serif" }}>{pack.label}</p>
-                    <p style={{ margin: 0, fontSize: 12, color: C.muted, fontFamily: "'DM Sans',sans-serif" }}>
-                      {pack.credits.toLocaleString()} credits{pack.bonus > 0 ? ` + ${pack.bonus} bonus` : ''}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleBuy(pack.key)}
-                    disabled={buying === pack.key}
-                    style={{
-                      padding: '9px 16px', borderRadius: 100, border: 'none', cursor: buying === pack.key ? 'default' : 'pointer',
-                      background: pack.popular ? 'linear-gradient(135deg,#e03060,#f03868)' : 'rgba(255,255,255,0.12)',
-                      color: pack.popular ? '#fff' : C.text,
-                      fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13,
-                      boxShadow: pack.popular ? '0 4px 14px rgba(240,56,104,0.35)' : 'none',
-                      flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-                      opacity: buying === pack.key ? 0.7 : 1,
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {CREDIT_PACKS.map(pack => {
+                const isMega    = pack.key === 'mega'
+                const accentCol = pack.popular ? C.rose : isMega ? C.gold : C.violet
+                const accentDim = pack.popular ? 'rgba(240,56,104,0.15)' : isMega ? 'rgba(251,191,36,0.12)' : 'rgba(167,139,250,0.14)'
+                const accentBdr = pack.popular ? 'rgba(240,56,104,0.38)' : isMega ? 'rgba(251,191,36,0.30)' : 'rgba(167,139,250,0.22)'
+                return (
+                  <div key={pack.key} style={{
+                    borderRadius: 20,
+                    background: `linear-gradient(160deg, ${accentDim}, rgba(12,10,30,0.95))`,
+                    border: `1.5px solid ${accentBdr}`,
+                    padding: '18px 14px 14px',
+                    display: 'flex', flexDirection: 'column',
+                    position: 'relative', overflow: 'hidden',
+                    boxShadow: pack.popular ? '0 8px 28px rgba(240,56,104,0.14)' : isMega ? '0 8px 28px rgba(251,191,36,0.10)' : 'none',
+                  }}>
+                    {/* Top banner */}
+                    {(pack.popular || isMega) && (
+                      <div style={{
+                        position: 'absolute', top: 0, left: 0, right: 0,
+                        background: pack.popular ? 'linear-gradient(90deg,#e03060,#f03868)' : 'linear-gradient(90deg,#b45309,#fbbf24)',
+                        textAlign: 'center', padding: '4px 0',
+                        fontSize: 9, fontWeight: 800, letterSpacing: '0.10em',
+                        color: isMega ? '#1a0e00' : '#fff',
+                      }}>
+                        {pack.popular ? '★ MOST POPULAR' : '🔥 BEST VALUE'}
+                      </div>
+                    )}
+
+                    {/* Icon */}
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 13,
+                      background: accentDim, border: `1px solid ${accentBdr}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 22,
+                      marginTop: (pack.popular || isMega) ? 18 : 0,
+                      marginBottom: 10,
                     }}>
-                    {buying === pack.key
-                      ? <Loader2 size={14} style={{ animation: 'cs-spin 0.8s linear infinite' }} />
-                      : `$${pack.usd}`}
-                  </button>
-                </div>
-              ))}
+                      {pack.emoji}
+                    </div>
+
+                    {/* Name */}
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 3, fontFamily: "'DM Sans',sans-serif" }}>
+                      {pack.label}
+                    </div>
+
+                    {/* Credits */}
+                    <div style={{ fontSize: 12, color: C.muted, marginBottom: 12, fontFamily: "'DM Sans',sans-serif", lineHeight: 1.4 }}>
+                      {pack.credits.toLocaleString()}
+                      {pack.bonus > 0 && <span style={{ color: accentCol, fontWeight: 700 }}> +{pack.bonus}</span>}
+                      {' '}credits
+                    </div>
+
+                    {/* Price */}
+                    <div style={{ marginBottom: 12, marginTop: 'auto' }}>
+                      <div style={{ fontSize: 19, fontWeight: 800, color: accentCol, lineHeight: 1, fontFamily: "'DM Sans',sans-serif" }}>
+                        KES {pack.kes.toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(240,232,244,0.36)', marginTop: 3, fontFamily: "'DM Sans',sans-serif" }}>
+                        ≈ ${pack.usd} USD
+                      </div>
+                    </div>
+
+                    {/* Button */}
+                    <button
+                      onClick={() => handleBuy(pack.key)}
+                      disabled={buying === pack.key}
+                      style={{
+                        width: '100%', padding: '11px 0', borderRadius: 100, border: 'none',
+                        cursor: buying === pack.key ? 'default' : 'pointer',
+                        fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 13,
+                        background: pack.popular
+                          ? 'linear-gradient(135deg,#e03060,#f03868)'
+                          : isMega
+                            ? 'linear-gradient(135deg,#b45309,#fbbf24)'
+                            : 'linear-gradient(135deg,#5b21b6,#7c3aed)',
+                        color: isMega ? '#1a0e00' : '#fff',
+                        opacity: buying === pack.key ? 0.7 : 1,
+                        boxShadow: pack.popular ? '0 4px 16px rgba(240,56,104,0.38)' : isMega ? '0 4px 16px rgba(251,191,36,0.28)' : '0 4px 16px rgba(124,58,237,0.28)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      }}>
+                      {buying === pack.key
+                        ? <Loader2 size={13} style={{ animation: 'cs-spin 0.8s linear infinite' }} />
+                        : 'Get Pack'
+                      }
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           )}
 

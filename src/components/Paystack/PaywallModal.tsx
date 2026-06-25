@@ -18,9 +18,10 @@ const SUBSCRIPTION_TIERS = [
     plan:    'starter',
     name:    'Starter',
     emoji:   '🪨',
-    color:   '#a78bfa',   // soft violet — distinct from rose but still on-brand
+    color:   '#a78bfa',
     badge:   null as string | null,
-    monthly: 5.00,
+    kes:     650,
+    usd:     5.00,
     features: [
       '100 credits/month',
       'Perfect for getting started',
@@ -33,7 +34,8 @@ const SUBSCRIPTION_TIERS = [
     emoji:   '✨',
     color:   ROSE,
     badge:   null as string | null,
-    monthly: 10.00,
+    kes:     1300,
+    usd:     10.00,
     features: [
       'See who liked you',
       'Unlimited likes',
@@ -50,7 +52,8 @@ const SUBSCRIPTION_TIERS = [
     emoji:   '👑',
     color:   GOLD,
     badge:   'Most popular' as string | null,
-    monthly: 15.00,
+    kes:     1950,
+    usd:     15.00,
     features: [
       'Everything in Premium',
       '450 credits/month',
@@ -63,10 +66,10 @@ const SUBSCRIPTION_TIERS = [
 ]
 
 const CREDIT_PACKS = [
-  { key: 'starter', label: 'Starter Pack', credits: 100, bonus: 0,   usd: 4.99,  emoji: '🪨', desc: '100 credits — great for trying things out' },
-  { key: 'popular', label: 'Popular Pack', credits: 300, bonus: 30,  usd: 19.99, emoji: '⭐', desc: '300 + 30 bonus credits' },
-  { key: 'value',   label: 'Value Pack',   credits: 700, bonus: 100, usd: 39.99, emoji: '🔥', desc: '700 + 100 bonus credits' },
-  { key: 'mega',    label: 'Mega Pack',    credits: 1600,bonus: 300, usd: 74.99, emoji: '💥', desc: '1,600 + 300 bonus credits — best value' },
+  { key: 'starter', label: 'Starter Pack', credits: 100,  bonus: 0,   kes: 650,  usd: 4.99,  emoji: '🪨', desc: '100 credits — great for trying things out' },
+  { key: 'popular', label: 'Popular Pack', credits: 300,  bonus: 30,  kes: 2600, usd: 19.99, emoji: '⭐', desc: '300 + 30 bonus credits' },
+  { key: 'value',   label: 'Value Pack',   credits: 700,  bonus: 100, kes: 5200, usd: 39.99, emoji: '🔥', desc: '700 + 100 bonus credits' },
+  { key: 'mega',    label: 'Mega Pack',    credits: 1600, bonus: 300, kes: 9750, usd: 74.99, emoji: '💥', desc: '1,600 + 300 bonus credits — best value' },
 ]
 
 const MOMENTS = [
@@ -313,9 +316,12 @@ export default function PaywallModal({
                                 <span style={{ fontSize: 28 }}>{tier.emoji}</span>
                                 <div>
                                   <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 20, fontWeight: 700, color: '#f0e8f4' }}>{tier.name}</div>
-                                  <div style={{ fontSize: 26, fontWeight: 800, color: tier.color, lineHeight: 1 }}>
-                                    ${tier.monthly}
+                                  <div style={{ lineHeight: 1 }}>
+                                    <span style={{ fontSize: 26, fontWeight: 800, color: tier.color }}>
+                                      KES {tier.kes.toLocaleString()}
+                                    </span>
                                     <span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(240,232,244,0.38)' }}>/mo</span>
+                                    <div style={{ fontSize: 11, color: 'rgba(240,232,244,0.38)', marginTop: 2 }}>~${tier.usd} USD</div>
                                   </div>
                                 </div>
                               </div>
@@ -358,40 +364,104 @@ export default function PaywallModal({
                   {/* One-time credit packs */}
                   {plansSection === 'credits' && (
                     <>
-                      <p style={{ fontSize: 12, color: 'rgba(240,232,244,0.48)', margin: '0 0 14px', textAlign: 'center', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600 }}>
+                      <p style={{ fontSize: 11, color: 'rgba(240,232,244,0.38)', margin: '0 0 14px', textAlign: 'center', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>
                         One-time purchase · Credits never expire
                       </p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {CREDIT_PACKS.map(pack => (
-                          <div key={pack.key} style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(240,56,104,0.12)',
-                            borderRadius: 16, padding: '14px 16px',
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <div style={{ width: 40, height: 40, borderRadius: 12, background: ROSE_DIM, border: `1px solid rgba(240,56,104,0.22)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        {CREDIT_PACKS.map((pack) => {
+                          const isPopular = pack.key === 'popular'
+                          const isMega    = pack.key === 'mega'
+                          const accentCol = isPopular ? ROSE : isMega ? GOLD : '#a78bfa'
+                          const accentDim = isPopular ? ROSE_DIM : isMega ? GOLD_DIM : 'rgba(167,139,250,0.15)'
+                          const accentBdr = isPopular ? 'rgba(240,56,104,0.38)' : isMega ? 'rgba(251,191,36,0.30)' : 'rgba(167,139,250,0.22)'
+                          return (
+                            <div key={pack.key} style={{
+                              borderRadius: 20,
+                              background: `linear-gradient(160deg, ${accentDim}, rgba(12,10,30,0.9))`,
+                              border: `1.5px solid ${accentBdr}`,
+                              padding: '18px 14px 14px',
+                              display: 'flex', flexDirection: 'column', gap: 0,
+                              position: 'relative', overflow: 'hidden',
+                              boxShadow: isPopular ? '0 8px 32px rgba(240,56,104,0.15)' : isMega ? '0 8px 32px rgba(251,191,36,0.10)' : 'none',
+                            }}>
+                              {/* Badge */}
+                              {(isPopular || isMega) && (
+                                <div style={{
+                                  position: 'absolute', top: 0, left: 0, right: 0,
+                                  background: isPopular
+                                    ? `linear-gradient(90deg, ${ROSE2}, ${ROSE})`
+                                    : 'linear-gradient(90deg, #b45309, #fbbf24)',
+                                  textAlign: 'center',
+                                  fontSize: 9, fontWeight: 800,
+                                  color: isMega ? '#1a0e00' : '#fff',
+                                  padding: '4px 0',
+                                  letterSpacing: '0.10em',
+                                }}>
+                                  {isPopular ? '★ MOST POPULAR' : '🔥 BEST VALUE'}
+                                </div>
+                              )}
+
+                              {/* Icon */}
+                              <div style={{
+                                width: 44, height: 44, borderRadius: 13,
+                                background: accentDim,
+                                border: `1px solid ${accentBdr}`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 22,
+                                marginTop: (isPopular || isMega) ? 18 : 0,
+                                marginBottom: 10,
+                              }}>
                                 {pack.emoji}
                               </div>
-                              <div>
-                                <div style={{ fontSize: 15, fontWeight: 700, color: '#f0e8f4' }}>{pack.label}</div>
-                                <div style={{ fontSize: 12, color: 'rgba(240,232,244,0.52)' }}>{pack.desc}</div>
+
+                              {/* Name */}
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#f0e8f4', marginBottom: 3, fontFamily: "'DM Sans', sans-serif" }}>
+                                {pack.label}
                               </div>
+
+                              {/* Credits */}
+                              <div style={{ fontSize: 12, color: 'rgba(240,232,244,0.55)', marginBottom: 12, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>
+                                {pack.credits.toLocaleString()}
+                                {pack.bonus > 0 && <span style={{ color: accentCol, fontWeight: 700 }}> +{pack.bonus}</span>}
+                                {' '}credits
+                              </div>
+
+                              {/* Price */}
+                              <div style={{ marginBottom: 12 }}>
+                                <div style={{ fontSize: 20, fontWeight: 800, color: accentCol, lineHeight: 1, fontFamily: "'DM Sans', sans-serif" }}>
+                                  KES {pack.kes.toLocaleString()}
+                                </div>
+                                <div style={{ fontSize: 11, color: 'rgba(240,232,244,0.38)', marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
+                                  ≈ ${pack.usd} USD
+                                </div>
+                              </div>
+
+                              {/* Button */}
+                              <button
+                                onClick={() => pay('credits', pack.key)}
+                                disabled={loading === pack.key}
+                                style={{
+                                  width: '100%', padding: '11px 0', borderRadius: 100, border: 'none',
+                                  cursor: loading === pack.key ? 'default' : 'pointer',
+                                  fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700,
+                                  background: isPopular
+                                    ? `linear-gradient(135deg, ${ROSE2}, ${ROSE})`
+                                    : isMega
+                                      ? 'linear-gradient(135deg, #b45309, #fbbf24)'
+                                      : `linear-gradient(135deg, #5b21b6, #7c3aed)`,
+                                  color: isMega ? '#1a0e00' : '#fff',
+                                  opacity: loading === pack.key ? 0.6 : 1,
+                                  boxShadow: isPopular
+                                    ? '0 4px 16px rgba(240,56,104,0.40)'
+                                    : isMega ? '0 4px 16px rgba(251,191,36,0.28)'
+                                    : '0 4px 16px rgba(124,58,237,0.30)',
+                                  marginTop: 'auto',
+                                }}>
+                                {loading === pack.key ? 'Opening…' : 'Get Pack'}
+                              </button>
                             </div>
-                            <button
-                              onClick={() => pay('credits', pack.key)}
-                              disabled={loading === pack.key}
-                              style={{
-                                background: `linear-gradient(135deg, ${ROSE2}, ${ROSE})`,
-                                border: 'none', borderRadius: 100, padding: '8px 14px',
-                                color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                                fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap',
-                                flexShrink: 0, opacity: loading === pack.key ? 0.6 : 1,
-                                boxShadow: `0 4px 14px rgba(240,56,104,0.3)`,
-                              }}>
-                              {loading === pack.key ? '…' : `$${pack.usd}`}
-                            </button>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </>
                   )}
@@ -535,7 +605,7 @@ export default function PaywallModal({
 
               {/* Footer */}
               <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(240,232,244,0.36)', marginTop: 28, lineHeight: 1.7 }}>
-                💳 Visa, Mastercard &amp; all major cards accepted<br />
+                💳 Card (USD) &amp; M-Pesa (KES) accepted<br />
                 Powered by Paystack · Credits never expire · Not cashable
               </p>
 

@@ -6,17 +6,17 @@ import { getAuthUserFromRequest } from '@/lib/auth-server'
 
 // ─── Subscription plans ───────────────────────────────────────────────────
 export const SUBSCRIPTION_PLANS = {
-  starter_monthly: { tier: 'starter', billing_period: 'monthly', usd: 5.00,  label: 'Starter Monthly', monthly_credits: 100 },
-  premium_monthly: { tier: 'premium', billing_period: 'monthly', usd: 10.00, label: 'Premium Monthly', monthly_credits: 250 },
-  vip_monthly:     { tier: 'vip',     billing_period: 'monthly', usd: 15.00, label: 'VIP Monthly',     monthly_credits: 450 },
+  starter_monthly: { tier: 'starter', billing_period: 'monthly', usd: 5.00,  kes: 650,  label: 'Starter Monthly', monthly_credits: 100 },
+  premium_monthly: { tier: 'premium', billing_period: 'monthly', usd: 10.00, kes: 1300, label: 'Premium Monthly', monthly_credits: 250 },
+  vip_monthly:     { tier: 'vip',     billing_period: 'monthly', usd: 15.00, kes: 1950, label: 'VIP Monthly',     monthly_credits: 450 },
 } as const
 
 // ─── Credit packs ─────────────────────────────────────────────────────────
 export const CREDIT_PACKS = {
-  starter: { pack_key: 'starter', credits: 100, bonus: 0,    usd: 4.99,  label: 'Starter Pack' },
-  popular: { pack_key: 'popular', credits: 300, bonus: 30,   usd: 19.99, label: 'Popular Pack' },
-  value:   { pack_key: 'value',   credits: 700, bonus: 100,  usd: 39.99, label: 'Value Pack'   },
-  mega:    { pack_key: 'mega',    credits: 1600, bonus: 300, usd: 74.99, label: 'Mega Pack'    },
+  starter: { pack_key: 'starter', credits: 100,  bonus: 0,   usd: 4.99,  kes: 650,  label: 'Starter Pack' },
+  popular: { pack_key: 'popular', credits: 300,  bonus: 30,  usd: 19.99, kes: 2600, label: 'Popular Pack' },
+  value:   { pack_key: 'value',   credits: 700,  bonus: 100, usd: 39.99, kes: 5200, label: 'Value Pack'   },
+  mega:    { pack_key: 'mega',    credits: 1600, bonus: 300, usd: 74.99, kes: 9750, label: 'Mega Pack'    },
 } as const
 
 export type SubPlanKey    = keyof typeof SUBSCRIPTION_PLANS
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     if (type === 'subscription') {
       const plan = SUBSCRIPTION_PLANS[product as SubPlanKey]
       if (!plan) return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
-      amountCents = Math.round(plan.usd * 100)
+      amountCents = Math.round(plan.kes * 100)
       label       = plan.label
 
       // Pre-insert subscription row (non-blocking — fulfillment will upsert on verify)
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     } else if (type === 'credits') {
       const pack = CREDIT_PACKS[product as CreditPackKey]
       if (!pack) return NextResponse.json({ error: 'Invalid credit pack' }, { status: 400 })
-      amountCents = Math.round(pack.usd * 100)
+      amountCents = Math.round(pack.kes * 100)
       label       = pack.label
 
       try {
@@ -109,10 +109,10 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         email:        user.email!,
         amount:       amountCents,
-        currency:     'USD',
+        currency:     'KES',
         reference,
         callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/paystack/verify?ref=${reference}`,
-        channels:     ['card'],
+        channels:     ['card', 'mobile_money'],
         metadata: {
           user_id:      paymentUserId,
           auth_user_id: user.id,
