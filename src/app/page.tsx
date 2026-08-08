@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import type {} from 'react'
 import Script from 'next/script'
+import { Facebook, Instagram, X as XIcon } from 'lucide-react'
 import { cdnUrl } from '@/lib/cdn'
 
 /* ── Data ──────────────────────────────────────────────────────────── */
@@ -44,6 +45,12 @@ const FOOTER_LINKS = [
   { head: 'Product',  links: [['#features','Features'],['#stories','Stories'],['/auth','Sign up']] },
   { head: 'Company', links: [['/about','About'],['/blog','Blog'],['/contact','Contact']] },
   { head: 'Legal',   links: [['/privacy','Privacy'],['/terms','Terms']] },
+]
+
+const SOCIAL_LINKS = [
+  { label: 'Facebook',  href: 'https://www.facebook.com/profile.php?id=61589535176918', Icon: Facebook },
+  { label: 'X (Twitter)', href: 'https://x.com/Mebley_Dating', Icon: XIcon },
+  { label: 'Instagram', href: 'https://www.instagram.com/mebleysite/', Icon: Instagram },
 ]
 
 /* ── Design tokens ─────────────────────────────────────────────────── */
@@ -226,8 +233,9 @@ const JSON_LD = {
         height: 200,
       },
       sameAs: [
-        'https://twitter.com/mebley',
-        'https://instagram.com/mebleyapp',
+        'https://www.facebook.com/profile.php?id=61589535176918',
+        'https://x.com/Mebley_Dating',
+        'https://www.instagram.com/mebleysite/',
       ],
       contactPoint: {
         '@type': 'ContactPoint',
@@ -645,15 +653,15 @@ export default function LandingPage() {
             <p style={{ fontSize: 12, color: 'rgba(200,170,190,0.65)' }}>© 2025 Mebley Inc. All rights reserved.</p>
 
 <div style={{ display: 'flex', gap: 8 }}>
-              {['𝕏','IG','TT'].map(s => (
-                <a key={s} href="#" style={{
+              {SOCIAL_LINKS.map(({ label, href, Icon }) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} style={{
                   width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '1px solid rgba(255,255,255,0.2)', fontSize: 11, color: 'rgba(200,170,190,0.65)', textDecoration: 'none',
+                  border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(200,170,190,0.65)', textDecoration: 'none',
                   transition: 'all 0.15s',
                 }}
                   onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.roseBorder; el.style.color = T.text }}
                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.2)'; el.style.color = 'rgba(200,170,190,0.65)' }}>
-                  {s}
+                  <Icon size={15} strokeWidth={2} />
                 </a>
               ))}
             </div>

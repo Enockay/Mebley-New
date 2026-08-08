@@ -13,6 +13,12 @@ const T = {
   roseBorder: 'rgba(240,56,104,0.25)',
 }
 
+const SOCIAL_LINKS = [
+  { label: 'Facebook', href: 'https://www.facebook.com/profile.php?id=61589535176918' },
+  { label: 'X / Twitter', href: 'https://x.com/Mebley_Dating' },
+  { label: 'Instagram', href: 'https://www.instagram.com/mebleysite/' },
+]
+
 const CATEGORIES = [
   'General enquiry',
   'Account or billing',
@@ -143,14 +149,14 @@ export default function ContactPage() {
             <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 18, padding: '24px' }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: T.text, margin: '0 0 12px' }}>Follow us</p>
               <div style={{ display: 'flex', gap: 10 }}>
-                {['Twitter / X', 'Instagram', 'LinkedIn'].map(s => (
-                  <span key={s} style={{
+                {SOCIAL_LINKS.map(({ label, href }) => (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{
                     padding: '7px 14px', borderRadius: 100,
                     background: 'rgba(255,255,255,0.06)', border: `1px solid ${T.border}`,
-                    fontSize: 12, color: T.muted, cursor: 'pointer',
+                    fontSize: 12, color: T.muted, cursor: 'pointer', textDecoration: 'none',
                   }}>
-                    {s}
-                  </span>
+                    {label}
+                  </a>
                 ))}
               </div>
             </div>
