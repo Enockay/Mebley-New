@@ -21,12 +21,26 @@ import { isSafeRedirectPath } from '@/lib/safe-redirect'
 // ── Route classification ──────────────────────────────────────────────────────
 
 /** Pages that anyone can visit without a session */
-const PUBLIC_PAGE_ROUTES = ['/', '/auth', '/privacy', '/terms']
+const PUBLIC_PAGE_ROUTES = ['/', '/auth', '/privacy', '/terms', '/about', '/blog', '/contact', '/upgrade']
 
 /** API routes that do NOT require authentication */
 const PUBLIC_API_PREFIXES = [
   '/api/auth/',   // send-otp, verify-otp, callback
   '/api/health',
+]
+
+/**
+ * SEO/system routes that must always be reachable by unauthenticated crawlers
+ * (search engines, social-media link previewers). These bypass auth entirely —
+ * gating them behind /auth silently breaks indexing and OG image previews.
+ */
+const PUBLIC_SYSTEM_ROUTES = [
+  '/opengraph-image',
+  '/twitter-image',
+  '/sitemap.xml',
+  '/robots.txt',
+  '/manifest.webmanifest',
+  '/manifest.json',
 ]
 
 /** After login, users who haven't finished setup can only visit these pages */
@@ -96,6 +110,11 @@ function applySecurityHeaders(response: NextResponse, request?: NextRequest): Ne
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // ── 1. SEO/system routes — always public, never touch auth or the DB ────
+  if (PUBLIC_SYSTEM_ROUTES.includes(pathname)) {
+    return applySecurityHeaders(NextResponse.next({ request }), request)
+  }
 
   const authResponse = NextResponse.next({ request })
   const user = await getAuthUserFromRequest(request)
