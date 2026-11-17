@@ -26,6 +26,7 @@ mkdirSync(outDir, { recursive: true })
 /** name → { file, widths, crop? } — keep in sync with IMAGES in ResponsiveImage.tsx */
 const JOBS = {
   hero:          { file: 'hero-bg.png',     widths: [480, 960, 1440] },
+  auth:          { file: 'auth-bg.png',     widths: [640, 1024, 1536] },
   safety:        { file: 'hero-bg-5.png',   widths: [480, 960, 1400] },
   cta:           { file: 'hero-bg-3.png',   widths: [480, 960, 1400] },
   listening:     { file: 'bg-features.jpg', widths: [480, 960, 1440] },

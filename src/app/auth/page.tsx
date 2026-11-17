@@ -3,6 +3,7 @@
 /* eslint-disable react/no-unescaped-entities */
 'use client'
 
+import ResponsiveImage from '@/components/Marketing/ResponsiveImage'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { cdnUrl } from '@/lib/cdn'
 import Icon from '@/components/Marketing/Icon'
@@ -307,10 +308,16 @@ function BrandPanel() {
     }}
     className="auth-brand-panel">
       {/* Background photo */}
-      <img src={cdnUrl('/auth-bg.png')} alt="" style={{
-        position: 'absolute', inset: 0, width: '100%', height: '100%',
-        objectFit: 'cover', objectPosition: 'center top',
-      }} />
+      {/* AVIF/WebP renditions (was a 2.3 MB PNG). The panel is hidden below
+          900px, and lazy loading means phones never download it. The photo is
+          landscape and covers a tall panel, so its rendered width is about 1.5x
+          the viewport height. */}
+      <ResponsiveImage
+        name="auth"
+        alt=""
+        sizes="(min-width: 900px) 150vh, 1px"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+      />
       {/* Gradient overlay: dark on left for text, fades to photo on right */}
       <div style={{
         position: 'absolute', inset: 0,

@@ -2,10 +2,12 @@
  * Serves the AVIF/WebP renditions produced by scripts/optimize-images.mjs
  * with width descriptors (review issue F1). Add new images to both files.
  */
+import type { CSSProperties } from 'react'
 import { cdnUrl } from '@/lib/cdn'
 
 export const IMAGES = {
   hero: [480, 960, 1440],
+  auth: [640, 1024, 1536],
   safety: [480, 960, 1400],
   cta: [480, 960, 1400],
   listening: [480, 960, 1440],
@@ -25,9 +27,10 @@ type Props = {
   className?: string
   width?: number
   height?: number
+  style?: CSSProperties
 }
 
-export default function ResponsiveImage({ name, alt, sizes, priority = false, className, width, height }: Props) {
+export default function ResponsiveImage({ name, alt, sizes, priority = false, className, width, height, style }: Props) {
   const widths = IMAGES[name]
   const set = (ext: string) => widths.map(w => `${cdnUrl(`/img/${name}-${w}.${ext}`)} ${w}w`).join(', ')
   const fallback = cdnUrl(`/img/${name}-${widths[Math.min(1, widths.length - 1)]}.webp`)
@@ -39,6 +42,7 @@ export default function ResponsiveImage({ name, alt, sizes, priority = false, cl
         src={fallback}
         alt={alt}
         className={className}
+        style={style}
         width={width}
         height={height}
         loading={priority ? 'eager' : 'lazy'}
