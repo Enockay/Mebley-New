@@ -144,8 +144,8 @@ export const CREDIT_COSTS = [
 ] as const
 
 export const CREDIT_PACKS = [
-  { name: 'Starter Pack', credits: 100, bonus: 0, kes: 650, usd: 4.99 },
-  { name: 'Popular Pack', credits: 300, bonus: 30, kes: 2600, usd: 19.99 },
-  { name: 'Value Pack', credits: 700, bonus: 100, kes: 5200, usd: 39.99 },
-  { name: 'Mega Pack', credits: 1600, bonus: 300, kes: 9750, usd: 74.99 },
+  { key: 'starter', name: 'Starter Pack', credits: 100, bonus: 0, kes: 650, usd: 4.99 },
+  { key: 'popular', name: 'Popular Pack', credits: 300, bonus: 30, kes: 2600, usd: 19.99 },
+  { key: 'value', name: 'Value Pack', credits: 700, bonus: 100, kes: 5200, usd: 39.99 },
+  { key: 'mega', name: 'Mega Pack', credits: 1600, bonus: 300, kes: 9750, usd: 74.99 },
 ] as const

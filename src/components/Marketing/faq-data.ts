@@ -16,7 +16,7 @@ export const FAQS: Faq[] = [
     q: 'Is Mebley free?',
     a: [
       'Yes. Creating a profile, recording a voice note, getting verified, liking, matching and messaging your matches are free.',
-      'Paid plans start at $5 a month and add monthly credits, see who liked you, unlimited likes and more. Credits pay for Stitches that become matches, Spotlight and Boosts.',
+      'Paid plans are priced for your country (from $5 a month) and add monthly credits, see who liked you, unlimited likes and more. Credits pay for Stitches that become matches, Spotlight and Boosts.',
     ],
     link: { href: '/pricing', label: 'See all prices' },
   },
@@ -49,7 +49,7 @@ export const FAQS: Faq[] = [
   {
     q: 'How do I pay?',
     a: [
-      'Payments are processed securely by Paystack. You can pay by card or by mobile money, including M-Pesa. Prices are shown in US dollars and billed as the Kenyan shilling (KES) amount shown with each price; your bank converts it if needed.',
+      'Payments are processed securely by Paystack. You can pay by card or by mobile money, including M-Pesa. Prices are set for your country and shown in your currency. Payments are currently charged in Kenyan shillings (KES), and the amount is shown before you pay; your bank converts it if needed.',
     ],
   },
   {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fulfillPaystackReference } from '@/lib/paystack-fulfillment'
+import { logPricingCountryCheck } from '@/lib/pricing-audit'
 
 // ─── GET — browser redirect back from Paystack ────────────────────────────
 export async function GET(req: NextRequest) {
@@ -18,6 +19,8 @@ export async function GET(req: NextRequest) {
       console.error('[paystack/verify GET] not success:', data)
       return NextResponse.redirect(`${appBase}/upgrade?error=payment_failed`)
     }
+
+    logPricingCountryCheck(ref, data.data)
 
     const result = await fulfillPaystackReference(ref, data.data?.metadata)
     if (!result.ok) {

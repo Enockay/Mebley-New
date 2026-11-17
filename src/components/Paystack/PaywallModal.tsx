@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePathname } from 'next/navigation'
+import { formatKes, formatPrice, type PackKey, type PlanKey, type RegionPricing } from '@/lib/pricing'
 
 // ── Brand colours ──────────────────────────────────────────────────
 const ROSE    = '#f03868'
@@ -133,6 +134,30 @@ export default function PaywallModal({
     defaultTab === 'boosts'  ? 'boosts'  : 'moments'
   )
   const [loading, setLoading] = useState<string | null>(null)
+  // Regional prices checkout will charge (review 4.12). Falls back to the
+  // tier D list below until loaded.
+  const [region, setRegion]   = useState<RegionPricing | null>(null)
+  useEffect(() => {
+    if (!open) return
+    let live = true
+    fetch('/api/pricing')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (live && d) setRegion(d) })
+      .catch(() => {})
+    return () => { live = false }
+  }, [open])
+  const planPrice = (plan: string, usd: number, kes: number) => {
+    const p = region?.plans[plan as PlanKey]
+    return p
+      ? { main: formatPrice(p), sub: p.currency === 'KES' ? '' : `Charged as ${formatKes(p.kes)}` }
+      : { main: `$${usd}`, sub: `Billed as KES ${kes.toLocaleString()}` }
+  }
+  const packPrice = (key: string, usd: number, kes: number) => {
+    const p = region?.packs[key as PackKey]
+    return p
+      ? { main: formatPrice(p), sub: p.currency === 'KES' ? '' : `Charged as ${formatKes(p.kes)}` }
+      : { main: `$${usd}`, sub: `Billed as KES ${kes.toLocaleString()}` }
+  }
   const [error, setError]     = useState<string | null>(null)
 
   useEffect(() => {
@@ -318,10 +343,12 @@ export default function PaywallModal({
                                   <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 20, fontWeight: 700, color: '#f0e8f4' }}>{tier.name}</div>
                                   <div style={{ lineHeight: 1 }}>
                                     <span style={{ fontSize: 26, fontWeight: 800, color: tier.color }}>
-                                      ${tier.usd}
+                                      {planPrice(tier.plan, tier.usd, tier.kes).main}
                                     </span>
                                     <span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(240,232,244,0.38)' }}>/mo</span>
-                                    <div style={{ fontSize: 11, color: 'rgba(240,232,244,0.5)', marginTop: 2 }}>Billed as KES {tier.kes.toLocaleString()}</div>
+                                    {planPrice(tier.plan, tier.usd, tier.kes).sub ? (
+                                      <div style={{ fontSize: 11, color: 'rgba(240,232,244,0.5)', marginTop: 2 }}>{planPrice(tier.plan, tier.usd, tier.kes).sub}</div>
+                                    ) : null}
                                   </div>
                                 </div>
                               </div>
@@ -429,10 +456,10 @@ export default function PaywallModal({
                               {/* Price */}
                               <div style={{ marginBottom: 12 }}>
                                 <div style={{ fontSize: 20, fontWeight: 800, color: accentCol, lineHeight: 1, fontFamily: "'DM Sans', sans-serif" }}>
-                                  ${pack.usd}
+                                  {packPrice(pack.key, pack.usd, pack.kes).main}
                                 </div>
                                 <div style={{ fontSize: 11, color: 'rgba(240,232,244,0.5)', marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
-                                  Billed as KES {pack.kes.toLocaleString()}
+                                  {packPrice(pack.key, pack.usd, pack.kes).sub}
                                 </div>
                               </div>
 
@@ -605,7 +632,7 @@ export default function PaywallModal({
 
               {/* Footer */}
               <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(240,232,244,0.36)', marginTop: 28, lineHeight: 1.7 }}>
-                💳 Card &amp; M-Pesa accepted · Billed in KES; your bank converts if needed<br />
+                💳 Card &amp; mobile money accepted · Prices set for your country · Charged in KES; your bank converts if needed<br />
                 Powered by Paystack · Credits never expire · Not cashable
               </p>
 

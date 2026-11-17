@@ -386,7 +386,7 @@
   font-size: 13px; font-weight: 700; line-height: 1; padding: 6px 10px; border-radius: var(--radius-pill);
 }
 .mk-plan__price { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
-.mk-plan__amount { font-family: var(--font-display); font-weight: 600; font-size: 40px; line-height: 44px; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.mk-plan__amount { font-family: var(--font-display); font-weight: 600; font-size: 40px; line-height: 44px; color: var(--text-1); font-variant-numeric: lining-nums tabular-nums; }
 .mk-plan__alt { font-size: 15px; color: var(--text-3); }
 .mk-plan ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
 .mk-plan li { display: flex; gap: var(--space-3); align-items: flex-start; font-size: 16px; line-height: 23px; color: var(--text-2); }
@@ -550,3 +550,13 @@
 .mk-demo__caption summary { cursor: pointer; color: var(--text-2); width: fit-content; }
 .mk-demo__caption summary:focus-visible { outline: 2px solid var(--champagne-400); outline-offset: 3px; border-radius: 4px; }
 .mk-demo__caption p { margin: var(--space-2) 0 0; color: var(--text-2); max-width: 70ch; }
+
+/* Regional pricing bar and picker */
+.mk-region-bar { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; justify-content: space-between; margin-block-start: var(--space-6); padding: var(--space-3) var(--space-4); border-radius: 16px; background: var(--plum-900); border: 1px solid var(--plum-700); color: var(--text-2); font-size: 15px; line-height: 22px; }
+.mk-region-bar p { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.mk-region-bar strong { color: var(--text-1); }
+.mk-region { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 15px; color: var(--text-2); }
+.mk-region select { font: inherit; color: var(--text-1); background: var(--plum-800); border: 1px solid var(--plum-700); border-radius: 999px; padding: 8px 14px; min-height: 40px; }
+.mk-region select:focus-visible { outline: 2px solid var(--champagne-400); outline-offset: 2px; }
+.mk-plan__amount { white-space: nowrap; }
+.mk-plans--4 .mk-plan__amount { font-size: clamp(28px, 2.6vw, 36px); line-height: 1.15; }

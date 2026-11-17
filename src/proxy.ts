@@ -30,6 +30,7 @@ const PUBLIC_PAGE_ROUTES = ['/', '/auth', '/privacy', '/terms', '/about', '/blog
 const PUBLIC_API_PREFIXES = [
   '/api/auth/',   // send-otp, verify-otp, callback
   '/api/health',
+  '/api/pricing', // public regional price list
 ]
 
 /**

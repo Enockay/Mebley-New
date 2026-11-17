@@ -16,7 +16,9 @@ import {
   ChatScreen, PhoneFrame, RecordScreen, StitchScreen, VoiceFragment, Waveform,
 } from '@/components/Marketing/PhoneScreens'
 import { FAQS, faqJsonLd } from '@/components/Marketing/faq-data'
-import { PLANS, PRODUCT_FACTS, SITE_FACTS, kesLabel, usd } from '@/lib/site-facts'
+import { PLANS, PRODUCT_FACTS, SITE_FACTS } from '@/lib/site-facts'
+import { countryName, formatPrice, paymentMethodsText, planPriceText, type RegionPricing } from '@/lib/pricing'
+import { displayedPricing } from '@/lib/pricing-server'
 import { getSiteUrl } from '@/lib/site-url'
 import { cdnUrl } from '@/lib/cdn'
 import DemoVideo from '@/components/Marketing/DemoVideo'
@@ -131,7 +133,7 @@ const STORIES: { q: string; name: string; city: string; tag: string; img: ImageN
 const HOME_PLANS = PLANS.filter(p => p.key === 'free' || p.key === 'premium' || p.key === 'vip')
 
 /* ── Structured data (FAQ + app) ──────────────────────────────────── */
-function jsonLd() {
+function jsonLd(region: RegionPricing) {
   const site = getSiteUrl()
   const app: Record<string, unknown> = {
     '@type': 'WebApplication',
@@ -139,7 +141,7 @@ function jsonLd() {
     url: site,
     applicationCategory: 'LifestyleApplication',
     operatingSystem: 'Any (web browser)',
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free to join; optional monthly plans' },
+    offers: { '@type': 'Offer', price: '0', priceCurrency: region.currency, description: 'Free to join; optional monthly plans' },
     featureList: FEATURES.map(f => `${f.title}: ${f.sub}`),
   }
   if (SITE_FACTS.rating) {
@@ -167,7 +169,8 @@ function jsonLd() {
 }
 
 /* ── Page ─────────────────────────────────────────────────────────── */
-export default function HomePage() {
+export default async function HomePage() {
+  const { pricing: region } = await displayedPricing()
   const proof = [
     SITE_FACTS.members
       ? { value: SITE_FACTS.members.value, label: `${SITE_FACTS.members.label} (${SITE_FACTS.members.asOf})` }
@@ -176,12 +179,12 @@ export default function HomePage() {
     SITE_FACTS.rating
       ? { value: `${SITE_FACTS.rating.value} / 5`, label: SITE_FACTS.rating.label, href: SITE_FACTS.rating.sourceUrl }
       : { value: 'Selfie', label: 'verification for every member' },
-    { value: '$0', label: 'to join; pay by card or M-Pesa' },
+    { value: formatPrice({ amount: 0, currency: region.currency }), label: 'to join; upgrade any time' },
   ]
 
   return (
     <MarketingShell stickyJoin>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd()) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(region)) }} />
 
       {/* ── Hero ── */}
       <section id="hero" className="mk-hero" aria-labelledby="hero-title">
@@ -374,7 +377,7 @@ export default function HomePage() {
             <p className="mk-label" style={{ margin: 0 }}>Pricing</p>
             <h2 id="pricing-title" className="mk-h2">Free to join. Upgrade when you want more.</h2>
             <p className="mk-lead" style={{ margin: 0 }}>
-              Prices in US dollars. Pay by card or <span style={{ whiteSpace: 'nowrap' }}>M-Pesa</span>. Cancel any time.
+              Prices for {countryName(region.country)} in {region.currency}. {paymentMethodsText(region)} Cancel any time.
             </p>
           </div>
           <div className="mk-plans mk-plans--3">
@@ -383,8 +386,8 @@ export default function HomePage() {
                 {'featured' in p && p.featured ? <span className="mk-plan__badge">Most chosen</span> : null}
                 <h3 className="mk-h3">{p.name}</h3>
                 <div className="mk-plan__price">
-                  <span className="mk-plan__amount">{usd(p.usd)}</span>
-                  <span className="mk-plan__alt">{p.kes > 0 ? `per month, billed as ${kesLabel(p.kes)}` : 'forever'}</span>
+                  <span className="mk-plan__amount">{planPriceText(region, p.key).amount}</span>
+                  <span className="mk-plan__alt">{planPriceText(region, p.key).sub}</span>
                 </div>
                 <p className="mk-small" style={{ margin: 0 }}>{p.tagline}</p>
                 <ul>
@@ -393,7 +396,7 @@ export default function HomePage() {
                   ))}
                 </ul>
                 <a href="/auth" className={`mk-btn ${'featured' in p && p.featured ? 'mk-btn--primary' : 'mk-btn--secondary'}`}>
-                  {p.kes === 0 ? 'Join free' : `Start with ${p.name}`}
+                  {p.key === 'free' ? 'Join free' : `Start with ${p.name}`}
                 </a>
               </div>
             ))}

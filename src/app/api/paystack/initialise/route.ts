@@ -3,8 +3,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pgQuery } from '@/lib/postgres'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
+import { regionPricing } from '@/lib/pricing'
+import { countryFromHeaders } from '@/lib/pricing-server'
 
 // ─── Subscription plans ───────────────────────────────────────────────────
+// usd/kes below are the tier D (lowest) prices. The amount actually charged
+// comes from the regional price book (src/lib/pricing.ts) for the country
+// detected on this request; Kenya and other tier D countries pay these.
 export const SUBSCRIPTION_PLANS = {
   starter_monthly: { tier: 'starter', billing_period: 'monthly', usd: 5.00,  kes: 650,  label: 'Starter Monthly', monthly_credits: 100 },
   premium_monthly: { tier: 'premium', billing_period: 'monthly', usd: 10.00, kes: 1300, label: 'Premium Monthly', monthly_credits: 250 },
@@ -60,12 +65,17 @@ export async function POST(req: NextRequest) {
     const reference  = `cro_${type}_${product}_${paymentUserId.slice(0, 8)}_${Date.now()}`
     let amountCents  = 0
     let label        = ''
+    // Regional price for the detected country (review 4.12). Only the server
+    // decides the amount; what credits buy is the same in every tier.
+    const region     = regionPricing(countryFromHeaders(req.headers))
+    let chargedUsd   = 0
 
     // 3. Validate product + write pending record
     if (type === 'subscription') {
       const plan = SUBSCRIPTION_PLANS[product as SubPlanKey]
       if (!plan) return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
-      amountCents = Math.round(plan.kes * 100)
+      amountCents = Math.round(region.plans[plan.tier].kes * 100)
+      chargedUsd  = region.plans[plan.tier].usd
       label       = plan.label
 
       // Pre-insert subscription row (non-blocking — fulfillment will upsert on verify)
@@ -81,7 +91,8 @@ export async function POST(req: NextRequest) {
     } else if (type === 'credits') {
       const pack = CREDIT_PACKS[product as CreditPackKey]
       if (!pack) return NextResponse.json({ error: 'Invalid credit pack' }, { status: 400 })
-      amountCents = Math.round(pack.kes * 100)
+      amountCents = Math.round(region.packs[pack.pack_key].kes * 100)
+      chargedUsd  = region.packs[pack.pack_key].usd
       label       = pack.label
 
       try {
@@ -89,7 +100,7 @@ export async function POST(req: NextRequest) {
           `INSERT INTO stripe_orders
              (user_id, paystack_ref, stripe_session_id, status, credits_purchased, bonus_credits, amount_usd)
            VALUES ($1, $2, $2, 'pending', $3, $4, $5)`,
-          [paymentUserId, reference, pack.credits, pack.bonus, pack.usd]
+          [paymentUserId, reference, pack.credits, pack.bonus, chargedUsd]
         )
       } catch (err) {
         console.error('[paystack/initialize] failed to create credit order:', err)
@@ -118,6 +129,10 @@ export async function POST(req: NextRequest) {
           auth_user_id: user.id,
           product,
           type,
+          pricing_country: region.country,
+          pricing_tier:    region.tier,
+          price_book:      region.version,
+          charged_usd:     chargedUsd,
           custom_fields: [
             { display_name: 'Product', variable_name: 'product', value: label      },
             { display_name: 'App',     variable_name: 'app',     value: 'Mebley'   },
