@@ -13,7 +13,7 @@ import MarketingShell from '@/components/Marketing/MarketingShell'
 import Icon, { type IconName } from '@/components/Marketing/Icon'
 import ResponsiveImage, { type ImageName } from '@/components/Marketing/ResponsiveImage'
 import {
-  ChatScreen, PhoneFrame, ProfileScreen, RecordScreen, StitchScreen, VoiceFragment, Waveform,
+  ChatScreen, PhoneFrame, RecordScreen, StitchScreen, VoiceFragment, Waveform,
 } from '@/components/Marketing/PhoneScreens'
 import { FAQS, faqJsonLd } from '@/components/Marketing/faq-data'
 import { PLANS, PRODUCT_FACTS, SITE_FACTS, kesLabel, usd } from '@/lib/site-facts'
@@ -223,14 +223,6 @@ export default function HomePage() {
               <Icon name="info" size={18} />
               Runs in your browser on any phone or computer. No download needed.
             </p>
-          </div>
-          <div className="mk-hero__visual">
-            <PhoneFrame
-              label="Sample Mebley profile: Amara, 27, from Nairobi, verified, with a 30 second voice note, a prompt about her perfect Sunday, interests, and a Send a Stitch button"
-              caption="Sample profile. Photo is illustrative."
-            >
-              <ProfileScreen />
-            </PhoneFrame>
           </div>
         </div>
       </section>
