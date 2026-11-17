@@ -1,0 +1,38 @@
+/* Media studio compositions (dev only). Uses the .mk design tokens. */
+.st-shot, .st-stage {
+  position: fixed; inset-block-start: 0; inset-inline-start: 0; overflow: hidden;
+  background: var(--plum-950); color: var(--text-1); z-index: 9999;
+}
+.st-shot { width: 430px; height: 932px; }
+.st-stage { width: 1280px; height: 720px; }
+
+.st-glow { position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; }
+.st-glow--a { width: 560px; height: 560px; background: rgba(232, 53, 95, 0.22); inset-block-start: -180px; inset-inline-end: -160px; }
+.st-glow--b { width: 520px; height: 520px; background: rgba(120, 60, 200, 0.22); inset-block-end: -200px; inset-inline-start: -160px; }
+
+.st-title { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; margin: 0; font-variant-numeric: lining-nums; }
+.st-body { color: var(--text-2); margin: 0; font-size: 17px; line-height: 25px; }
+.st-body--lg { font-size: 22px; line-height: 32px; }
+.st-note { color: var(--text-3); font-size: 14px; margin: 0; }
+
+/* Store screenshot */
+.st-shot__copy { position: relative; padding: 56px 32px 0; display: grid; gap: 10px; text-align: center; justify-items: center; }
+.st-shot .st-title { font-size: 36px; line-height: 42px; }
+.st-shot__phone { position: absolute; inset-inline: 0; inset-block-start: 222px; display: flex; justify-content: center; }
+.st-shot__phone .mk-phone { --w: 330px; }
+
+/* Video */
+.st-center { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 18px; text-align: center; }
+.st-mark { width: 120px; height: auto; }
+.st-wordmark { font-family: var(--font-display); font-weight: 600; font-size: 72px; line-height: 1; }
+.st-title--end { font-size: 64px; line-height: 72px; }
+.st-copy { position: absolute; inset-inline-start: 120px; inset-block-start: 230px; width: 520px; display: grid; gap: 16px; }
+.st-title--video { font-size: 52px; line-height: 60px; }
+.st-phone { position: absolute; inset-inline-end: 150px; inset-block-start: 26px; transform-origin: center top; }
+.st-phone .mk-phone__screen > .st-layer { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.st-steps { position: absolute; inset-inline-start: 120px; inset-block-end: 72px; display: flex; gap: 10px; list-style: none; margin: 0; padding: 0; }
+.st-steps li { font-size: 14px; font-weight: 600; padding: 6px 14px; border-radius: 999px; color: var(--text-3); border: 1px solid rgba(244, 238, 246, 0.12); }
+.st-steps li.is-on { color: var(--plum-950); background: var(--champagne-400); border-color: transparent; }
+
+/* Hide the Next.js dev indicator in captures */
+nextjs-portal { display: none !important; }

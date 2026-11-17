@@ -5,14 +5,30 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { OneSignalProvider } from '@/contexts/OneSignalContext'
 import AppShell from '@/components/UI/AppShell'
 import { getSiteUrl } from '@/lib/site-url'
+import { SITE_FACTS } from '@/lib/site-facts'
+import '@/components/Marketing/marketing.css'
 
 const siteUrl = getSiteUrl()
+
+/**
+ * Loaded with <link> rather than CSS @import, which the build pipeline drops
+ * (fonts were silently falling back to system serif/sans before).
+ * Fraunces keeps its optical-size axis for display sizes (review 4.3).
+ */
+const FONTS_HREF =
+  'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..800;1,9..144,300..800' +
+  '&family=Inter:wght@400..700&family=DM+Sans:wght@300;400;500;600;700&display=swap'
 const siteName = 'Mebley'
 
 /** Aligned with visible landing copy so Google is less likely to substitute other snippet text. */
+const siteTitle = 'Mebley: Voice First Dating App for Real Connections'
 const siteDescription =
-  'Voice-first dating for intentional connections across 40+ countries. Stitch with a note, hear chemistry on profiles, and match by depth — not noise.'
+  "Hear someone's voice before you match. Send a Stitch, a like with a personal note, and meet people ranked by shared values. Free to join, selfie verified, 18+."
 
+/**
+ * One Organization/WebSite graph for every page. Social links come from
+ * SITE_FACTS so they always match the footer (review issue S1).
+ */
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -20,43 +36,25 @@ const jsonLd = {
       '@type': 'Organization',
       '@id': `${siteUrl}/#organization`,
       name: siteName,
+      legalName: SITE_FACTS.legalName,
       url: siteUrl,
-      logo: `${siteUrl}/icon.svg`,
-      sameAs: [
-        'https://twitter.com/mebley',
-        'https://instagram.com/mebleyapp',
-      ],
+      logo: { '@type': 'ImageObject', url: `${siteUrl}/icons/icon-512.png`, width: 512, height: 512 },
+      sameAs: SITE_FACTS.social.map(s => s.href),
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        url: `${siteUrl}/contact`,
+        availableLanguage: 'English',
+      },
     },
     {
       '@type': 'WebSite',
       '@id': `${siteUrl}/#website`,
       url: siteUrl,
-      name: `${siteName} | Modern Connections`,
+      name: siteName,
       description: siteDescription,
       publisher: { '@id': `${siteUrl}/#organization` },
       inLanguage: 'en-US',
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: { '@type': 'EntryPoint', urlTemplate: `${siteUrl}/browse?q={search_term_string}` },
-        'query-input': 'required name=search_term_string',
-      },
-    },
-    {
-      '@type': 'SiteLinksSearchBox',
-      target: `${siteUrl}/?q={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
-    {
-      '@type': 'ItemList',
-      name: 'Mebley Site Navigation',
-      itemListElement: [
-        { '@type': 'SiteLinksSearchBox', position: 1, url: siteUrl, name: 'Home' },
-        { '@type': 'ListItem', position: 2, url: `${siteUrl}/auth`,    name: 'Join Free / Sign In' },
-        { '@type': 'ListItem', position: 3, url: `${siteUrl}/about`,   name: 'About Mebley' },
-        { '@type': 'ListItem', position: 4, url: `${siteUrl}/upgrade`, name: 'Upgrade to Premium' },
-        { '@type': 'ListItem', position: 5, url: `${siteUrl}/blog`,    name: 'Blog' },
-        { '@type': 'ListItem', position: 6, url: `${siteUrl}/contact`, name: 'Contact Us' },
-      ],
     },
   ],
 }
@@ -65,19 +63,19 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#1f0b12',
+  themeColor: '#0C0A1E',
 }
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: siteName,
   title: {
-    default: 'Mebley | Modern Connections',
+    default: siteTitle,
     template: '%s | Mebley',
   },
   description: siteDescription,
   keywords: [
-    'dating app', 'Mebley', 'modern connections', 'intentional dating',
+    'dating app', 'Mebley', 'voice dating', 'voice first dating app', 'intentional dating',
     'voice notes', 'online dating', 'global dating', 'relationships',
     'meet people online', 'dating platform', 'meaningful connections',
   ],
@@ -91,27 +89,25 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName,
-    title: 'Mebley | Modern Connections',
-    description:
-      'Dating built for people who want something real. Intentional matches, voice-first chemistry, and meaningful conversations across 40+ countries.',
+    title: siteTitle,
+    description: siteDescription,
     url: siteUrl,
     images: [
       {
         url: '/opengraph-image',
         width: 1200,
         height: 630,
-        alt: 'Mebley | Modern Connections dating app',
+        alt: 'Mebley, voice first dating',
       },
     ],
     locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@mebley',
-    creator: '@mebley',
-    title: 'Mebley | Modern Connections',
-    description:
-      'Mebley helps ambitious people build real relationships through voice notes, intentional profiles, and values-based matching.',
+    site: '@Mebley_Dating',
+    creator: '@Mebley_Dating',
+    title: siteTitle,
+    description: siteDescription,
     images: ['/opengraph-image'],
   },
   robots: {
@@ -126,9 +122,14 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
-    apple: [{ url: '/icon.svg', type: 'image/svg+xml' }],
-    shortcut: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icons/icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/icon-48.png', sizes: '48x48', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: [{ url: '/icons/icon-32.png', type: 'image/png' }],
   },
   manifest: '/manifest.json',
   ...(process.env.GOOGLE_SITE_VERIFICATION
@@ -138,7 +139,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" dir="ltr">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="stylesheet" href={FONTS_HREF} />
+      </head>
       <body>
         <script
           type="application/ld+json"

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 76" width="64" height="76">
+  <title>Mebley</title>
+  <circle cx="32" cy="30" r="28" fill="#E8355F"/>
+  <path transform="translate(15.5 13) scale(1.375)" fill="#0C0A1E" d="M12 20.5S3 15 3 8.8C3 6 5.2 4 7.8 4c1.8 0 3.3 1 4.2 2.5C12.9 5 14.4 4 16.2 4 18.8 4 21 6 21 8.8 21 15 12 20.5 12 20.5z"/>
+  <path d="M10 68q5.5-5 11 0t11 0 11 0 11 0" fill="none" stroke="#E9C46A" stroke-width="3" stroke-linecap="round"/>
+</svg>

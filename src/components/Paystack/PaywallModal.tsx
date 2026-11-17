@@ -318,10 +318,10 @@ export default function PaywallModal({
                                   <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 20, fontWeight: 700, color: '#f0e8f4' }}>{tier.name}</div>
                                   <div style={{ lineHeight: 1 }}>
                                     <span style={{ fontSize: 26, fontWeight: 800, color: tier.color }}>
-                                      KES {tier.kes.toLocaleString()}
+                                      ${tier.usd}
                                     </span>
                                     <span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(240,232,244,0.38)' }}>/mo</span>
-                                    <div style={{ fontSize: 11, color: 'rgba(240,232,244,0.38)', marginTop: 2 }}>~${tier.usd} USD</div>
+                                    <div style={{ fontSize: 11, color: 'rgba(240,232,244,0.5)', marginTop: 2 }}>Billed as KES {tier.kes.toLocaleString()}</div>
                                   </div>
                                 </div>
                               </div>
@@ -429,10 +429,10 @@ export default function PaywallModal({
                               {/* Price */}
                               <div style={{ marginBottom: 12 }}>
                                 <div style={{ fontSize: 20, fontWeight: 800, color: accentCol, lineHeight: 1, fontFamily: "'DM Sans', sans-serif" }}>
-                                  KES {pack.kes.toLocaleString()}
+                                  ${pack.usd}
                                 </div>
-                                <div style={{ fontSize: 11, color: 'rgba(240,232,244,0.38)', marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
-                                  ≈ ${pack.usd} USD
+                                <div style={{ fontSize: 11, color: 'rgba(240,232,244,0.5)', marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
+                                  Billed as KES {pack.kes.toLocaleString()}
                                 </div>
                               </div>
 
@@ -605,7 +605,7 @@ export default function PaywallModal({
 
               {/* Footer */}
               <p style={{ textAlign: 'center', fontSize: 12, color: 'rgba(240,232,244,0.36)', marginTop: 28, lineHeight: 1.7 }}>
-                💳 Card (USD) &amp; M-Pesa (KES) accepted<br />
+                💳 Card &amp; M-Pesa accepted · Billed in KES; your bank converts if needed<br />
                 Powered by Paystack · Credits never expire · Not cashable
               </p>
 

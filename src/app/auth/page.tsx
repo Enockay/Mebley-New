@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { cdnUrl } from '@/lib/cdn'
+import Icon from '@/components/Marketing/Icon'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Mail, Loader2, Eye, EyeOff, Lock,
@@ -25,8 +26,9 @@ const T = {
   rose:       '#f03868',
   coral:      '#ff7a50',
   text:       '#f0e8f4',
-  muted:      'rgba(220,190,210,0.65)',
-  faint:      'rgba(180,150,170,0.4)',
+  // Text tones from the public-site design system; both pass 4.5:1 on the panel.
+  muted:      '#C9BFD6',
+  faint:      '#9A8FAE',
 }
 
 /* ── Small helpers ──────────────────────────────────────────────── */
@@ -98,7 +100,7 @@ function RightInput({ show, onToggle, ...props }: { show: boolean; onToggle: () 
 function PrimaryBtn({ children, loading, disabled, onClick }: { children: React.ReactNode; loading?: boolean; disabled?: boolean; onClick?: () => void }) {
   return (
     <button onClick={onClick} disabled={disabled || loading}
-      style={{ width: '100%', padding: '14px', borderRadius: 14, background: `linear-gradient(135deg, ${T.rose}, ${T.coral})`, color: 'white', border: 'none', fontSize: 14, fontWeight: 600, cursor: disabled || loading ? 'not-allowed' : 'pointer', opacity: disabled ? 0.45 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 10px 30px rgba(240,56,104,0.32)', fontFamily: 'inherit', transition: 'opacity 0.2s, transform 0.15s' }}
+      style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'linear-gradient(135deg, #B71F47, #D42A55)', color: 'white', border: 'none', fontSize: 16, fontWeight: 600, cursor: disabled || loading ? 'not-allowed' : 'pointer', opacity: disabled ? 0.45 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 10px 30px rgba(240,56,104,0.32)', fontFamily: 'inherit', transition: 'opacity 0.2s, transform 0.15s' }}
       onMouseEnter={e => { if (!disabled && !loading) (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)' }}>
       {loading ? <><Loader2 size={15} className="animate-spin" /> {children}</> : children}
@@ -324,7 +326,7 @@ function BrandPanel() {
         <div>
           <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <img src={cdnUrl('/icon.svg')} alt="Mebley" style={{ height: 36, width: 36, borderRadius: '50%', objectFit: 'cover' }} />
-            <span style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: '#ff6b96' }}>Mebley</span>
+            <span style={{ fontFamily: "'Fraunces',serif", fontSize: 22, fontWeight: 700, color: '#F4EEF6' }}>Mebley</span>
           </a>
         </div>
 
@@ -332,12 +334,12 @@ function BrandPanel() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 48 }}>
           <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 52, fontWeight: 700, lineHeight: 1.04, margin: '0 0 16px', color: '#ffffff', textShadow: '0 2px 24px rgba(0,0,0,0.5)' }}>
             Find your
-            <span style={{ display: 'block', background: 'linear-gradient(118deg, #ff6b96 0%, #f03868 40%, #ff7a50 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>
+            <span style={{ display: 'block', background: 'linear-gradient(90deg, #E8355F, #F08A6A, #E9C46A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>
               person.
             </span>
           </h1>
-          <p style={{ fontSize: 15, color: 'rgba(240,210,225,0.85)', lineHeight: 1.7, maxWidth: 280, margin: '0 0 40px', textShadow: '0 1px 12px rgba(0,0,0,0.6)' }}>
-            Thoughtful profiles, voice chemistry, and matches ranked by depth — not by who swiped last.
+          <p style={{ fontSize: 15, color: 'rgba(240,210,225,0.85)', lineHeight: 1.7, maxWidth: 360, margin: '0 0 40px', textShadow: '0 1px 12px rgba(0,0,0,0.6)' }}>
+            Hear someone&rsquo;s voice before you match. Send a Stitch, a like with a personal note, and meet people ranked by shared values.
           </p>
 
           {/* mock profile card */}
@@ -364,13 +366,13 @@ function BrandPanel() {
         {/* trust */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
-            { icon: '🔒', text: 'End-to-end encrypted' },
-            { icon: '🌍', text: '40+ countries, one platform' },
-            { icon: '⭐', text: '4.8 rated experience' },
+            { icon: 'verified' as const, text: 'Selfie verified profiles' },
+            { icon: 'shield' as const, text: '18+ only' },
+            { icon: 'heart' as const, text: 'Free to join' },
           ].map(({ icon, text }) => (
             <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 14 }}>{icon}</span>
-              <span style={{ fontSize: 12, color: 'rgba(230,200,215,0.75)', textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>{text}</span>
+              <span style={{ color: '#E9C46A', display: 'inline-flex' }}><Icon name={icon} size={20} /></span>
+              <span style={{ fontSize: 15, color: '#F4EEF6', textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>{text}</span>
             </div>
           ))}
         </div>
@@ -655,7 +657,7 @@ function AuthPageInner() {
             {/* mobile logo */}
             <a href="/" className="auth-mobile-header" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
               <img src={cdnUrl('/icon.svg')} alt="Mebley" style={{ height: 28, width: 28, borderRadius: '50%' }} />
-              <span style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: '#ff6b96' }}>Mebley</span>
+              <span style={{ fontFamily: "'Fraunces',serif", fontSize: 17, fontWeight: 700, color: '#F4EEF6' }}>Mebley</span>
             </a>
           </div>
 
@@ -670,17 +672,17 @@ function AuthPageInner() {
                   <div className="auth-mobile-header" style={{ marginBottom: 32, textAlign: 'center' }}>
                     <h1 style={{ fontFamily: "'Fraunces',serif", fontSize: 36, fontWeight: 700, lineHeight: 1.06, margin: '0 0 10px', color: '#ffffff' }}>
                       Find your
-                      <span style={{ display: 'inline-block', background: 'linear-gradient(118deg, #ff6b96, #f03868, #ff7a50)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', marginLeft: 8 }}>
+                      <span style={{ display: 'inline-block', background: 'linear-gradient(90deg, #E8355F, #F08A6A, #E9C46A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', marginLeft: 8 }}>
                         person.
                       </span>
                     </h1>
-                    <p style={{ fontSize: 14, color: T.muted, lineHeight: 1.6, margin: 0 }}>Real connections. Real people.</p>
+                    <p style={{ fontSize: 16, color: '#C9BFD6', lineHeight: 1.6, margin: 0 }}>Hear someone&rsquo;s voice before you match.</p>
                   </div>
 
                   {/* desktop heading */}
                   <div style={{ marginBottom: 32 }}>
                     <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 30, fontWeight: 700, color: '#ffffff', margin: '0 0 8px' }}>Get started</h2>
-                    <p style={{ fontSize: 14, color: T.muted, margin: 0 }}>Join thousands building something real.</p>
+                    <p style={{ fontSize: 16, color: '#C9BFD6', margin: 0 }}>Free to join. It takes two minutes and a 30 second voice note.</p>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -690,19 +692,19 @@ function AuthPageInner() {
                     <Divider />
 
                     <PrimaryBtn onClick={() => { setMode('signup'); setError('') }}>
-                      Create account — It's free
+                      Create a free account
                     </PrimaryBtn>
 
                     <button
                       onClick={() => { setMode('signin'); setError('') }}
-                      style={{ width: '100%', padding: '13px', borderRadius: 14, border: `1.5px solid ${T.border}`, background: 'transparent', fontSize: 14, fontWeight: 500, color: T.muted, cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color 0.18s, color 0.18s' }}
+                      style={{ width: '100%', padding: '13px', borderRadius: 14, border: `1.5px solid ${T.border}`, background: 'transparent', fontSize: 16, fontWeight: 500, color: T.muted, cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color 0.18s, color 0.18s' }}
                       onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.22)'; el.style.color = T.text }}
                       onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = T.border; el.style.color = T.muted }}>
                       Sign in to your account
                     </button>
                   </div>
 
-                  <p style={{ marginTop: 24, textAlign: 'center', fontSize: 11, color: T.faint, lineHeight: 1.7 }}>
+                  <p style={{ marginTop: 24, textAlign: 'center', fontSize: 13, color: T.faint, lineHeight: 1.7 }}>
                     By continuing you agree to our{' '}
                     <a href="/terms" target="_blank" style={{ color: T.rose, fontWeight: 600, textDecoration: 'none' }}>Terms</a>
                     {' '}and{' '}
@@ -711,9 +713,9 @@ function AuthPageInner() {
 
                   {/* trust row */}
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 28, flexWrap: 'wrap' }}>
-                    {[['🔒','Encrypted'],['⭐','4.8 rated'],['🌍','40+ countries']].map(([icon, label]) => (
-                      <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: T.faint }}>
-                        <span>{icon}</span><span>{label}</span>
+                    {([['verified','Selfie verified'],['shield','18+ only'],['globe','40+ countries']] as const).map(([icon, label]) => (
+                      <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: T.faint }}>
+                        <span style={{ color: '#E9C46A', display: 'inline-flex' }}><Icon name={icon} size={16} /></span><span>{label}</span>
                       </div>
                     ))}
                   </div>

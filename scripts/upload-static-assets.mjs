@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
-import { readFileSync, readdirSync } from 'fs'
-import { join, extname } from 'path'
+import { readFileSync, readdirSync, statSync } from 'fs'
+import { join, extname, relative, sep } from 'path'
 import { config } from 'dotenv'
 
 config({ path: new URL('../.env', import.meta.url).pathname })
@@ -11,7 +11,10 @@ const MIME = {
   '.jpeg': 'image/jpeg',
   '.svg':  'image/svg+xml',
   '.webp': 'image/webp',
+  '.avif': 'image/avif',
   '.gif':  'image/gif',
+  '.webm': 'video/webm',
+  '.mp4':  'video/mp4',
 }
 
 const s3 = new S3Client({
@@ -25,7 +28,16 @@ const s3 = new S3Client({
 const publicDir = new URL('../public', import.meta.url).pathname
 const bucket    = process.env.AWS_S3_BUCKET
 
-const files = readdirSync(publicDir).filter(f => MIME[extname(f).toLowerCase()])
+// Recurse so responsive renditions in public/img/ are uploaded too.
+function walk(dir) {
+  return readdirSync(dir).flatMap(f => {
+    const full = join(dir, f)
+    return statSync(full).isDirectory() ? walk(full) : [full]
+  })
+}
+const files = walk(publicDir)
+  .filter(f => MIME[extname(f).toLowerCase()])
+  .map(f => relative(publicDir, f).split(sep).join('/'))
 
 console.log(`Uploading ${files.length} files to s3://${bucket}/static/\n`)
 

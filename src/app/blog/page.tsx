@@ -2,13 +2,14 @@
 
 import MarketingLayout from '@/components/UI/MarketingLayout'
 import Link from 'next/link'
+import Icon, { type IconName } from '@/components/Marketing/Icon'
 
 const T = {
-  text:  '#f0e8f4',
-  muted: 'rgba(240,232,244,0.52)',
-  rose:  '#f03868',
-  card:  'rgba(255,255,255,0.045)',
-  border:'rgba(255,255,255,0.09)',
+  text:  'var(--text-1)',
+  muted: 'var(--text-2)',
+  rose:  'var(--coral-500)',
+  card:  'var(--plum-900)',
+  border:'rgba(244,238,246,0.08)',
 }
 
 const POSTS = [
@@ -21,7 +22,7 @@ const POSTS = [
     title:    'Why voice notes are changing the way we date',
     excerpt:  "A written bio can be crafted. A voice note can't lie. Here's what 30 seconds of audio reveals that months of texting doesn't.",
     grad:     'linear-gradient(135deg, #4830a0 0%, #261668 100%)',
-    emoji:    '🎙️',
+    icon:     'mic' as IconName,
   },
   {
     slug:     'intent-score-explained',
@@ -32,7 +33,7 @@ const POSTS = [
     title:    'The Intent Score: how we match on what you actually want',
     excerpt:  "Most algorithms match on behaviour. Ours matches on intent. Here's what goes into the score that shapes your Discover feed.",
     grad:     'linear-gradient(135deg, #bf4578 0%, #8b2556 100%)',
-    emoji:    '🎯',
+    icon:     'target' as IconName,
   },
   {
     slug:     'global-dating-culture',
@@ -43,7 +44,7 @@ const POSTS = [
     title:    'Love across borders: dating culture in 5 cities',
     excerpt:  "From Nairobi to Seoul, first-date expectations vary wildly. We spoke to Mebley members on 4 continents about what connection means to them.",
     grad:     'linear-gradient(135deg, #c44858 0%, #962840 100%)',
-    emoji:    '🌍',
+    icon:     'globe' as IconName,
   },
   {
     slug:     'safety-on-mebley',
@@ -54,7 +55,7 @@ const POSTS = [
     title:    "How Mebley keeps you safe — and why we built it this way",
     excerpt:  "Photo verification, reporting, and moderation aren't add-ons. They're the foundation. Here's why we prioritised safety above growth.",
     grad:     'linear-gradient(135deg, #1a5c3a 0%, #0d3321 100%)',
-    emoji:    '🔒',
+    icon:     'lock' as IconName,
   },
   {
     slug:     'here-tonight-feature',
@@ -65,7 +66,7 @@ const POSTS = [
     title:    "Here Tonight: meet people who are actually out right now",
     excerpt:  "Most matches go nowhere because timing is off. Here Tonight changes that — it surfaces people who are available now, tonight.",
     grad:     'linear-gradient(135deg, #4a0e38 0%, #2d0622 100%)',
-    emoji:    '🌙',
+    icon:     'moon' as IconName,
   },
   {
     slug:     'meaningful-connections',
@@ -76,7 +77,7 @@ const POSTS = [
     title:    '5 things people who find lasting love online do differently',
     excerpt:  "After analysing thousands of matches that led to real relationships, patterns emerge. The biggest one? How they fill out their profile.",
     grad:     'linear-gradient(135deg, #7c2d12 0%, #431407 100%)',
-    emoji:    '💎',
+    icon:     'heart' as IconName,
   },
 ]
 
@@ -95,7 +96,7 @@ export default function BlogPage() {
             display: 'inline-block', marginBottom: 18,
             background: 'rgba(240,56,104,0.12)', border: '1px solid rgba(240,56,104,0.25)',
             borderRadius: 100, padding: '6px 18px',
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#ff80a8',
+            fontSize: 13, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--champagne-400)',
           }}>
             The Mebley Journal
           </div>
@@ -115,8 +116,8 @@ export default function BlogPage() {
           {CATEGORIES.map((c, i) => (
             <span key={c} style={{
               padding: '8px 18px', borderRadius: 100,
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              background: i === 0 ? 'linear-gradient(135deg, #e03060, #f03868)' : T.card,
+              fontSize: 15, fontWeight: 600, cursor: 'pointer',
+              background: i === 0 ? 'var(--gradient-action)' : T.card,
               color:      i === 0 ? '#fff' : T.muted,
               border:     i === 0 ? 'none' : `1px solid ${T.border}`,
             }}>
@@ -136,23 +137,23 @@ export default function BlogPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             minHeight: 280, fontSize: 80,
           }}>
-            {featured.emoji}
+            <Icon name={featured.icon} size={56} />
           </div>
           <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
               <span style={{
-                padding: '4px 12px', borderRadius: 100, fontSize: 11, fontWeight: 700,
+                padding: '4px 12px', borderRadius: 100, fontSize: 15, fontWeight: 700,
                 color: featured.catColor, background: `${featured.catColor}18`, border: `1px solid ${featured.catColor}30`,
               }}>{featured.category}</span>
-              <span style={{ fontSize: 12, color: T.muted }}>{featured.date} · {featured.read}</span>
+              <span style={{ fontSize: 15, color: T.muted }}>{featured.date} · {featured.read}</span>
             </div>
             <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: T.text, margin: '0 0 12px', lineHeight: 1.3 }}>
               {featured.title}
             </h2>
-            <p style={{ fontSize: 14, color: T.muted, lineHeight: 1.7, margin: '0 0 24px' }}>{featured.excerpt}</p>
+            <p style={{ fontSize: 17, color: T.muted, lineHeight: 1.7, margin: '0 0 24px' }}>{featured.excerpt}</p>
             <Link href={`/blog/${featured.slug}`} style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              fontSize: 14, fontWeight: 700, color: T.rose, textDecoration: 'none',
+              fontSize: 17, fontWeight: 700, color: T.rose, textDecoration: 'none',
             }}>
               Read article <span style={{ fontSize: 16 }}>→</span>
             </Link>
@@ -182,23 +183,23 @@ export default function BlogPage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 56,
                 }}>
-                  {post.emoji}
+                  <Icon name={post.icon} size={40} />
                 </div>
                 <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <span style={{
-                      padding: '3px 10px', borderRadius: 100, fontSize: 10, fontWeight: 700,
+                      padding: '3px 10px', borderRadius: 100, fontSize: 15, fontWeight: 700,
                       color: post.catColor, background: `${post.catColor}18`,
                     }}>{post.category}</span>
-                    <span style={{ fontSize: 11, color: T.muted }}>{post.read}</span>
+                    <span style={{ fontSize: 15, color: T.muted }}>{post.read}</span>
                   </div>
                   <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 700, color: T.text, margin: '0 0 8px', lineHeight: 1.35, flex: 1 }}>
                     {post.title}
                   </h3>
-                  <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.6, margin: '0 0 14px' }}>
+                  <p style={{ fontSize: 15, color: T.muted, lineHeight: 1.6, margin: '0 0 14px' }}>
                     {post.excerpt.slice(0, 100)}…
                   </p>
-                  <span style={{ fontSize: 12, color: T.muted }}>{post.date}</span>
+                  <span style={{ fontSize: 15, color: T.muted }}>{post.date}</span>
                 </div>
               </div>
             </Link>
@@ -211,25 +212,25 @@ export default function BlogPage() {
           background: 'rgba(240,56,104,0.06)', border: '1px solid rgba(240,56,104,0.14)',
           borderRadius: 28, padding: '52px 24px',
         }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>📬</div>
+          <div style={{ marginBottom: 16, color: 'var(--coral-500)', display: 'flex', justifyContent: 'center' }}><Icon name="message" size={40} /></div>
           <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 700, color: T.text, margin: '0 0 10px' }}>
             Get new stories in your inbox
           </h2>
-          <p style={{ fontSize: 14, color: T.muted, margin: '0 0 28px' }}>No spam. Just good writing about modern connection.</p>
+          <p style={{ fontSize: 17, color: T.muted, margin: '0 0 28px' }}>No spam. Just good writing about modern connection.</p>
           <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', gap: 10, maxWidth: 420, margin: '0 auto', justifyContent: 'center' }}>
             <input
               type="email"
               placeholder="your@email.com"
               style={{
                 flex: 1, padding: '13px 18px', borderRadius: 100, border: `1px solid ${T.border}`,
-                background: 'rgba(255,255,255,0.06)', color: T.text, fontSize: 14,
+                background: 'rgba(255,255,255,0.06)', color: T.text, fontSize: 17,
                 fontFamily: "'DM Sans', sans-serif", outline: 'none',
               }}
             />
             <button type="submit" style={{
               padding: '13px 24px', borderRadius: 100, border: 'none',
-              background: 'linear-gradient(135deg, #e03060, #f03868)',
-              color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+              background: 'var(--gradient-action)',
+              color: '#fff', fontSize: 17, fontWeight: 700, cursor: 'pointer',
               fontFamily: "'DM Sans', sans-serif",
             }}>
               Subscribe

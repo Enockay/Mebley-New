@@ -21,7 +21,10 @@ import { isSafeRedirectPath } from '@/lib/safe-redirect'
 // ── Route classification ──────────────────────────────────────────────────────
 
 /** Pages that anyone can visit without a session */
-const PUBLIC_PAGE_ROUTES = ['/', '/auth', '/privacy', '/terms', '/about', '/blog', '/contact', '/upgrade']
+const PUBLIC_PAGE_ROUTES = ['/', '/auth', '/privacy', '/terms', '/about', '/blog', '/contact', '/upgrade', '/pricing', '/safety', '/faq',
+  // Dev-only media studio for screenshots and the demo video; 404s in production.
+  ...(process.env.NODE_ENV !== 'production' ? ['/studio'] : []),
+]
 
 /** API routes that do NOT require authentication */
 const PUBLIC_API_PREFIXES = [
@@ -228,6 +231,6 @@ export async function proxy(request: NextRequest) {
 // Excludes Next.js internals and static assets for performance
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|webm|mp4)$).*)',
   ],
 }

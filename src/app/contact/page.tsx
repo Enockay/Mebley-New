@@ -2,22 +2,21 @@
 
 import { useState } from 'react'
 import MarketingLayout from '@/components/UI/MarketingLayout'
+import Icon, { type IconName } from '@/components/Marketing/Icon'
+import { SITE_FACTS } from '@/lib/site-facts'
 
 const T = {
-  text:  '#f0e8f4',
-  muted: 'rgba(240,232,244,0.52)',
-  rose:  '#f03868',
-  rose2: '#e03060',
-  card:  'rgba(255,255,255,0.045)',
-  border:'rgba(255,255,255,0.09)',
+  text:  'var(--text-1)',
+  muted: 'var(--text-2)',
+  rose:  'var(--coral-500)',
+  rose2: 'var(--coral-700)',
+  card:  'var(--plum-900)',
+  border:'rgba(244,238,246,0.08)',
   roseBorder: 'rgba(240,56,104,0.25)',
 }
 
-const SOCIAL_LINKS = [
-  { label: 'Facebook', href: 'https://www.facebook.com/profile.php?id=61589535176918' },
-  { label: 'X / Twitter', href: 'https://x.com/Mebley_Dating' },
-  { label: 'Instagram', href: 'https://www.instagram.com/mebleysite/' },
-]
+// Same links as the footer and structured data (review S1)
+const SOCIAL_LINKS = SITE_FACTS.social
 
 const CATEGORIES = [
   'General enquiry',
@@ -30,19 +29,19 @@ const CATEGORIES = [
 
 const CONTACT_CARDS = [
   {
-    emoji: '✉️',
+    icon: 'message' as IconName,
     title: 'Email us',
     detail: 'support@mebley.com',
     sub: 'Usually replies within 24 hours',
   },
   {
-    emoji: '🛡️',
+    icon: 'shield' as IconName,
     title: 'Safety & trust',
     detail: 'safety@mebley.com',
     sub: 'Reviewed within 4 hours',
   },
   {
-    emoji: '📰',
+    icon: 'info' as IconName,
     title: 'Press',
     detail: 'press@mebley.com',
     sub: 'Media kits & interviews',
@@ -88,7 +87,7 @@ export default function ContactPage() {
     width: '100%', padding: '14px 16px', borderRadius: 14,
     border: `1px solid ${T.border}`,
     background: 'rgba(255,255,255,0.05)',
-    color: T.text, fontSize: 14,
+    color: T.text, fontSize: 17,
     fontFamily: "'DM Sans', sans-serif",
     outline: 'none', boxSizing: 'border-box',
     transition: 'border-color 0.2s',
@@ -104,7 +103,7 @@ export default function ContactPage() {
             display: 'inline-block', marginBottom: 18,
             background: 'rgba(240,56,104,0.12)', border: `1px solid ${T.roseBorder}`,
             borderRadius: 100, padding: '6px 18px',
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#ff80a8',
+            fontSize: 13, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--champagne-400)',
           }}>
             Get in touch
           </div>
@@ -112,7 +111,7 @@ export default function ContactPage() {
             fontFamily: "'Fraunces', serif", fontSize: 'clamp(32px, 5vw, 56px)',
             fontWeight: 700, color: T.text, margin: '0 0 16px', letterSpacing: '-0.02em',
           }}>
-            We'd love to hear from you
+            We&rsquo;d love to hear from you
           </h1>
           <p style={{ fontSize: 17, color: T.muted, maxWidth: 440, margin: '0 auto', lineHeight: 1.7 }}>
             Questions, feedback, partnership ideas — our team reads every message.
@@ -135,25 +134,25 @@ export default function ContactPage() {
                     background: 'rgba(240,56,104,0.10)', border: '1px solid rgba(240,56,104,0.2)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
                   }}>
-                    {c.emoji}
+                    <Icon name={c.icon} />
                   </div>
                   <div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: '0 0 2px' }}>{c.title}</p>
-                    <p style={{ fontSize: 13, color: T.rose, margin: '0 0 2px', fontWeight: 600 }}>{c.detail}</p>
-                    <p style={{ fontSize: 12, color: T.muted, margin: 0 }}>{c.sub}</p>
+                    <p style={{ fontSize: 17, fontWeight: 700, color: T.text, margin: '0 0 2px' }}>{c.title}</p>
+                    <p style={{ fontSize: 15, color: T.rose, margin: '0 0 2px', fontWeight: 600 }}>{c.detail}</p>
+                    <p style={{ fontSize: 15, color: T.muted, margin: 0 }}>{c.sub}</p>
                   </div>
                 </div>
               ))}
             </div>
 
             <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 18, padding: '24px' }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: T.text, margin: '0 0 12px' }}>Follow us</p>
+              <p style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: '0 0 12px' }}>Follow us</p>
               <div style={{ display: 'flex', gap: 10 }}>
                 {SOCIAL_LINKS.map(({ label, href }) => (
                   <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{
                     padding: '7px 14px', borderRadius: 100,
                     background: 'rgba(255,255,255,0.06)', border: `1px solid ${T.border}`,
-                    fontSize: 12, color: T.muted, cursor: 'pointer', textDecoration: 'none',
+                    fontSize: 15, color: T.muted, cursor: 'pointer', textDecoration: 'none',
                   }}>
                     {label}
                   </a>
@@ -166,18 +165,18 @@ export default function ContactPage() {
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 28, padding: '36px 32px' }}>
             {sent ? (
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                <div style={{ fontSize: 64, marginBottom: 16 }}>✉️</div>
+                <div style={{ marginBottom: 16, color: 'var(--coral-500)', display: 'flex', justifyContent: 'center' }}><Icon name="check" size={56} /></div>
                 <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, color: T.text, margin: '0 0 10px' }}>
                   Message sent!
                 </h2>
                 <p style={{ fontSize: 15, color: T.muted, margin: '0 0 24px', lineHeight: 1.6 }}>
-                  Thanks {form.name.split(' ')[0]}! We'll get back to you at {form.email} within 24 hours.
+                  Thanks, {form.name.split(' ')[0]}. We&rsquo;ll get back to you at {form.email} within 24 hours.
                 </p>
                 <button
                   onClick={() => { setSent(false); setForm({ name: '', email: '', category: '', message: '' }) }}
                   style={{
                     padding: '11px 28px', borderRadius: 100, border: `1px solid ${T.border}`,
-                    background: 'transparent', color: T.muted, fontSize: 14, cursor: 'pointer',
+                    background: 'transparent', color: T.muted, fontSize: 17, cursor: 'pointer',
                     fontFamily: "'DM Sans', sans-serif",
                   }}>
                   Send another
@@ -187,24 +186,24 @@ export default function ContactPage() {
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                 <div>
                   <p style={{ fontSize: 22, fontFamily: "'Fraunces', serif", fontWeight: 700, color: T.text, margin: '0 0 6px' }}>Send a message</p>
-                  <p style={{ fontSize: 13, color: T.muted, margin: 0 }}>We read every message and usually reply within 24 hours.</p>
+                  <p style={{ fontSize: 15, color: T.muted, margin: 0 }}>We read every message and usually reply within 24 hours.</p>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Name</label>
+                    <label style={{ fontSize: 15, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Name</label>
                     <input name="name" value={form.name} onChange={handleChange} placeholder="Your name"
                       required style={inputStyle} />
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Email</label>
+                    <label style={{ fontSize: 15, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Email</label>
                     <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="you@example.com"
                       required style={inputStyle} />
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Category</label>
+                  <label style={{ fontSize: 15, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Category</label>
                   <select name="category" value={form.category} onChange={handleChange}
                     style={{ ...inputStyle, appearance: 'none', WebkitAppearance: 'none' }}>
                     <option value="" disabled>Choose a topic…</option>
@@ -213,7 +212,7 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Message</label>
+                  <label style={{ fontSize: 15, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Message</label>
                   <textarea name="message" value={form.message} onChange={handleChange}
                     placeholder="Tell us what's on your mind…"
                     rows={5} required
@@ -225,7 +224,7 @@ export default function ContactPage() {
                   <div style={{
                     padding: '12px 16px', borderRadius: 12,
                     background: 'rgba(240,56,104,0.10)', border: '1px solid rgba(240,56,104,0.25)',
-                    color: '#ff6688', fontSize: 13, lineHeight: 1.5,
+                    color: 'var(--coral-200)', fontSize: 15, lineHeight: 1.5,
                   }}>
                     {apiError}
                   </div>
@@ -242,7 +241,7 @@ export default function ContactPage() {
                   {loading ? 'Sending…' : 'Send message →'}
                 </button>
 
-                <p style={{ fontSize: 12, color: T.muted, textAlign: 'center', margin: 0 }}>
+                <p style={{ fontSize: 15, color: T.muted, textAlign: 'center', margin: 0 }}>
                   By sending, you agree to our{' '}
                   <a href="/privacy" style={{ color: T.rose, textDecoration: 'none' }}>Privacy Policy</a>.
                 </p>
@@ -258,14 +257,14 @@ export default function ContactPage() {
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
             {[
-              { q: 'How do credits work?', a: "Credits are your in-app currency. Spend them on Moments (like Here Tonight) or Boosts to increase your visibility. You earn credits through your monthly plan or by purchasing packs." },
+              { q: 'How do credits work?', a: "Credits are your in-app currency. Spend them on Stitches that become matches, Spotlight and Boosts. You earn credits through your monthly plan or by purchasing packs." },
               { q: 'Can I cancel my plan?', a: "Yes, anytime. Your plan stays active until the end of the billing period, then reverts to free. No hidden fees or cancellation charges." },
               { q: 'How does photo verification work?', a: "Take a quick selfie from the app. Our system compares it to your profile photos. Verified profiles get a badge that tells others you're who you say you are." },
-              { q: 'Is Mebley available worldwide?', a: "Mebley works in 40+ countries. Payment is handled by Paystack, which supports Visa, Mastercard, and bank cards internationally." },
+              { q: 'Is Mebley available worldwide?', a: "Mebley is open in more than 40 countries. Payments are handled by Paystack: cards and mobile money, including M-Pesa, charged in Kenyan shillings." },
             ].map(faq => (
               <div key={faq.q} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 18, padding: '22px' }}>
-                <p style={{ fontSize: 14, fontWeight: 700, color: T.text, margin: '0 0 8px' }}>{faq.q}</p>
-                <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.7, margin: 0 }}>{faq.a}</p>
+                <p style={{ fontSize: 17, fontWeight: 700, color: T.text, margin: '0 0 8px' }}>{faq.q}</p>
+                <p style={{ fontSize: 15, color: T.muted, lineHeight: 1.7, margin: 0 }}>{faq.a}</p>
               </div>
             ))}
           </div>
