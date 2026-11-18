@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUserFromRequest } from '@/lib/auth-server'
 import { pgQuery } from '@/lib/postgres'
+import { sanitizeDetails } from '@/lib/profile-details'
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -38,6 +39,19 @@ export async function PATCH(request: NextRequest) {
         user.id,
       ]
     )
+
+    // Optional profile details (migration 022). Written separately so the
+    // core fields above keep saving even if the migration has not run yet.
+    const details = sanitizeDetails(body)
+    if (!details.ok) return NextResponse.json({ error: details.error }, { status: 400 })
+    const cols = Object.keys(details.value) as (keyof typeof details.value)[]
+    if (cols.length > 0) {
+      const sets = cols.map((c, i) => `${c} = $${i + 1}`).join(', ')
+      await pgQuery(
+        `UPDATE profiles SET ${sets}, updated_at = NOW() WHERE id = $${cols.length + 1}`,
+        [...cols.map(c => (c === 'languages' ? details.value.languages ?? [] : details.value[c] ?? null)), user.id],
+      )
+    }
 
     return NextResponse.json({ success: true })
   } catch (err) {

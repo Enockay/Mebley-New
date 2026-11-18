@@ -2,8 +2,7 @@
 
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import BottomNav from '@/components/UI/BottomNav'
-import TopHeader from '@/components/UI/TopHeader'
+import AppFrame from '@/components/App/AppFrame'
 
 // Routes with no nav ever
 const NO_NAV_ROUTES = ['/', '/auth', '/terms', '/privacy', '/about', '/blog', '/contact', '/upgrade', '/pricing', '/safety', '/faq', '/studio', '/admin']
@@ -11,17 +10,18 @@ const NO_NAV_ROUTES = ['/', '/auth', '/terms', '/privacy', '/about', '/blog', '/
 // Routes that only hide nav when profile is incomplete
 const SETUP_ROUTES = ['/setup', '/browse', '/discover']
 
+// Full-screen on mobile (no top bar): an open chat thread
+const BARE_MOBILE = (pathname: string, params: URLSearchParams) =>
+  pathname.startsWith('/matches') && params.has('conversation')
+
 export default function NavWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { profile, user, loading } = useAuth()
   const isEmbedded = searchParams.get('embedded') === '1'
-  const hideTopHeaderOnRoute = pathname === '/matches' || pathname.startsWith('/matches/')
 
   // Embedded pages render inside in-app drawers/iframes and must not inherit nav wrapper spacing.
-  if (isEmbedded) {
-    return <>{children}</>
-  }
+  if (isEmbedded) return <>{children}</>
 
   // Always no nav on these pages
   if (NO_NAV_ROUTES.some(r => pathname === r || (r !== '/' && pathname.startsWith(r)))) {
@@ -34,32 +34,5 @@ export default function NavWrapper({ children }: { children: React.ReactNode }) 
     return <div className="min-h-screen">{children}</div>
   }
 
-  return (
-    <div
-      className="flex flex-col min-h-screen"
-      style={{
-        background: `
-          radial-gradient(ellipse 55% 40% at 10% 90%, rgba(240,56,104,0.13) 0%, transparent 65%),
-          radial-gradient(ellipse 45% 55% at 90% 10%, rgba(110,40,190,0.11) 0%, transparent 65%),
-          radial-gradient(ellipse 70% 50% at 50% 50%, rgba(20,14,50,0.5) 0%, transparent 80%),
-          #0c0a1e
-        `,
-      }}
-    >
-      {!hideTopHeaderOnRoute && <TopHeader />}
-      <main
-        className="flex-1 overflow-y-auto overflow-x-hidden"
-        style={hideTopHeaderOnRoute
-          ? undefined
-          : {
-              marginTop: '62px',
-              paddingBottom: 'calc(72px + env(safe-area-inset-bottom) + 8px)',
-            }
-        }
-      >
-        {children}
-      </main>
-      <BottomNav />
-    </div>
-  )
+  return <AppFrame bareMobile={BARE_MOBILE(pathname, searchParams)}>{children}</AppFrame>
 }

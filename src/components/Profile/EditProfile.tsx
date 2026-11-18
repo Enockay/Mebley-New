@@ -3,6 +3,10 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
+import {
+  CHILDREN_OPTIONS, DRINKING_OPTIONS, EDUCATION_OPTIONS, HEIGHT_MAX_CM, HEIGHT_MIN_CM,
+  LANGUAGE_OPTIONS, OCCUPATION_MAX, formatHeight,
+} from '@/lib/profile-details'
 import { X, Check, Sparkles, Save, Plus, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { RELATIONSHIP_INTENTS, INTERESTS_BY_CATEGORY, PROFILE_PROMPTS } from '@/types/app-constants'
@@ -63,6 +67,12 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
     nationality: '',
     looking_for: [] as string[],
     interests:   [] as string[],
+    occupation:  '',
+    height_cm:   '',
+    education:   '',
+    drinking:    '',
+    children:    '',
+    languages:   [] as string[],
   })
 
   // ── Prompts state ─────────────────────────────────────────────────────────
@@ -90,6 +100,12 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
           nationality: (profile as any).nationality ?? '',
           looking_for: (profile.looking_for ?? []) as string[],
           interests:   profile.interests   ?? [],
+          occupation:  (profile as any).occupation ?? '',
+          height_cm:   (profile as any).height_cm ? String((profile as any).height_cm) : '',
+          education:   (profile as any).education ?? '',
+          drinking:    (profile as any).drinking ?? '',
+          children:    (profile as any).children ?? '',
+          languages:   Array.isArray((profile as any).languages) ? (profile as any).languages : [],
         })
 
         // Load saved prompts — stored as jsonb[] on profile
@@ -209,6 +225,12 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
         interests:            formData.interests,
         prompts,
         profile_completeness: completeness,
+        occupation:           formData.occupation.trim() || null,
+        height_cm:            formData.height_cm ? Number(formData.height_cm) : null,
+        education:            formData.education || null,
+        drinking:             formData.drinking || null,
+        children:             formData.children || null,
+        languages:            formData.languages,
       }),
     })
 
@@ -321,6 +343,96 @@ export default function EditProfile({ onClose, initialTab }: EditProfileProps) {
                   onChange={e => setFormData(p => ({ ...p, nationality: e.target.value }))}
                   className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
                 />
+              </div>
+
+
+              {/* Details (migration 022): shown as "Basics" on your profile */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2" htmlFor="ep-occupation">Job title</label>
+                  <input
+                    id="ep-occupation"
+                    type="text"
+                    maxLength={OCCUPATION_MAX}
+                    placeholder="e.g. Marketing executive"
+                    value={formData.occupation}
+                    onChange={e => setFormData(p => ({ ...p, occupation: e.target.value }))}
+                    className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2" htmlFor="ep-height">Height (cm)</label>
+                  <input
+                    id="ep-height"
+                    type="number"
+                    inputMode="numeric"
+                    min={HEIGHT_MIN_CM}
+                    max={HEIGHT_MAX_CM}
+                    placeholder="e.g. 168"
+                    value={formData.height_cm}
+                    onChange={e => setFormData(p => ({ ...p, height_cm: e.target.value }))}
+                    className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
+                  />
+                  {formData.height_cm && formatHeight(Number(formData.height_cm)) ? (
+                    <p className="mt-1 text-xs text-[rgba(233,213,255,0.6)]">{formatHeight(Number(formData.height_cm))}</p>
+                  ) : null}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2" htmlFor="ep-education">Education</label>
+                  <select
+                    id="ep-education"
+                    value={formData.education}
+                    onChange={e => setFormData(p => ({ ...p, education: e.target.value }))}
+                    className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
+                  >
+                    <option value="">Prefer not to say</option>
+                    {EDUCATION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2" htmlFor="ep-drinking">Drinks</label>
+                  <select
+                    id="ep-drinking"
+                    value={formData.drinking}
+                    onChange={e => setFormData(p => ({ ...p, drinking: e.target.value }))}
+                    className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
+                  >
+                    <option value="">Prefer not to say</option>
+                    {DRINKING_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2" htmlFor="ep-children">Children</label>
+                  <select
+                    id="ep-children"
+                    value={formData.children}
+                    onChange={e => setFormData(p => ({ ...p, children: e.target.value }))}
+                    className="w-full px-4 py-3 border border-white/14 rounded-xl focus:border-rose-400 focus:outline-none transition-colors bg-white/8 text-[#fff4ff] placeholder:text-[rgba(233,213,255,0.45)]"
+                  >
+                    <option value="">Prefer not to say</option>
+                    {CHILDREN_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <fieldset className="sm:col-span-2">
+                  <legend className="block text-sm font-semibold text-[rgba(233,213,255,0.88)] mb-2">Languages <span className="text-[rgba(233,213,255,0.55)] font-normal">(up to 6)</span></legend>
+                  <div className="flex flex-wrap gap-2">
+                    {LANGUAGE_OPTIONS.map(lang => {
+                      const on = formData.languages.includes(lang)
+                      return (
+                        <button
+                          key={lang}
+                          type="button"
+                          aria-pressed={on}
+                          disabled={!on && formData.languages.length >= 6}
+                          onClick={() => toggleArrayValue('languages', lang)}
+                          className={`px-3 py-1.5 rounded-full text-sm border transition-colors disabled:opacity-40 ${on ? 'border-rose-400 bg-rose-500/20 text-rose-100' : 'border-white/15 bg-white/5 text-[rgba(233,213,255,0.85)]'}`}
+                        >
+                          {lang}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </fieldset>
               </div>
 
               <div>

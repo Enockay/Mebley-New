@@ -7,11 +7,13 @@ interface StitchModalProps {
   targetName: string
   onSend: (note: string) => Promise<void>
   onClose: () => void
+  /** Prompt question being replied to, shown above the note. */
+  context?: string
 }
 
 const MAX = 280
 
-export default function StitchModal({ targetName, onSend, onClose }: StitchModalProps) {
+export default function StitchModal({ targetName, onSend, onClose, context }: StitchModalProps) {
   const [note, setNote]       = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -108,6 +110,15 @@ export default function StitchModal({ targetName, onSend, onClose }: StitchModal
         }}>
           A Stitch jumps to the top of their stack. Write something genuine — they'll see it before anything else.
         </p>
+
+        {context ? (
+          <p style={{
+            fontSize: 13, color: '#f7a1b5', margin: '0 0 10px', padding: '8px 12px',
+            borderRadius: 12, background: 'rgba(232,53,95,0.12)', border: '1px solid rgba(232,53,95,0.3)',
+          }}>
+            Replying to: {context}
+          </p>
+        ) : null}
 
         {/* Textarea */}
         <div style={{ position: 'relative', marginBottom: 14 }}>

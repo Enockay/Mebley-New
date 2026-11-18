@@ -10,7 +10,7 @@ import {
   ArrowLeft, Send, Image, Gift, Video,
   PhoneOff, MicOff, Mic, VideoOff, X, Loader2,
   CameraOff, Check, Trash2, MoreVertical, BellOff, Shield,
-  Play, Pause, Phone, Flag,
+  Play, Pause, Phone, Flag, Plus, Heart, ShieldCheck,
 } from 'lucide-react'
 import BlockReport from '@/components/Moderation/BlockReport'
 import { ChatOverlayPortalContext } from '@/contexts/ChatOverlayPortalContext'
@@ -350,6 +350,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
 
   // GIF panel
   const [showGifs, setShowGifs]         = useState(false)
+  const [showTray, setShowTray]         = useState(false)
   const [gifQuery, setGifQuery]         = useState('')
   const [gifs, setGifs]                 = useState<any[]>([])
   const [gifLoading, setGifLoading]     = useState(false)
@@ -1117,7 +1118,18 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
   const online    = isUserOnline(otherLastActive)
   const statusText = isPendingConversation
     ? 'Pending match'
-    : (online ? 'Online now' : formatLastSeen(otherLastActive))
+    : (online ? 'Active now' : formatLastSeen(otherLastActive))
+  const mine   = new Set(((currentProfile as any)?.interests ?? []) as string[])
+  const shared = (((otherProfile as any).interests ?? []) as string[]).filter(i => mine.has(i)).slice(0, 2)
+  const bothSerious = ((currentProfile as any)?.looking_for ?? []).includes('serious relationship')
+    && (((otherProfile as any).looking_for ?? []) as string[]).includes('serious relationship')
+  const sharedText = [
+    shared.length ? `You both like ${shared.map(x => x.toLowerCase()).join(' and ')}` : null,
+    bothSerious ? 'want something serious' : null,
+  ].filter(Boolean).join(shared.length ? ' and ' : '')
+  const lastMsg = messages[messages.length - 1]
+  const showQuickReplies = !isPendingConversation && !!lastMsg && lastMsg.senderId !== currentProfile?.id && !text && !recordingAudio && !pendingImage
+  const QUICK_REPLIES = ['Sounds good!', 'What time works for you?', 'Tell me more']
 
   return (
     <>
@@ -1137,23 +1149,25 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: 'radial-gradient(ellipse 65% 45% at 12% 88%, rgba(240,56,104,0.09) 0%, transparent 65%), radial-gradient(ellipse 45% 55% at 88% 12%, rgba(100,40,180,0.07) 0%, transparent 65%), #0c0a1e',
-        fontFamily: "'DM Sans', sans-serif",
+        background: '#100e1f',
+        fontFamily: "'Inter', 'DM Sans', system-ui, sans-serif",
+        fontSize: 15,
         position: 'relative',
       }}>
 
         {/* ── Header ── */}
-        <div style={{ background: 'rgba(8,6,20,0.80)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <button onClick={onBack} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ArrowLeft size={18} color="#f8ecff" />
+        <div style={{ background: '#0c0a1a', borderBottom: '1px solid rgba(244,238,246,0.08)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, minHeight: 72 }}>
+          <button onClick={onBack} aria-label="Back to chats" style={{ width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ArrowLeft size={22} color="#f4eef6" />
           </button>
 
           <div
             onClick={onViewProfile}
             style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, cursor: onViewProfile ? 'pointer' : 'default' }}
           >
-            <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,#f43f5e,#ec4899)', padding: 2, flexShrink: 0 }}>
-              <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#120326' }}>
+            <div style={{ width: 44, height: 44, borderRadius: '50%', flexShrink: 0, position: 'relative' }}>
+              {online && !isPendingConversation ? <span aria-hidden="true" style={{ position: 'absolute', right: 0, bottom: 0, width: 12, height: 12, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 0 2.5px #0c0a1a', zIndex: 1 }} /> : null}
+              <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: '#252042' }}>
                 {avatarUrl
                   ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(244,63,94,0.1)' }}>
@@ -1164,13 +1178,11 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
             </div>
 
             <div style={{ minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#fff6fb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {otherProfile.full_name}{ageLabel ? `, ${ageLabel}` : ''}
+              <p style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#f4eef6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={ageLabel ? `${otherProfile.full_name}, ${ageLabel}` : undefined}>
+                {otherProfile.full_name}
               </p>
-              <p style={{ margin: 0, fontSize: 11, color: online ? '#a7f3d0' : 'rgba(246,223,252,0.72)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: isPendingConversation ? '#f9a8d4' : (online ? '#34d399' : 'rgba(246,223,252,0.42)'), boxShadow: isPendingConversation ? '0 0 0 2px rgba(249,168,212,0.18)' : (online ? '0 0 0 2px rgba(52,211,153,0.22)' : 'none') }} />
+              <p style={{ margin: 0, fontSize: 13, color: online && !isPendingConversation ? '#34d399' : '#9a8fae' }}>
                 {statusText}
-                {otherProfile.location ? ` • ${otherProfile.location}` : ''}
               </p>
             </div>
           </div>
@@ -1179,8 +1191,9 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
           <button
             onClick={e => { e.stopPropagation(); if (!inCall && !isPendingConversation) setCallPermNeeded('start') }}
             disabled={isPendingConversation || inCall}
-            style={{ width: 38, height: 38, borderRadius: '50%', border: 'none', cursor: (isPendingConversation || inCall) ? 'not-allowed' : 'pointer', opacity: (isPendingConversation || inCall) ? 0.45 : 1, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Video size={17} color="#f6e8ff" />
+            aria-label="Start a video call"
+            style={{ width: 40, height: 40, borderRadius: 12, border: 'none', cursor: (isPendingConversation || inCall) ? 'not-allowed' : 'pointer', opacity: (isPendingConversation || inCall) ? 0.45 : 1, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Video size={22} color="#c9bfd6" />
           </button>
 
           {/* Report — shows check + “reported” state after you submit a report */}
@@ -1195,12 +1208,12 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
               setBlockReportOpen(true)
             }}
             style={{
-              width: 38,
-              height: 38,
-              borderRadius: '50%',
-              border: userReportedPeer ? '1px solid rgba(52,211,153,0.4)' : '1px solid rgba(251,146,60,0.45)',
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              border: 'none',
               cursor: userReportedPeer ? 'default' : 'pointer',
-              background: userReportedPeer ? 'rgba(52,211,153,0.14)' : 'rgba(251,146,60,0.14)',
+              background: 'transparent',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1209,16 +1222,17 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
             }}
           >
             {userReportedPeer
-              ? <Check size={17} color="#6ee7b7" strokeWidth={2.5} />
-              : <Flag size={17} color="#fb923c" />}
+              ? <ShieldCheck size={22} color="#34d399" />
+              : <Shield size={22} color="#c9bfd6" />}
           </button>
 
           {/* Three dot menu */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={e => { e.stopPropagation(); setShowChatMenu(!showChatMenu) }}
-              style={{ width: 38, height: 38, borderRadius: '50%', border: 'none', cursor: 'pointer', background: showChatMenu ? 'rgba(240,56,104,0.20)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <MoreVertical size={17} color="#f0d9ff" />
+              aria-label="More options"
+              style={{ width: 40, height: 40, borderRadius: 12, border: 'none', cursor: 'pointer', background: showChatMenu ? 'rgba(232,53,95,0.16)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <MoreVertical size={20} color="#c9bfd6" />
             </button>
 
             {showChatMenu && (
@@ -1341,7 +1355,16 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
               </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {!isPendingConversation ? (
+                <div style={{ margin: '4px auto 14px', maxWidth: 420, width: '100%', textAlign: 'center', padding: '16px 18px', borderRadius: 18, background: '#17142a', border: '1px solid rgba(244,238,246,0.08)' }}>
+                  <Heart size={20} color="#e8355f" fill="#e8355f" style={{ margin: '0 auto 6px', display: 'block' }} />
+                  <p style={{ margin: 0, fontFamily: "'Fraunces', Georgia, serif", fontWeight: 700, fontSize: 18, color: '#f4eef6' }}>
+                    You matched with {otherProfile.full_name?.split(' ')[0]}
+                  </p>
+                  {sharedText ? <p style={{ margin: '4px 0 0', fontSize: 13, color: '#9a8fae' }}>{sharedText}</p> : null}
+                </div>
+              ) : null}
               {/* Deduplicate by id — only dedup when both messages have a real id */}
               {messages.filter((msg, i, arr) =>
                 !msg.id || arr.findIndex(m => m.id === msg.id) === i
@@ -1396,16 +1419,16 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
                     )}
 
                     <div style={{
-                      maxWidth: '72%',
-                      padding: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? '0' : '10px 14px',
-                      borderRadius: own ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                      maxWidth: '76%',
+                      padding: (msg.messageType === 'image' || msg.messageType === 'gif') && !isDeleted ? '0' : '11px 16px',
+                      borderRadius: own ? '20px 20px 6px 20px' : '20px 20px 20px 6px',
                       background: isDeleted
-                        ? 'rgba(255,255,255,0.07)'
+                        ? 'rgba(255,255,255,0.05)'
                         : isGif ? 'transparent'
-                        : own ? 'linear-gradient(150deg, #b8203c, #e03060)' : 'rgba(255,255,255,0.09)',
-                      border: isDeleted ? '1px dashed rgba(255,255,255,0.2)' : isGif ? 'none' : own ? 'none' : '1px solid rgba(255,255,255,0.11)',
-                      boxShadow: isDeleted ? 'none' : isGif ? 'none' : own ? '0 4px 18px rgba(184,32,60,0.30)' : '0 2px 10px rgba(0,0,0,0.18)',
-                      color: isDeleted ? 'rgba(246,223,252,0.66)' : own ? 'white' : '#fff2fb',
+                        : own ? 'linear-gradient(135deg, #b71f47, #d42a55)' : '#241f3d',
+                      border: isDeleted ? '1px dashed rgba(255,255,255,0.2)' : 'none',
+                      boxShadow: 'none',
+                      color: isDeleted ? '#9a8fae' : own ? 'white' : '#f4eef6',
                       cursor: own && !isTemp && !isDeleted ? 'pointer' : 'default',
                       opacity: isTemp ? 0.8 : 1,
                     }}>
@@ -1444,7 +1467,7 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
 
                       {/* Text */}
                       {!isDeleted && msg.messageType === 'text' && (
-                        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{msg.content}</p>
+                        <p style={{ margin: 0, fontSize: 15, lineHeight: '22px', wordBreak: 'break-word' }}>{msg.content}</p>
                       )}
 
                       {/* Timestamp + delivery ticks */}
@@ -1469,6 +1492,14 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
                   </div>
                 )
               })}
+              {!isPendingConversation && messages.length >= 3 ? (
+                <div role="note" style={{ margin: '14px auto 4px', maxWidth: 440, width: '100%', display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 16, background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.28)' }}>
+                  <Shield size={20} color="#7fb0ff" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <p style={{ margin: 0, fontSize: 13, lineHeight: '19px', color: '#c9bfd6' }}>
+                    Meeting up? Choose a public place and tell a friend. Never send money to someone you haven&rsquo;t met.
+                  </p>
+                </div>
+              ) : null}
               <div ref={messagesEndRef} style={{ height: navBarOffset }} />
             </div>
           )}
@@ -1535,7 +1566,23 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
         )}
 
         {/* ── Input bar ── */}
-        <div style={{ background: 'rgba(8,6,20,0.88)', backdropFilter: 'blur(24px)', borderTop: '1px solid rgba(255,255,255,0.08)', padding: '10px 12px', paddingBottom: embedded ? bottomInsetPadding : '10px', flexShrink: 0, position: 'sticky', bottom: navBarOffset, zIndex: 30 }}>
+        {showQuickReplies ? (
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '8px 14px 4px', flexShrink: 0, scrollbarWidth: 'none' }} aria-label="Quick replies">
+            {QUICK_REPLIES.map(r => (
+              <button key={r} type="button" onClick={() => setText(r)} style={{ flexShrink: 0, height: 36, padding: '0 14px', borderRadius: 999, border: '1px solid rgba(232,53,95,0.45)', background: 'rgba(232,53,95,0.1)', color: '#f7a1b5', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {r}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <div style={{ background: '#100e1f', borderTop: '1px solid rgba(244,238,246,0.08)', padding: '10px 14px', paddingBottom: embedded ? bottomInsetPadding : '10px', flexShrink: 0, position: 'sticky', bottom: navBarOffset, zIndex: 30 }}>
+          {showTray && !recordingAudio ? (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              <button type="button" onClick={async () => { setShowTray(false); const next = !showGifs; setShowGifs(next); if (next && gifs.length === 0) await loadTrendingGifs() }} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 14px', borderRadius: 12, border: '1px solid rgba(244,238,246,0.14)', background: '#17142a', color: '#f4eef6', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}><Gift size={16} /> GIF</button>
+              <button type="button" onClick={() => { setShowTray(false); imageInputRef.current?.click() }} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 14px', borderRadius: 12, border: '1px solid rgba(244,238,246,0.14)', background: '#17142a', color: '#f4eef6', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}><Image size={16} /> Photo</button>
+              <button type="button" onClick={() => { setShowTray(false); toggleVoiceRecording() }} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 38, padding: '0 14px', borderRadius: 12, border: '1px solid rgba(244,238,246,0.14)', background: '#17142a', color: '#f4eef6', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}><Mic size={16} /> Voice note</button>
+            </div>
+          ) : null}
           {pendingImage && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
               <div style={{ width: 58, height: 58, borderRadius: 16, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.06)', flexShrink: 0 }}>
@@ -1578,37 +1625,16 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
               </button>
             </div>
           )}
-          <form onSubmit={sendText} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              type="button"
-              onClick={async () => {
-                const next = !showGifs
-                setShowGifs(next)
-                if (next && gifs.length === 0) {
-                  // load trending on open if empty
-                  await loadTrendingGifs()
-                }
-              }}
-              style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', background: showGifs ? 'rgba(240,56,104,0.20)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-            >
-              <Gift size={18} color={showGifs ? '#ffd7ec' : 'rgba(246,223,252,0.76)'} />
-            </button>
-            <button type="button" onClick={() => imageInputRef.current?.click()} style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Image size={18} color="rgba(246,223,252,0.76)" />
-            </button>
-            <button
-              type="button"
-              onClick={toggleVoiceRecording}
-              style={{
-                width: 36, height: 36, borderRadius: '50%', border: 'none',
-                cursor: 'pointer',
-                background: recordingAudio ? 'rgba(244,63,94,0.34)' : 'rgba(255,255,255,0.06)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}
-              title={recordingAudio ? 'Stop recording' : 'Record voice note'}
-            >
-              <Mic size={17} color={recordingAudio ? '#fff' : 'rgba(246,223,252,0.82)'} />
-            </button>
+          <form onSubmit={sendText} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {recordingAudio ? (
+              <button type="button" onClick={toggleVoiceRecording} title="Stop recording" aria-label="Stop recording and send" style={{ width: 46, height: 46, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'rgba(232,53,95,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Mic size={20} color="#fff" />
+              </button>
+            ) : (
+              <button type="button" onClick={() => setShowTray(v => !v)} aria-label="Add a photo, GIF or voice note" aria-expanded={showTray} style={{ width: 46, height: 46, borderRadius: '50%', border: '1px solid rgba(244,238,246,0.14)', cursor: 'pointer', background: showTray ? 'rgba(232,53,95,0.16)' : '#17142a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Plus size={22} color="#f4eef6" style={{ transform: showTray ? 'rotate(45deg)' : 'none', transition: 'transform 0.15s' }} />
+              </button>
+            )}
             <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
             {recordingAudio ? (
               <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 24, border: '1.5px solid rgba(240,56,104,0.35)', background: 'rgba(240,56,104,0.10)' }}>
@@ -1623,7 +1649,8 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
                 value={text}
                 onChange={e => setText(e.target.value)}
                 placeholder={isPendingConversation ? 'Waiting for match to unlock chat…' : `Message ${otherProfile.full_name?.split(' ')[0] ?? ''}…`}
-                style={{ flex: 1, minWidth: 0, padding: '11px 16px', borderRadius: 24, border: '1.5px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', fontSize: 14, color: '#f0e8f4', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}
+                aria-label={`Message ${otherProfile.full_name?.split(' ')[0] ?? ''}`}
+                style={{ flex: 1, minWidth: 0, height: 46, padding: '0 18px', borderRadius: 999, border: '1px solid rgba(244,238,246,0.14)', background: '#17142a', fontSize: 15, color: '#f4eef6', outline: 'none', fontFamily: 'inherit' }}
                 disabled={sending || isPendingConversation || !!pendingImage}
               />
             )}
@@ -1631,10 +1658,11 @@ export default function Chat({ conversationId, otherProfile, onBack, embedded = 
               <button
                 type="submit"
                 disabled={!text.trim() || sending || isPendingConversation || !!pendingImage}
-                style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', flexShrink: 0, background: !isPendingConversation && text.trim() ? 'linear-gradient(135deg,#f43f5e,#ec4899)' : 'rgba(244,63,94,0.12)', cursor: !isPendingConversation && text.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: !isPendingConversation && text.trim() ? '0 4px 12px rgba(244,63,94,0.3)' : 'none', transition: 'all 0.2s ease' }}>
+                aria-label="Send message"
+                style={{ width: 46, height: 46, borderRadius: '50%', border: 'none', flexShrink: 0, background: 'linear-gradient(135deg, #b71f47, #d42a55)', opacity: !isPendingConversation && text.trim() ? 1 : 0.55, cursor: !isPendingConversation && text.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'opacity 0.2s ease' }}>
                 {sending
                   ? <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', animation: 'spin 0.8s linear infinite' }} />
-                  : <Send size={17} color={!isPendingConversation && text.trim() ? 'white' : '#f43f5e'} />
+                  : <Send size={19} color="white" />
                 }
               </button>
             )}

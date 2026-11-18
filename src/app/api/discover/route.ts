@@ -86,6 +86,10 @@ export async function GET(request: NextRequest) {
     const intentList   = filterIntents   ? filterIntents.split(',').filter(Boolean)   : []
     const interestList = filterInterests ? filterInterests.split(',').filter(Boolean) : []
     const ageRangeList = filterAgeRanges ? filterAgeRanges.split(',').filter(Boolean) : []
+    // Quick filter chips on the Discover screen
+    const verifiedOnly = searchParams.get('verified') === '1'
+    const onlineOnly   = searchParams.get('online') === '1'
+    const maxKmParam   = parseInt(searchParams.get('maxKm') ?? '', 10)
 
     const myProfileRes = await pgQuery<DiscoverProfileRow>(
       'SELECT * FROM profiles WHERE id = $1 LIMIT 1',
@@ -100,7 +104,9 @@ export async function GET(request: NextRequest) {
 
     const myLat         = myProfile.latitude  ? parseFloat(myProfile.latitude)  : null
     const myLng         = myProfile.longitude ? parseFloat(myProfile.longitude) : null
-    const myDistanceMax = myProfile.distance_max ?? 500
+    const myDistanceMax = Number.isFinite(maxKmParam) && maxKmParam > 0
+      ? Math.min(maxKmParam, myProfile.distance_max ?? 500)
+      : (myProfile.distance_max ?? 500)
 
     // ── Passed IDs — exclude from results (server-side, permanent) ───────────
     // This is the key change: passes are now fetched from the DB so they
@@ -174,6 +180,12 @@ export async function GET(request: NextRequest) {
     if (ageRangeList.length > 0) {
       where.push(`p.age_range = ANY(${bind(ageRangeList)}::text[])`)
     }
+    if (verifiedOnly) {
+      where.push('p.photo_verified = true')
+    }
+    if (onlineOnly) {
+      where.push(`p.last_active > NOW() - INTERVAL '5 minutes'`)
+    }
 
     const candidatesRes = await pgQuery<DiscoverProfileRow>(
       `
@@ -203,6 +215,7 @@ export async function GET(request: NextRequest) {
       })
       .map(candidate => {
         let score = 0
+        let distanceKm: number | null = null
         const reasons: string[] = []
 
         const candLat = candidate.latitude  ? parseFloat(candidate.latitude)  : null
@@ -225,6 +238,7 @@ export async function GET(request: NextRequest) {
           const { points, label } = distanceScore(km)
           score += points
           reasons.push(label)
+          distanceKm = Math.round(km)
 
         } else if (myProfile.location && candidate.location) {
           const myParts    = myProfile.location.split(',').map((s: string) => s.trim().toLowerCase())
@@ -310,6 +324,13 @@ export async function GET(request: NextRequest) {
             last_active:          candidate.last_active,
             photo_verified:       (candidate as any).photo_verified ?? false,
             voice_note_url:       (candidate as any).voice_note_url ?? null,
+            distance_km:          distanceKm,
+            occupation:           (candidate as any).occupation ?? null,
+            height_cm:            (candidate as any).height_cm ?? null,
+            education:            (candidate as any).education ?? null,
+            languages:            (candidate as any).languages ?? [],
+            drinking:             (candidate as any).drinking ?? null,
+            children:             (candidate as any).children ?? null,
           },
         }
       })

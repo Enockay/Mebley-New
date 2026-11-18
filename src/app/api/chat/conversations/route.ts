@@ -68,10 +68,14 @@ export async function GET(request: NextRequest) {
       let lastMessage = 'Say hello 👋'
       let lastTime = row.updated_at ?? ''
       let unreadCount = 0
+      let hasMessages = false
+      let lastFromMe = false
       try {
         const messages = await getMessages(row.conversation_id, 1, 1)
         const msg = messages[0]
         if (msg) {
+          hasMessages = true
+          lastFromMe = msg.senderId === user.id
           lastMessage = msg.isDeleted
             ? 'Message deleted'
             : msg.messageType === 'image'
@@ -109,6 +113,8 @@ export async function GET(request: NextRequest) {
         lastMessage,
         lastTime,
         unreadCount,
+        hasMessages,
+        lastFromMe,
         isPinned: (row.is_pinned_by ?? []).includes(user.id),
         isMuted: (row.is_muted_by ?? []).includes(user.id),
         isArchived: (row.is_archived_by ?? []).includes(user.id),

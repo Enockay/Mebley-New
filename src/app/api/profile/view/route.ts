@@ -82,3 +82,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+/** GET: how many people have viewed my profile (Me page stat). */
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getAuthUserFromRequest(request)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const res = await pgQuery<{ n: string }>('SELECT COUNT(*)::text AS n FROM profile_views WHERE viewed_id = $1', [user.id])
+    return NextResponse.json({ count: parseInt(res.rows[0]?.n ?? '0', 10) })
+  } catch (err) {
+    console.error('GET /api/profile/view error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
